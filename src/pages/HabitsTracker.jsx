@@ -269,21 +269,21 @@ export const HabitsTracker = ({ selectedDate }) => {
                   className={`transition-all duration-200 ${
                     isDone ? 'border-emerald-500/40 bg-emerald-500/5' : ''
                   }`}
-                  action={
-                    <div className="flex items-center gap-1">
+                  bottomAction={
+                    <div className="flex items-center gap-0.5 bg-surface/90 dark:bg-surface/90 backdrop-blur-xs rounded-xl p-0.5 border border-theme/40 shadow-xs">
                       <button
                         onClick={() => handleEditHabit(habit)}
-                        className="p-1.5 rounded-lg text-secondary hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
+                        className="p-1 rounded-lg text-secondary hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
                         title="Edit Habit"
                       >
-                        <Edit2 className="w-4 h-4" />
+                        <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setDeleteId(habit._id)}
-                        className="p-1.5 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                        className="p-1 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                         title="Delete Habit"
                       >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                       </button>
                     </div>
                   }
@@ -301,7 +301,7 @@ export const HabitsTracker = ({ selectedDate }) => {
                       <CheckCircle2 className="w-5 h-5" />
                     </button>
 
-                    <div className="min-w-0 flex-1 space-y-1.5">
+                    <div className="min-w-0 flex-1 space-y-1.5 pr-14">
                       <div className="flex items-center justify-between gap-2">
                         <h4
                           className={`text-sm font-bold truncate transition-colors duration-150 ${

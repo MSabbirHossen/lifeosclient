@@ -182,18 +182,19 @@ export const Reports = () => {
               <Card
                 key={rev._id}
                 hover
-                className="flex flex-col justify-between"
-                action={
-                  <button
-                    onClick={() => setDeleteId(rev._id)}
-                    className="p-1.5 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                    title="Delete Review"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+                bottomAction={
+                  <div className="flex items-center gap-0.5 bg-surface/90 dark:bg-surface/90 backdrop-blur-xs rounded-xl p-0.5 border border-theme/40 shadow-xs">
+                    <button
+                      onClick={() => setDeleteId(rev._id)}
+                      className="p-1 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      title="Delete Review"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
                 }
               >
-                <div className="space-y-4">
+                <div className="space-y-4 pb-2">
                   <div className="flex items-center justify-between gap-2">
                     <Badge variant={rev.type === 'monthly' ? 'purple' : 'primary'} size="sm" dot>
                       {rev.type === 'monthly' ? 'Monthly Review' : 'Weekly Review'}

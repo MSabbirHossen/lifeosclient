@@ -1,14 +1,13 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useNavigate } from 'react-router-dom';
-import { Sparkles, Mail, Lock, User, ArrowRight, Eye, EyeOff, Info, CheckCircle2, ShieldCheck } from 'lucide-react';
+import { Sparkles, Mail, Lock, User, ArrowRight, Eye, EyeOff, Check, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/Button';
-import { Modal } from '../components/Modal';
 
 // Official Google 'G' Logo SVG
 const GoogleIcon = () => (
-  <svg className="w-5 h-5" viewBox="0 0 24 24">
+  <svg className="w-5 h-5 shrink-0" viewBox="0 0 24 24">
     <path
       fill="#4285F4"
       d="M23.745 12.27c0-.7-.06-1.4-.19-2.07H12v4.51h6.6c-.29 1.52-1.14 2.82-2.4 3.68v3.05h3.88c2.27-2.09 3.665-5.17 3.665-9.17z"
@@ -28,25 +27,84 @@ const GoogleIcon = () => (
   </svg>
 );
 
+// Client-side Password Strength Evaluator
+const evaluatePasswordStrength = (pwd) => {
+  if (!pwd) {
+    return {
+      score: 0,
+      label: 'Too Short',
+      textColor: 'text-muted',
+      barColor: 'bg-subtle',
+      hasMinLength: false,
+      hasUppercase: false,
+      hasNumber: false,
+      hasSpecial: false,
+    };
+  }
+
+  const hasMinLength = pwd.length >= 8;
+  const hasUppercase = /[A-Z]/.test(pwd);
+  const hasNumber = /[0-9]/.test(pwd);
+  const hasSpecial = /[^A-Za-z0-9]/.test(pwd);
+
+  let score = 0;
+  if (hasMinLength) score += 1;
+  if (hasUppercase) score += 1;
+  if (hasNumber) score += 1;
+  if (hasSpecial) score += 1;
+
+  let label = 'Weak';
+  let textColor = 'text-rose-500';
+  let barColor = 'bg-rose-500';
+
+  if (score === 2) {
+    label = 'Fair';
+    textColor = 'text-amber-500';
+    barColor = 'bg-amber-500';
+  } else if (score === 3) {
+    label = 'Good';
+    textColor = 'text-indigo-500';
+    barColor = 'bg-indigo-500';
+  } else if (score >= 4) {
+    label = 'Strong';
+    textColor = 'text-emerald-500';
+    barColor = 'bg-emerald-500';
+  }
+
+  return {
+    score,
+    label,
+    textColor,
+    barColor,
+    hasMinLength,
+    hasUppercase,
+    hasNumber,
+    hasSpecial,
+  };
+};
+
 export const Auth = () => {
   const [isLogin, setIsLogin] = useState(true);
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [isPasswordFocused, setIsPasswordFocused] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const [showGoogleGuideModal, setShowGoogleGuideModal] = useState(false);
 
   const { login, register, loginWithGoogle } = useAuth();
   const { effectiveTheme } = useTheme();
   const navigate = useNavigate();
+
   const googleBtnContainerRef = useRef(null);
   const tokenClientRef = useRef(null);
-  const [googleBtnRendered, setGoogleBtnRendered] = useState(false);
 
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
+
+  // Real-time password strength calculation
+  const pwdStrength = useMemo(() => evaluatePasswordStrength(password), [password]);
 
   // Handle detailed auth errors with actionable messages
   const handleAuthError = (err) => {
@@ -117,14 +175,14 @@ export const Auth = () => {
         }
       }
 
-      // 2. Initialize Identity Services (ID Token / One Tap & Official Button)
+      // 2. Initialize Identity Services (ID Token / One Tap in background)
       if (window.google?.accounts?.id) {
         try {
           window.google.accounts.id.initialize({
             client_id: googleClientId,
             callback: handleGoogleCredentialResponse,
             auto_select: false,
-            use_fedcm_for_prompt: false, // Disables FedCM to avoid localhost NetworkError
+            use_fedcm_for_prompt: false,
           });
 
           if (googleBtnContainerRef.current) {
@@ -138,7 +196,6 @@ export const Auth = () => {
               text: isLogin ? 'signin_with' : 'signup_with',
               logo_alignment: 'left',
             });
-            setGoogleBtnRendered(true);
           }
         } catch (e) {
           console.warn('Google Identity initialization notice:', e);
@@ -159,7 +216,7 @@ export const Auth = () => {
     }
   }, [googleClientId, isLogin, effectiveTheme]);
 
-  // Handle Google Token Response from official Google Sign-In button
+  // Handle Google Token Response from background Google Sign-In button
   const handleGoogleCredentialResponse = async (response) => {
     if (!response?.credential) return;
     setGoogleLoading(true);
@@ -181,7 +238,7 @@ export const Auth = () => {
   const handleGoogleClick = () => {
     setError('');
     if (!googleClientId) {
-      setShowGoogleGuideModal(true);
+      setError('Google Sign-In is not currently available. Please sign in with email.');
       return;
     }
 
@@ -195,7 +252,7 @@ export const Auth = () => {
       }
     }
 
-    // Fallback: trigger click on rendered Google button if present
+    // Fallback: trigger click on background rendered Google button if present
     const renderedBtn = googleBtnContainerRef.current?.querySelector('div[role="button"]');
     if (renderedBtn) {
       renderedBtn.click();
@@ -205,35 +262,27 @@ export const Auth = () => {
     if (window.google?.accounts?.id) {
       window.google.accounts.id.prompt();
     } else {
-      setError('Google Sign-In service is still loading. Please wait a moment.');
+      setError('Google Sign-In service is initializing. Please wait a moment.');
     }
   };
 
-  // Developer 1-click test flow when GOOGLE_CLIENT_ID is not yet configured
-  const handleSimulateGoogleLogin = async () => {
-    setShowGoogleGuideModal(false);
-    setGoogleLoading(true);
-    setError('');
-    try {
-      const mockTestUser = {
-        email: email.trim() ? email.trim().toLowerCase() : 'user.google@example.com',
-        name: name.trim() ? name.trim() : 'Google User',
-        avatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&auto=format&fit=crop&q=80',
-        googleId: `google_sim_${Date.now()}`,
-      };
-      await loginWithGoogle({ testUser: mockTestUser });
-      navigate('/dashboard');
-    } catch (err) {
-      handleAuthError(err);
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
-
-  // Email/Password Submit
+  // Email/Password Submit with Client-side validation
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
+
+    // Strong password confirmation on registration
+    if (!isLogin) {
+      if (!pwdStrength.hasMinLength) {
+        setError('Password must be at least 8 characters long.');
+        return;
+      }
+      if (pwdStrength.score < 3) {
+        setError('Please create a stronger password (must include uppercase, numbers, and symbols).');
+        return;
+      }
+    }
+
     setLoading(true);
 
     try {
@@ -256,11 +305,11 @@ export const Auth = () => {
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md bg-surface border border-theme rounded-3xl p-5 sm:p-7 md:p-9 card-shadow relative z-10 animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-md bg-surface border border-theme rounded-3xl p-6 sm:p-8 card-shadow relative z-10 animate-in fade-in zoom-in-95 duration-200">
         {/* Header Branding */}
         <div className="text-center mb-6">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-accent text-white flex items-center justify-center mx-auto mb-3.5 shadow-lg shadow-indigo-500/25">
-            <Sparkles className="w-7 h-7" />
+          <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-accent text-white flex items-center justify-center mx-auto mb-3.5 shadow-lg shadow-indigo-500/25">
+            <Sparkles className="w-6 h-6" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
             {isLogin ? 'Welcome back to Life OS' : 'Create your Account'}
@@ -278,10 +327,11 @@ export const Auth = () => {
               setIsLogin(true);
               setError('');
             }}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${isLogin
-              ? 'bg-surface text-primary card-shadow'
-              : 'text-secondary hover:text-primary'
-              }`}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              isLogin
+                ? 'bg-surface text-primary card-shadow'
+                : 'text-secondary hover:text-primary'
+            }`}
           >
             Sign In
           </button>
@@ -291,10 +341,11 @@ export const Auth = () => {
               setIsLogin(false);
               setError('');
             }}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${!isLogin
-              ? 'bg-surface text-primary card-shadow'
-              : 'text-secondary hover:text-primary'
-              }`}
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
+              !isLogin
+                ? 'bg-surface text-primary card-shadow'
+                : 'text-secondary hover:text-primary'
+            }`}
           >
             Create Account
           </button>
@@ -338,23 +389,12 @@ export const Auth = () => {
             </span>
           </button>
 
-          {/* Hidden GSI container for silent background identity service initialization */}
+          {/* Hidden GSI container for background service initialization */}
           <div
             ref={googleBtnContainerRef}
             aria-hidden="true"
             className="hidden"
           />
-
-          {/* Troubleshoot & Test Mode */}
-          <div className="text-center pt-0.5">
-            <button
-              type="button"
-              onClick={() => setShowGoogleGuideModal(true)}
-              className="text-[11px] text-secondary hover:text-accent font-medium underline transition-colors cursor-pointer"
-            >
-              Having trouble with Google Sign-In?
-            </button>
-          </div>
         </div>
 
         {/* Divider */}
@@ -414,10 +454,11 @@ export const Auth = () => {
               <input
                 type={showPassword ? 'text' : 'password'}
                 required
-                minLength={6}
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
+                onFocus={() => setIsPasswordFocused(true)}
+                onBlur={() => setIsPasswordFocused(false)}
                 className="input-base input-with-icon-left input-with-icon-right"
                 style={{ paddingLeft: '2.75rem', paddingRight: '2.75rem' }}
               />
@@ -430,10 +471,68 @@ export const Auth = () => {
                 {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
               </button>
             </div>
-            {!isLogin && (
-              <span className="text-[10px] text-secondary mt-1 block">
-                Must be at least 6 characters long
-              </span>
+
+            {/* Client-side Smooth Password Strength Validation (on Create Account tab) */}
+            {!isLogin && (password.length > 0 || isPasswordFocused) && (
+              <div className="mt-2.5 p-3 rounded-xl bg-subtle border border-theme space-y-2 animate-in fade-in slide-in-from-top-1 duration-200">
+                <div className="flex items-center justify-between text-[11px] font-semibold">
+                  <span className="text-secondary">Password Strength:</span>
+                  <span className={`font-bold transition-colors duration-200 ${pwdStrength.textColor}`}>
+                    {pwdStrength.label}
+                  </span>
+                </div>
+
+                {/* 4-Segment Animated Progress Bar */}
+                <div className="grid grid-cols-4 gap-1.5 h-1.5">
+                  {[1, 2, 3, 4].map((step) => (
+                    <div
+                      key={step}
+                      className={`h-full rounded-full transition-all duration-300 ${
+                        pwdStrength.score >= step ? pwdStrength.barColor : 'bg-surface border border-theme/40'
+                      }`}
+                    />
+                  ))}
+                </div>
+
+                {/* Validation Criteria Checkpoints */}
+                <div className="grid grid-cols-2 gap-x-2 gap-y-1 pt-1 text-[11px]">
+                  <div
+                    className={`flex items-center gap-1.5 transition-colors duration-150 ${
+                      pwdStrength.hasMinLength ? 'text-emerald-500 font-medium' : 'text-secondary'
+                    }`}
+                  >
+                    <Check className={`w-3 h-3 ${pwdStrength.hasMinLength ? 'text-emerald-500 stroke-[3]' : 'opacity-30'}`} />
+                    <span>8+ characters</span>
+                  </div>
+
+                  <div
+                    className={`flex items-center gap-1.5 transition-colors duration-150 ${
+                      pwdStrength.hasUppercase ? 'text-emerald-500 font-medium' : 'text-secondary'
+                    }`}
+                  >
+                    <Check className={`w-3 h-3 ${pwdStrength.hasUppercase ? 'text-emerald-500 stroke-[3]' : 'opacity-30'}`} />
+                    <span>Uppercase (A-Z)</span>
+                  </div>
+
+                  <div
+                    className={`flex items-center gap-1.5 transition-colors duration-150 ${
+                      pwdStrength.hasNumber ? 'text-emerald-500 font-medium' : 'text-secondary'
+                    }`}
+                  >
+                    <Check className={`w-3 h-3 ${pwdStrength.hasNumber ? 'text-emerald-500 stroke-[3]' : 'opacity-30'}`} />
+                    <span>Number (0-9)</span>
+                  </div>
+
+                  <div
+                    className={`flex items-center gap-1.5 transition-colors duration-150 ${
+                      pwdStrength.hasSpecial ? 'text-emerald-500 font-medium' : 'text-secondary'
+                    }`}
+                  >
+                    <Check className={`w-3 h-3 ${pwdStrength.hasSpecial ? 'text-emerald-500 stroke-[3]' : 'opacity-30'}`} />
+                    <span>Special symbol (!@#)</span>
+                  </div>
+                </div>
+              </div>
             )}
           </div>
 
@@ -455,75 +554,9 @@ export const Auth = () => {
         {/* Security & Privacy Micro-Footer */}
         <div className="mt-6 pt-4 border-t border-theme/60 flex items-center justify-center gap-1.5 text-[11px] text-secondary font-medium text-center">
           <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-          <span>Secured with JWT authentication & password hashing</span>
+          <span>Secured with JWT authentication & encryption</span>
         </div>
       </div>
-
-      {/* Google Setup Guide & Sandbox Modal */}
-      <Modal
-        isOpen={showGoogleGuideModal}
-        onClose={() => setShowGoogleGuideModal(false)}
-        title="Google Authentication Setup"
-        subtitle="Live Google OAuth integration ready in your codebase"
-      >
-        <div className="space-y-4 text-xs">
-          <div className="p-3.5 rounded-xl bg-accent/10 border border-accent/20 flex items-start gap-2.5">
-            <Info className="w-4 h-4 text-accent shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <p className="font-bold text-primary">Google Sign-In is fully coded & ready!</p>
-              <p className="text-secondary leading-relaxed">
-                To connect real Google accounts, obtain a Client ID from the{' '}
-                <a
-                  href="https://console.cloud.google.com/apis/credentials"
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="text-accent hover:underline font-bold"
-                >
-                  Google Cloud Console
-                </a>{' '}
-                and add it to your environment variables:
-              </p>
-            </div>
-          </div>
-
-          <div className="space-y-2 p-3 bg-subtle rounded-xl border border-theme font-mono text-[11px]">
-            <p className="text-secondary font-sans font-bold uppercase tracking-wider text-[10px]">
-              Required Variables:
-            </p>
-            <p className="text-primary">
-              <span className="text-indigo-400">client/.env:</span> VITE_GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-            </p>
-            <p className="text-primary">
-              <span className="text-purple-400">server/.env:</span> GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
-            </p>
-          </div>
-
-          <div className="p-3 bg-subtle rounded-xl border border-theme text-[11px] space-y-1.5">
-            <p className="font-bold text-primary font-sans">
-              Important: Authorized JavaScript Origins in Google Cloud Console
-            </p>
-            <p className="text-secondary leading-relaxed">
-              In your OAuth 2.0 Client ID settings, verify that <code className="text-accent font-mono">https://lifeosclient.vercel.app</code>, <code className="text-accent font-mono">http://localhost:3000</code>, and <code className="text-accent font-mono">http://localhost:5173</code> are added under <strong>Authorized JavaScript origins</strong>.
-            </p>
-          </div>
-
-          <div className="space-y-2">
-            <p className="font-bold text-primary">Would you like to test the Google Sign-In user flow right now?</p>
-            <p className="text-secondary leading-relaxed">
-              Clicking below will simulate an authentic Google OAuth profile response and sign you in directly.
-            </p>
-          </div>
-
-          <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
-            <Button variant="secondary" onClick={() => setShowGoogleGuideModal(false)}>
-              Close
-            </Button>
-            <Button variant="primary" icon={CheckCircle2} onClick={handleSimulateGoogleLogin}>
-              Test Google Sign-In Flow
-            </Button>
-          </div>
-        </div>
-      </Modal>
     </div>
   );
 };

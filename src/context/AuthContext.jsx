@@ -4,8 +4,22 @@ import api from '../utils/api';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
-  const [loading, setLoading] = useState(true);
+  // Initialize user immediately from localStorage to eliminate flicker and unwanted redirect on refresh
+  const [user, setUser] = useState(() => {
+    try {
+      const savedUser = localStorage.getItem('lifeos_user');
+      return savedUser ? JSON.parse(savedUser) : null;
+    } catch (e) {
+      return null;
+    }
+  });
+
+  // Only show full loading spinner if token exists but cached user object has not been loaded yet
+  const [loading, setLoading] = useState(() => {
+    const token = localStorage.getItem('lifeos_token');
+    const cachedUser = localStorage.getItem('lifeos_user');
+    return Boolean(token && !cachedUser);
+  });
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -17,9 +31,15 @@ export const AuthProvider = ({ children }) => {
       try {
         const res = await api.get('/auth/profile');
         setUser(res.data);
+        localStorage.setItem('lifeos_user', JSON.stringify(res.data));
       } catch (err) {
-        console.error('Failed to load user profile', err);
-        localStorage.removeItem('lifeos_token');
+        console.warn('Profile fetch validation notice:', err.message);
+        // Only clear credentials if the backend explicitly declares the token invalid/expired (401/403)
+        if (err.response && (err.response.status === 401 || err.response.status === 403)) {
+          localStorage.removeItem('lifeos_token');
+          localStorage.removeItem('lifeos_user');
+          setUser(null);
+        }
       } finally {
         setLoading(false);
       }
@@ -32,6 +52,7 @@ export const AuthProvider = ({ children }) => {
     const res = await api.post('/auth/login', { email, password });
     const { token, ...userData } = res.data;
     localStorage.setItem('lifeos_token', token);
+    localStorage.setItem('lifeos_user', JSON.stringify(userData));
     setUser(userData);
     return res.data;
   };
@@ -40,6 +61,7 @@ export const AuthProvider = ({ children }) => {
     const res = await api.post('/auth/register', { name, email, password });
     const { token, ...userData } = res.data;
     localStorage.setItem('lifeos_token', token);
+    localStorage.setItem('lifeos_user', JSON.stringify(userData));
     setUser(userData);
     return res.data;
   };
@@ -54,18 +76,21 @@ export const AuthProvider = ({ children }) => {
     const res = await api.post('/auth/google', payload);
     const { token, ...userData } = res.data;
     localStorage.setItem('lifeos_token', token);
+    localStorage.setItem('lifeos_user', JSON.stringify(userData));
     setUser(userData);
     return res.data;
   };
 
   const logout = () => {
     localStorage.removeItem('lifeos_token');
+    localStorage.removeItem('lifeos_user');
     setUser(null);
   };
 
   const updateUser = async (updatedData) => {
     const res = await api.put('/auth/profile', updatedData);
     setUser(res.data);
+    localStorage.setItem('lifeos_user', JSON.stringify(res.data));
     return res.data;
   };
 

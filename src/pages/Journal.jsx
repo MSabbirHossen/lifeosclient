@@ -260,27 +260,26 @@ export const Journal = ({ selectedDate }) => {
               <Card
                 key={entry._id}
                 hover
-                className="flex flex-col justify-between"
-                action={
-                  <div className="flex items-center gap-1">
+                bottomAction={
+                  <div className="flex items-center gap-0.5 bg-surface/90 dark:bg-surface/90 backdrop-blur-xs rounded-xl p-0.5 border border-theme/40 shadow-xs">
                     <button
                       onClick={() => openEditModal(entry)}
-                      className="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-subtle transition-colors cursor-pointer"
+                      className="p-1 rounded-lg text-secondary hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
                       title="Edit Entry"
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => setDeleteId(entry._id)}
-                      className="p-1.5 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      className="p-1 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                       title="Delete Entry"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 }
               >
-                <div className="space-y-4">
+                <div className="space-y-4 pb-2">
                   {/* Top: Date & Moods */}
                   <div className="flex items-center justify-between gap-2 flex-wrap">
                     <div className="flex items-center gap-2">

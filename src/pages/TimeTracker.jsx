@@ -287,26 +287,26 @@ export const TimeTracker = ({ selectedDate }) => {
               <Card
                 key={log._id}
                 hover
-                action={
-                  <div className="flex items-center gap-1">
+                bottomAction={
+                  <div className="flex items-center gap-0.5 bg-surface/90 dark:bg-surface/90 backdrop-blur-xs rounded-xl p-0.5 border border-theme/40 shadow-xs">
                     <button
                       onClick={() => openEditModal(log)}
-                      className="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-subtle transition-colors cursor-pointer"
+                      className="p-1 rounded-lg text-secondary hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
                       title="Edit Log"
                     >
-                      <Edit2 className="w-4 h-4" />
+                      <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => setDeleteId(log._id)}
-                      className="p-1.5 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      className="p-1 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                       title="Delete Log"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-3.5 h-3.5" />
                     </button>
                   </div>
                 }
               >
-                <div className="space-y-3">
+                <div className="space-y-3 pb-2">
                   <div className="flex items-center justify-between gap-2">
                     <Badge variant={CATEGORY_COLORS[log.category] || 'neutral'} size="sm" dot>
                       {log.category}

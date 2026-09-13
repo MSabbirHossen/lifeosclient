@@ -481,26 +481,26 @@ export const CalorieTracker = ({ selectedDate }) => {
                 <Card
                   key={meal._id}
                   hover
-                  action={
-                    <div className="flex items-center gap-1">
-                      <button
-                        onClick={() => handleEditMeal(meal)}
-                        className="p-1.5 rounded-lg text-secondary hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
-                        title="Edit Meal"
-                      >
-                        <Edit2 className="w-4 h-4" />
-                      </button>
-                      <button
-                        onClick={() => setDeleteId(meal._id)}
-                        className="p-1.5 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                        title="Delete Meal"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </div>
-                  }
-                >
-                  <div className="space-y-3">
+                  bottomAction={
+                  <div className="flex items-center gap-0.5 bg-surface/90 dark:bg-surface/90 backdrop-blur-xs rounded-xl p-0.5 border border-theme/40 shadow-xs">
+                    <button
+                      onClick={() => handleEditMeal(meal)}
+                      className="p-1 rounded-lg text-secondary hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
+                      title="Edit Meal"
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      onClick={() => setDeleteId(meal._id)}
+                      className="p-1 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      title="Delete Meal"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                }
+              >
+                <div className="space-y-3 pb-2">
                     <div className="flex items-center justify-between">
                       <Badge variant="primary" size="sm" dot>
                         {meal.mealType}

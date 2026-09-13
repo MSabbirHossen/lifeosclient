@@ -10,10 +10,11 @@ export const DateInput = ({
   className = '',
   disabled = false,
   id,
+  defaultToday = true,
 }) => {
   const todayStr = getFormattedDate();
-  const currentValue = value || todayStr;
-  const isToday = currentValue === todayStr;
+  const currentValue = value !== undefined ? value : (defaultToday ? todayStr : '');
+  const isToday = Boolean(currentValue && currentValue === todayStr);
 
   const handleSetToday = () => {
     if (disabled) return;
