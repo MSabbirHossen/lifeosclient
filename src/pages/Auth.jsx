@@ -54,7 +54,7 @@ export const Auth = () => {
     if (err.response?.data?.message) {
       setError(err.response.data.message);
     } else if (err.code === 'ERR_NETWORK' || !err.response) {
-      setError('Unable to connect to backend server. Make sure the backend is running on port 5000.');
+      setError('Unable to connect to backend server. Please check your network connection or server status.');
     } else if (err.message) {
       setError(err.message);
     } else {
@@ -497,7 +497,7 @@ export const Auth = () => {
               Important: Authorized JavaScript Origins in Google Cloud Console
             </p>
             <p className="text-secondary leading-relaxed">
-              In your OAuth 2.0 Client ID settings, verify that <code className="text-accent font-mono">http://localhost:3000</code> and <code className="text-accent font-mono">http://localhost:5173</code> are added under <strong>Authorized JavaScript origins</strong>.
+              In your OAuth 2.0 Client ID settings, verify that <code className="text-accent font-mono">https://lifeosclient.vercel.app</code>, <code className="text-accent font-mono">http://localhost:3000</code>, and <code className="text-accent font-mono">http://localhost:5173</code> are added under <strong>Authorized JavaScript origins</strong>.
             </p>
           </div>
 
