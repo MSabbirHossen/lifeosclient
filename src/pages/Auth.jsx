@@ -309,44 +309,50 @@ export const Auth = () => {
 
         {/* --- GOOGLE AUTHENTICATION SECTION --- */}
         <div className="space-y-3">
-          {/* Official Google GSI Button Container */}
+          {/* Primary High-Visibility "Continue with Google" Button */}
+          <button
+            type="button"
+            id="google-auth-button"
+            onClick={handleGoogleClick}
+            disabled={googleLoading}
+            aria-label={isLogin ? 'Continue with Google' : 'Sign up with Google'}
+            className="w-full h-12 flex items-center justify-center gap-3.5 px-5 rounded-2xl bg-surface hover:bg-subtle active:scale-[0.99] border-2 border-theme hover:border-indigo-500/50 dark:hover:border-indigo-400/50 text-primary font-semibold text-sm sm:text-base transition-all duration-200 card-shadow hover:shadow-md hover:shadow-indigo-500/10 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group relative overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
+          >
+            {/* Ambient hover glow gradient */}
+            <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/[0.04] via-purple-500/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
+
+            {googleLoading ? (
+              <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin shrink-0" />
+            ) : (
+              <div className="shrink-0 transition-transform duration-200 group-hover:scale-110">
+                <GoogleIcon />
+              </div>
+            )}
+
+            <span className="font-semibold tracking-tight text-primary">
+              {googleLoading
+                ? 'Connecting to Google...'
+                : isLogin
+                  ? 'Continue with Google'
+                  : 'Sign up with Google'}
+            </span>
+          </button>
+
+          {/* Hidden GSI container for silent background identity service initialization */}
           <div
             ref={googleBtnContainerRef}
-            className={`flex justify-center w-full min-h-[44px] overflow-hidden ${googleBtnRendered ? '' : 'hidden'
-              }`}
+            aria-hidden="true"
+            className="hidden"
           />
 
-          {/* Custom Google Button (visible when official button is loading or on ad-blocker fallback) */}
-          {!googleBtnRendered && (
-            <button
-              type="button"
-              onClick={handleGoogleClick}
-              disabled={googleLoading}
-              className="w-full flex items-center justify-center gap-3 py-2.5 px-4 rounded-xl bg-surface hover:bg-subtle border border-theme hover:border-accent/40 text-primary font-bold text-xs sm:text-sm transition-all duration-200 card-shadow cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed group"
-            >
-              {googleLoading ? (
-                <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
-              ) : (
-                <GoogleIcon />
-              )}
-              <span>
-                {googleLoading
-                  ? 'Connecting to Google...'
-                  : isLogin
-                    ? 'Continue with Google'
-                    : 'Sign up with Google'}
-              </span>
-            </button>
-          )}
-
-          {/* Micro troubleshoot link */}
-          <div className="text-center">
+          {/* Troubleshoot & Test Mode */}
+          <div className="text-center pt-0.5">
             <button
               type="button"
               onClick={() => setShowGoogleGuideModal(true)}
               className="text-[11px] text-secondary hover:text-accent font-medium underline transition-colors cursor-pointer"
             >
-              Google Sign-In troubleshooting & test mode
+              Having trouble with Google Sign-In?
             </button>
           </div>
         </div>
