@@ -23,6 +23,32 @@ import {
 const CATEGORIES = ['Health', 'Learning', 'Productivity', 'Deen', 'Mindset', 'Other'];
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
+// Helper to calculate how many days a habit has been incomplete
+const getHabitIncompleteDays = (habit, targetDateStr) => {
+  const isDone = Boolean(habit.completedToday || habit.isCompletedToday);
+  if (isDone) return 0;
+
+  if (typeof habit.daysSinceLastCompleted === 'number' && habit.daysSinceLastCompleted > 0) {
+    return habit.daysSinceLastCompleted;
+  }
+
+  if (habit.lastCompletedDate) {
+    const t1 = new Date(targetDateStr).getTime();
+    const t2 = new Date(habit.lastCompletedDate).getTime();
+    const diff = Math.round((t1 - t2) / (1000 * 3600 * 24));
+    return Math.max(1, diff);
+  }
+
+  // Never completed habit: days since creation + 1000 weight so never-completed rank highest at top
+  const createdDateStr = habit.createdAt
+    ? new Date(habit.createdAt).toISOString().split('T')[0]
+    : targetDateStr;
+  const t1 = new Date(targetDateStr).getTime();
+  const t2 = new Date(createdDateStr).getTime();
+  const diff = Math.max(1, Math.round((t1 - t2) / (1000 * 3600 * 24)));
+  return 1000 + diff;
+};
+
 export const HabitsTracker = ({ selectedDate }) => {
   const activeDate = selectedDate || getFormattedDate();
 
@@ -100,6 +126,8 @@ export const HabitsTracker = ({ selectedDate }) => {
             isCompletedToday: isNowDone,
             streak: newStreak,
             currentStreak: newStreak,
+            daysSinceLastCompleted: isNowDone ? 0 : (h.daysSinceLastCompleted || 1),
+            lastCompletedDate: isNowDone ? activeDate : h.lastCompletedDate,
           };
         }
         return h;
@@ -212,6 +240,40 @@ export const HabitsTracker = ({ selectedDate }) => {
   const safeHeatmap = Array.isArray(heatmap) ? heatmap : [];
   const completedCount = safeHabits.filter((h) => h.completedToday || h.isCompletedToday).length;
   const longestStreak = safeHabits.reduce((max, h) => Math.max(max, h.streak || h.currentStreak || 0), 0);
+
+  // Automatic Priority Sorting:
+  // 1. Incomplete habits come first; completed habits are automatically sorted to the LAST of the list for the day.
+  // 2. The habit incomplete for the MOST days is on TOP every time, followed by every habit after that.
+  const sortedHabits = useMemo(() => {
+    if (!safeHabits || safeHabits.length === 0) return [];
+
+    return [...safeHabits].sort((a, b) => {
+      const aDone = Boolean(a.completedToday || a.isCompletedToday);
+      const bDone = Boolean(b.completedToday || b.isCompletedToday);
+
+      // Rule 1: Incomplete habits first, completed habits automatically to the last
+      if (!aDone && bDone) return -1;
+      if (aDone && !bDone) return 1;
+
+      // Rule 2: Both incomplete: sort by incompleted for the most days (descending)
+      if (!aDone && !bDone) {
+        const aIncompleteDays = getHabitIncompleteDays(a, activeDate);
+        const bIncompleteDays = getHabitIncompleteDays(b, activeDate);
+
+        if (bIncompleteDays !== aIncompleteDays) {
+          return bIncompleteDays - aIncompleteDays; // higher days incomplete on top
+        }
+
+        // Secondary tiebreaker: oldest habit first
+        const aCreated = a.createdAt ? new Date(a.createdAt).getTime() : 0;
+        const bCreated = b.createdAt ? new Date(b.createdAt).getTime() : 0;
+        return aCreated - bCreated;
+      }
+
+      // Rule 3: Both completed: sort completed habits consistently by streak
+      return (b.streak || b.currentStreak || 0) - (a.streak || a.currentStreak || 0);
+    });
+  }, [safeHabits, activeDate]);
 
   // Available timeframe options (Past Year, specific years, Lifetime)
   const currentYear = new Date().getFullYear();
@@ -412,14 +474,18 @@ export const HabitsTracker = ({ selectedDate }) => {
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-            {safeHabits.map((habit) => {
+            {sortedHabits.map((habit) => {
               const isDone = habit.completedToday || habit.isCompletedToday;
+              const rawIncompleteDays = !isDone ? getHabitIncompleteDays(habit, activeDate) : 0;
+              const isNeverCompleted = rawIncompleteDays >= 1000;
+              const displayMissedDays = isNeverCompleted ? rawIncompleteDays - 1000 : rawIncompleteDays;
+
               return (
                 <Card
                   key={habit._id}
                   hover
                   className={`transition-all duration-200 ${
-                    isDone ? 'border-emerald-500/40 bg-emerald-500/5' : ''
+                    isDone ? 'border-emerald-500/40 bg-emerald-500/5 opacity-85' : ''
                   }`}
                   bottomAction={
                     <div className="flex items-center gap-0.5 bg-surface/90 dark:bg-surface/90 backdrop-blur-xs rounded-xl p-0.5 border border-theme/40 shadow-xs">
@@ -454,7 +520,7 @@ export const HabitsTracker = ({ selectedDate }) => {
                     </button>
 
                     <div className="min-w-0 flex-1 space-y-1.5 pr-14">
-                      <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center justify-between gap-2 flex-wrap">
                         <h4
                           className={`text-sm font-bold truncate transition-colors duration-150 ${
                             isDone ? 'line-through text-secondary' : 'text-primary'
@@ -462,14 +528,43 @@ export const HabitsTracker = ({ selectedDate }) => {
                         >
                           {habit.name}
                         </h4>
-                        <Badge
-                          variant="warning"
-                          size="xs"
-                          icon={Flame}
-                          className="font-extrabold shrink-0"
-                        >
-                          {habit.streak || habit.currentStreak || 0}d streak
-                        </Badge>
+
+                        {isDone ? (
+                          <Badge
+                            variant="success"
+                            size="xs"
+                            icon={CheckCircle2}
+                            className="font-bold shrink-0"
+                          >
+                            {habit.streak || habit.currentStreak || 0}d streak
+                          </Badge>
+                        ) : isNeverCompleted ? (
+                          <Badge
+                            variant="danger"
+                            size="xs"
+                            className="font-bold shrink-0 bg-rose-500/10 text-rose-500 border border-rose-500/20"
+                          >
+                            Top Priority (0 done)
+                          </Badge>
+                        ) : displayMissedDays > 1 ? (
+                          <Badge
+                            variant="warning"
+                            size="xs"
+                            icon={Flame}
+                            className="font-bold shrink-0 bg-amber-500/10 text-amber-500 border border-amber-500/20"
+                          >
+                            Incomplete {displayMissedDays}d
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="warning"
+                            size="xs"
+                            icon={Flame}
+                            className="font-extrabold shrink-0"
+                          >
+                            {habit.streak || habit.currentStreak || 0}d streak
+                          </Badge>
+                        )}
                       </div>
 
                       <div className="flex items-center gap-2">
