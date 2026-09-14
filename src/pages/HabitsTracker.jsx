@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { StatCard } from '../components/StatCard';
@@ -21,6 +21,7 @@ import {
 } from 'lucide-react';
 
 const CATEGORIES = ['Health', 'Learning', 'Productivity', 'Deen', 'Mindset', 'Other'];
+const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 export const HabitsTracker = ({ selectedDate }) => {
   const activeDate = selectedDate || getFormattedDate();
@@ -28,6 +29,7 @@ export const HabitsTracker = ({ selectedDate }) => {
   const [habits, setHabits] = useState([]);
   const [heatmap, setHeatmap] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [hoveredDay, setHoveredDay] = useState(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -199,6 +201,88 @@ export const HabitsTracker = ({ selectedDate }) => {
   const completedCount = safeHabits.filter((h) => h.completedToday || h.isCompletedToday).length;
   const longestStreak = safeHabits.reduce((max, h) => Math.max(max, h.streak || h.currentStreak || 0), 0);
 
+  // Build GitHub-style 12-week grid (7 rows: Sun-Sat, 12 week columns)
+  const twelveWeeks = useMemo(() => {
+    let refDate = new Date();
+    if (activeDate) {
+      const parts = activeDate.split('-').map(Number);
+      if (parts.length === 3) {
+        refDate = new Date(parts[0], parts[1] - 1, parts[2]);
+      }
+    }
+
+    const counts = new Map();
+    safeHeatmap.forEach((item) => {
+      if (item && item.date) {
+        counts.set(item.date, item.count || 0);
+      }
+    });
+
+    const currentDayOfWeek = refDate.getDay(); // 0 is Sunday, 6 is Saturday
+    const startSunday = new Date(
+      refDate.getFullYear(),
+      refDate.getMonth(),
+      refDate.getDate() - currentDayOfWeek - 11 * 7
+    );
+
+    const todayStr = new Date().toISOString().split('T')[0];
+    const weeksList = [];
+    let prevMonth = -1;
+
+    for (let w = 0; w < 12; w++) {
+      const weekDays = [];
+      let monthLabel = '';
+
+      for (let d = 0; d < 7; d++) {
+        const current = new Date(
+          startSunday.getFullYear(),
+          startSunday.getMonth(),
+          startSunday.getDate() + w * 7 + d
+        );
+        const y = current.getFullYear();
+        const m = String(current.getMonth() + 1).padStart(2, '0');
+        const dayNum = String(current.getDate()).padStart(2, '0');
+        const dateStr = `${y}-${m}-${dayNum}`;
+        const isFuture = dateStr > todayStr;
+        const count = counts.get(dateStr) || 0;
+
+        if (w === 0 && d === 0) {
+          monthLabel = MONTH_NAMES[current.getMonth()];
+          prevMonth = current.getMonth();
+        } else if (current.getDate() === 1 || (current.getMonth() !== prevMonth && !monthLabel && d <= 3)) {
+          monthLabel = MONTH_NAMES[current.getMonth()];
+          prevMonth = current.getMonth();
+        }
+
+        weekDays.push({
+          date: dateStr,
+          displayDate: current.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          dayOfWeek: d,
+          count,
+          isFuture,
+        });
+      }
+
+      weeksList.push({
+        weekIndex: w,
+        monthLabel,
+        days: weekDays,
+      });
+    }
+
+    return weeksList;
+  }, [safeHeatmap, activeDate]);
+
+  const total12WeeksCompletions = useMemo(() => {
+    return safeHeatmap.reduce((sum, d) => sum + (d.count || 0), 0);
+  }, [safeHeatmap]);
+
+  const activeDaysCount = useMemo(() => {
+    return safeHeatmap.filter((d) => (d.count || 0) > 0).length;
+  }, [safeHeatmap]);
+
+  const consistencyPercent = Math.round((activeDaysCount / 84) * 100);
+
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
       <PageHeader
@@ -337,46 +421,110 @@ export const HabitsTracker = ({ selectedDate }) => {
         )}
       </div>
 
-      {/* Enhanced Visual Heatmap */}
+      {/* GitHub-style Visual Activity Heatmap (Rolling 12 Weeks) */}
       <Card
         hover
         title="Activity Heatmap (Rolling 12 Weeks)"
-        subtitle="Visual consistency and completions per day"
+        subtitle="Visual consistency and completions per day in unified GitHub-style blocks"
         icon={Calendar}
+        badge={
+          <Badge variant="success" size="xs">
+            {total12WeeksCompletions} completions
+          </Badge>
+        }
       >
-        <div className="overflow-x-auto touch-scroll-x pt-3">
-          <div className="flex gap-1.5 min-w-[700px]">
-            {safeHeatmap.map((day, idx) => {
-              const count = day.count || 0;
-              let bg = 'bg-subtle border-theme';
-              if (count === 1) bg = 'bg-emerald-200 dark:bg-emerald-950/70 border-emerald-300 dark:border-emerald-800/60';
-              else if (count === 2) bg = 'bg-emerald-400 dark:bg-emerald-700/80 border-emerald-400 dark:border-emerald-600';
-              else if (count === 3) bg = 'bg-emerald-500 dark:bg-emerald-600 border-emerald-500 shadow-sm shadow-emerald-500/20';
-              else if (count >= 4) bg = 'bg-emerald-600 dark:bg-emerald-400 border-emerald-600 dark:border-emerald-300 shadow-md shadow-emerald-500/30';
-
-              return (
+        <div className="pt-2">
+          {/* Unified GitHub-Style Heatmap Block */}
+          <div className="p-3 sm:p-4 rounded-2xl bg-subtle/30 border border-theme/60 w-fit mx-auto sm:mx-0">
+            {/* Month Labels Header */}
+            <div className="flex text-[10px] font-semibold text-secondary mb-1.5 pl-6 sm:pl-7">
+              {twelveWeeks.map((w, idx) => (
                 <div
                   key={idx}
-                  title={`${formatDisplayDate(day.date)}: ${count} habits completed`}
-                  className={`w-3.5 h-11 rounded-lg border transition-all duration-150 hover:scale-125 hover:z-10 cursor-pointer ${bg}`}
-                />
-              );
-            })}
-          </div>
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-2 text-[11px] text-secondary font-semibold mt-4 pt-2 border-t border-subtle">
-            <span>12 Weeks Ago</span>
-            <div className="flex items-center gap-2">
-              <span>Less</span>
-              <div className="flex gap-1">
-                <span className="w-3.5 h-3.5 rounded bg-subtle border border-theme" />
-                <span className="w-3.5 h-3.5 rounded bg-emerald-200 dark:bg-emerald-950/70 border border-emerald-300" />
-                <span className="w-3.5 h-3.5 rounded bg-emerald-400 dark:bg-emerald-700/80 border border-emerald-400" />
-                <span className="w-3.5 h-3.5 rounded bg-emerald-500 dark:bg-emerald-600 border border-emerald-500" />
-                <span className="w-3.5 h-3.5 rounded bg-emerald-600 dark:bg-emerald-400 border border-emerald-600 shadow-sm shadow-emerald-500/20" />
-              </div>
-              <span>More</span>
+                  className="w-3.5 sm:w-4 md:w-4.5 mr-1 sm:mr-1.5 text-left truncate overflow-visible"
+                >
+                  {w.monthLabel && (
+                    <span className="inline-block">{w.monthLabel}</span>
+                  )}
+                </div>
+              ))}
             </div>
-            <span>Today</span>
+
+            {/* Grid with Day Labels on Left and 12 Week Columns */}
+            <div className="flex items-start">
+              {/* Day of week labels (Sun - Sat, labeled Mon, Wed, Fri like GitHub) */}
+              <div className="grid grid-rows-7 gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-medium text-secondary pr-1.5 sm:pr-2 select-none">
+                <span className="h-3.5 sm:h-4 md:h-4.5 flex items-center leading-none"></span>
+                <span className="h-3.5 sm:h-4 md:h-4.5 flex items-center leading-none">Mon</span>
+                <span className="h-3.5 sm:h-4 md:h-4.5 flex items-center leading-none"></span>
+                <span className="h-3.5 sm:h-4 md:h-4.5 flex items-center leading-none">Wed</span>
+                <span className="h-3.5 sm:h-4 md:h-4.5 flex items-center leading-none"></span>
+                <span className="h-3.5 sm:h-4 md:h-4.5 flex items-center leading-none">Fri</span>
+                <span className="h-3.5 sm:h-4 md:h-4.5 flex items-center leading-none"></span>
+              </div>
+
+              {/* 12 Week Columns as Square Blocks */}
+              <div className="flex gap-1 sm:gap-1.5">
+                {twelveWeeks.map((week) => (
+                  <div key={week.weekIndex} className="grid grid-rows-7 gap-1 sm:gap-1.5">
+                    {week.days.map((day) => {
+                      if (day.isFuture) {
+                        return (
+                          <div
+                            key={day.date}
+                            className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 rounded-[3px] border border-dashed border-theme/20 opacity-15 pointer-events-none"
+                          />
+                        );
+                      }
+
+                      const count = day.count || 0;
+                      let bg = 'bg-subtle/70 border-theme/60 hover:border-theme';
+                      if (count === 1) bg = 'bg-emerald-200 dark:bg-emerald-950/70 border-emerald-300 dark:border-emerald-800/60';
+                      else if (count === 2) bg = 'bg-emerald-400 dark:bg-emerald-700/80 border-emerald-400 dark:border-emerald-600';
+                      else if (count === 3) bg = 'bg-emerald-500 dark:bg-emerald-600 border-emerald-500 shadow-xs shadow-emerald-500/20';
+                      else if (count >= 4) bg = 'bg-emerald-600 dark:bg-emerald-400 border-emerald-600 dark:border-emerald-300 shadow-sm shadow-emerald-500/30';
+
+                      return (
+                        <div
+                          key={day.date}
+                          onMouseEnter={() => setHoveredDay(day)}
+                          onMouseLeave={() => setHoveredDay(null)}
+                          title={`${day.displayDate}: ${count} habit${count === 1 ? '' : 's'} completed`}
+                          className={`w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 rounded-[3px] border transition-all duration-150 hover:scale-125 hover:z-20 cursor-pointer ${bg}`}
+                        />
+                      );
+                    })}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Bottom Status & GitHub Legend */}
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 text-[11px] text-secondary font-medium mt-3.5 pt-2.5 border-t border-subtle">
+              <div className="flex items-center gap-1.5 min-h-[1.25rem]">
+                {hoveredDay ? (
+                  <span className="font-semibold text-primary">
+                    <strong className="text-emerald-500">{hoveredDay.count}</strong> habit{hoveredDay.count === 1 ? '' : 's'} completed on <span className="text-primary font-bold">{hoveredDay.displayDate}</span>
+                  </span>
+                ) : (
+                  <span>
+                    <strong className="text-primary font-bold">{activeDaysCount}</strong> active days out of 84 ({consistencyPercent}% consistency)
+                  </span>
+                )}
+              </div>
+
+              <div className="flex items-center gap-1.5 self-end sm:self-auto select-none">
+                <span className="text-[10px]">Less</span>
+                <div className="flex gap-1 items-center">
+                  <span className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[3px] bg-subtle/70 border border-theme/60" title="0 habits" />
+                  <span className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[3px] bg-emerald-200 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-800/60" title="1 habit" />
+                  <span className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[3px] bg-emerald-400 dark:bg-emerald-700/80 border border-emerald-400 dark:border-emerald-600" title="2 habits" />
+                  <span className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[3px] bg-emerald-500 dark:bg-emerald-600 border border-emerald-500" title="3 habits" />
+                  <span className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[3px] bg-emerald-600 dark:bg-emerald-400 border border-emerald-600 dark:border-emerald-300 shadow-xs shadow-emerald-500/20" title="4+ habits" />
+                </div>
+                <span className="text-[10px]">More</span>
+              </div>
+            </div>
           </div>
         </div>
       </Card>

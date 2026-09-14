@@ -45,8 +45,8 @@ export const QadaMatrix = () => {
 
   // Batch edit modal
   const [editPrayer, setEditPrayer] = useState(null);
-  const [totalOwedInput, setTotalOwedInput] = useState(0);
-  const [totalCompletedInput, setTotalCompletedInput] = useState(0);
+  const [totalOwedInput, setTotalOwedInput] = useState('');
+  const [totalCompletedInput, setTotalCompletedInput] = useState('');
   const [qadaStartDate, setQadaStartDate] = useState('');
   const [qadaEndDate, setQadaEndDate] = useState('');
   const [applyToAllPrayers, setApplyToAllPrayers] = useState(false);
@@ -56,7 +56,7 @@ export const QadaMatrix = () => {
   const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [calcStartDate, setCalcStartDate] = useState('');
   const [calcEndDate, setCalcEndDate] = useState('');
-  const [calcExcusedDays, setCalcExcusedDays] = useState(0);
+  const [calcExcusedDays, setCalcExcusedDays] = useState('');
   const [calcSelectedPrayers, setCalcSelectedPrayers] = useState(ALL_PRAYERS);
   const [savingCalc, setSavingCalc] = useState(false);
 
@@ -166,8 +166,8 @@ export const QadaMatrix = () => {
 
   const handleOpenEdit = (record) => {
     setEditPrayer(record.prayerName);
-    setTotalOwedInput(record.totalOwed || 0);
-    setTotalCompletedInput(record.totalCompleted || 0);
+    setTotalOwedInput(record.totalOwed ?? '');
+    setTotalCompletedInput(record.totalCompleted ?? '');
     setQadaStartDate('');
     setQadaEndDate('');
     setApplyToAllPrayers(false);
@@ -713,6 +713,7 @@ export const QadaMatrix = () => {
                   min="0"
                   value={totalOwedInput}
                   onChange={(e) => setTotalOwedInput(e.target.value)}
+                  placeholder="e.g. 365"
                   className="input-base"
                   required
                 />
@@ -730,6 +731,7 @@ export const QadaMatrix = () => {
                   min="0"
                   value={totalCompletedInput}
                   onChange={(e) => setTotalCompletedInput(e.target.value)}
+                  placeholder="e.g. 0"
                   className="input-base"
                   required
                 />
@@ -854,11 +856,11 @@ export const QadaMatrix = () => {
                 <input
                   type="number"
                   min="0"
-                  max={rawDays}
+                  max={rawDays || undefined}
                   value={calcExcusedDays}
-                  onChange={(e) => setCalcExcusedDays(Math.max(0, Number(e.target.value)))}
+                  onChange={(e) => setCalcExcusedDays(e.target.value)}
                   className="input-base"
-                  placeholder="0"
+                  placeholder="e.g. 0 (optional)"
                 />
               </div>
 

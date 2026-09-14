@@ -69,7 +69,7 @@ export const IslamicTracker = ({ selectedDate }) => {
   const [isQuranModalOpen, setIsQuranModalOpen] = useState(false);
   const [editingQuranId, setEditingQuranId] = useState(null);
   const [quranSurah, setQuranSurah] = useState('');
-  const [quranPages, setQuranPages] = useState(1);
+  const [quranPages, setQuranPages] = useState('');
   const [quranAyats, setQuranAyats] = useState('');
 
   const [deleteHadithId, setDeleteHadithId] = useState(null);
@@ -333,7 +333,7 @@ export const IslamicTracker = ({ selectedDate }) => {
   const openCreateQuranModal = () => {
     setEditingQuranId(null);
     setQuranSurah('');
-    setQuranPages(1);
+    setQuranPages('');
     setQuranAyats('');
     setIsQuranModalOpen(true);
   };
@@ -341,7 +341,7 @@ export const IslamicTracker = ({ selectedDate }) => {
   const handleEditQuran = (q) => {
     setEditingQuranId(q._id);
     setQuranSurah(q.surahName || '');
-    setQuranPages(q.pagesRead || 1);
+    setQuranPages(q.pagesRead ?? '');
     setQuranAyats(q.ayatsRead ? q.ayatsRead.toString() : '');
     setIsQuranModalOpen(true);
   };
@@ -371,7 +371,7 @@ export const IslamicTracker = ({ selectedDate }) => {
         if (res.data) setQuranLogs((prev) => [res.data, ...prev]);
       }
       setQuranSurah('');
-      setQuranPages(1);
+      setQuranPages('');
       setQuranAyats('');
       fetchData(false);
     } catch (err) {
@@ -985,6 +985,7 @@ export const IslamicTracker = ({ selectedDate }) => {
                 required
                 value={quranPages}
                 onChange={(e) => setQuranPages(e.target.value)}
+                placeholder="e.g. 5"
                 className="input-base"
               />
             </div>

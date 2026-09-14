@@ -58,8 +58,8 @@ export const StudyTracker = ({ selectedDate }) => {
   const [topicSubject, setTopicSubject] = useState('');
   const [topicTitle, setTopicTitle] = useState('');
   const [topicStatus, setTopicStatus] = useState('backlog');
-  const [totalChapters, setTotalChapters] = useState(1);
-  const [completedChapters, setCompletedChapters] = useState(0);
+  const [totalChapters, setTotalChapters] = useState('');
+  const [completedChapters, setCompletedChapters] = useState('');
   const [subtopicsList, setSubtopicsList] = useState([]);
   const [newSubtopicInput, setNewSubtopicInput] = useState('');
   const [topicTargetDate, setTopicTargetDate] = useState('');
@@ -208,8 +208,8 @@ export const StudyTracker = ({ selectedDate }) => {
     setTopicSubject('');
     setTopicTitle('');
     setTopicStatus('backlog');
-    setTotalChapters(1);
-    setCompletedChapters(0);
+    setTotalChapters('');
+    setCompletedChapters('');
     setSubtopicsList([]);
     setNewSubtopicInput('');
     setTopicTargetDate('');
@@ -223,8 +223,8 @@ export const StudyTracker = ({ selectedDate }) => {
     setTopicSubject(top.subject || '');
     setTopicTitle(top.title || '');
     setTopicStatus(top.status || 'backlog');
-    setTotalChapters(top.totalChapters || 1);
-    setCompletedChapters(top.completedChapters || 0);
+    setTotalChapters(top.totalChapters ?? '');
+    setCompletedChapters(top.completedChapters ?? '');
     setSubtopicsList(Array.isArray(top.subtopics) ? top.subtopics : []);
     setNewSubtopicInput('');
     setTopicTargetDate(top.targetDate || '');
@@ -309,8 +309,8 @@ export const StudyTracker = ({ selectedDate }) => {
       }
       setTopicSubject('');
       setTopicTitle('');
-      setTotalChapters(1);
-      setCompletedChapters(0);
+      setTotalChapters('');
+      setCompletedChapters('');
       setSubtopicsList([]);
       setNewSubtopicInput('');
       setTopicNotes('');
@@ -904,6 +904,7 @@ export const StudyTracker = ({ selectedDate }) => {
                 required
                 value={durationMinutes}
                 onChange={(e) => setDurationMinutes(e.target.value)}
+                placeholder="e.g. 45"
                 className="input-base"
               />
             </div>
@@ -1021,7 +1022,8 @@ export const StudyTracker = ({ selectedDate }) => {
                 min="1"
                 required
                 value={totalChapters}
-                onChange={(e) => setTotalChapters(Math.max(1, Number(e.target.value) || 1))}
+                onChange={(e) => setTotalChapters(e.target.value)}
+                placeholder="e.g. 10"
                 className="input-base"
               />
             </div>
@@ -1033,9 +1035,10 @@ export const StudyTracker = ({ selectedDate }) => {
               <input
                 type="number"
                 min="0"
-                max={totalChapters}
+                max={totalChapters ? Number(totalChapters) : undefined}
                 value={completedChapters}
-                onChange={(e) => setCompletedChapters(Math.max(0, Math.min(totalChapters, Number(e.target.value) || 0)))}
+                onChange={(e) => setCompletedChapters(e.target.value)}
+                placeholder="e.g. 0"
                 className="input-base"
               />
             </div>

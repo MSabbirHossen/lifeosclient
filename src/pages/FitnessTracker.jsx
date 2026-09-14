@@ -61,10 +61,10 @@ export const FitnessTracker = ({ selectedDate }) => {
   const [wDate, setWDate] = useState(currentDate);
   const [wName, setWName] = useState('');
   const [wTrackingType, setWTrackingType] = useState('sets_reps'); // 'sets_reps' | 'duration'
-  const [wSets, setWSets] = useState(3);
-  const [wReps, setWReps] = useState(10);
+  const [wSets, setWSets] = useState('');
+  const [wReps, setWReps] = useState('');
   const [wWeight, setWWeight] = useState('');
-  const [wDuration, setWDuration] = useState(30);
+  const [wDuration, setWDuration] = useState('');
   const [wCalories, setWCalories] = useState('');
   const [wMet, setWMet] = useState(6.0);
   const [wIdealCalPerSet, setWIdealCalPerSet] = useState(8);
@@ -176,10 +176,10 @@ export const FitnessTracker = ({ selectedDate }) => {
     setWDate(currentDate);
     setWName('');
     setWTrackingType('sets_reps');
-    setWSets(3);
-    setWReps(10);
+    setWSets('');
+    setWReps('');
     setWWeight('');
-    setWDuration(30);
+    setWDuration('');
     setWCalories('');
     setWTarget('Muscle');
     setWNotes('');
@@ -191,10 +191,10 @@ export const FitnessTracker = ({ selectedDate }) => {
     setWDate(w.date || currentDate);
     setWName(w.name || '');
     setWTrackingType(w.trackingType || 'sets_reps');
-    setWSets(w.sets !== undefined ? w.sets : 3);
-    setWReps(w.reps !== undefined ? w.reps : 10);
+    setWSets(w.sets !== undefined ? w.sets : '');
+    setWReps(w.reps !== undefined ? w.reps : '');
     setWWeight(w.weight !== undefined && w.weight !== 0 ? w.weight : '');
-    setWDuration(w.durationMinutes !== undefined ? w.durationMinutes : 30);
+    setWDuration(w.durationMinutes !== undefined ? w.durationMinutes : '');
     setWCalories(w.caloriesBurned !== undefined ? w.caloriesBurned : '');
     setWTarget(w.target || 'Muscle');
     setWNotes(w.notes || '');
@@ -235,10 +235,10 @@ export const FitnessTracker = ({ selectedDate }) => {
         date: wDate,
         name: wName.trim(),
         trackingType: wTrackingType,
-        sets: wTrackingType === 'sets_reps' ? Number(wSets) : 0,
-        reps: wTrackingType === 'sets_reps' ? Number(wReps) : 0,
-        weight: Number(wWeight) || 0,
-        durationMinutes: wTrackingType === 'duration' ? Number(wDuration) : Number(wSets) * 3,
+        sets: wSets ? Number(wSets) : 3,
+        reps: wReps ? Number(wReps) : 10,
+        weight: wWeight ? Number(wWeight) : 0,
+        durationMinutes: wDuration ? Number(wDuration) : 30,
         caloriesBurned: finalCalories,
         idealCaloriesPerSet: Number(wIdealCalPerSet),
         idealCaloriesPerMin: Number(wIdealCalPerMin),
@@ -720,6 +720,7 @@ export const FitnessTracker = ({ selectedDate }) => {
                   required
                   value={wSets}
                   onChange={(e) => setWSets(e.target.value)}
+                  placeholder="e.g. 3"
                   className="input-base"
                 />
               </div>
@@ -733,6 +734,7 @@ export const FitnessTracker = ({ selectedDate }) => {
                   required
                   value={wReps}
                   onChange={(e) => setWReps(e.target.value)}
+                  placeholder="e.g. 10"
                   className="input-base"
                 />
               </div>
@@ -743,7 +745,7 @@ export const FitnessTracker = ({ selectedDate }) => {
                 <input
                   type="number"
                   step="0.5"
-                  placeholder="0"
+                  placeholder="e.g. 20"
                   value={wWeight}
                   onChange={(e) => setWWeight(e.target.value)}
                   className="input-base"
@@ -761,6 +763,7 @@ export const FitnessTracker = ({ selectedDate }) => {
                 required
                 value={wDuration}
                 onChange={(e) => setWDuration(e.target.value)}
+                placeholder="e.g. 30"
                 className="input-base"
               />
             </div>

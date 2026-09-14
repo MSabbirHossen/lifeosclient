@@ -55,7 +55,7 @@ export const CalorieTracker = ({ selectedDate }) => {
 
   // Meal Item inputs
   const [itemName, setItemName] = useState('');
-  const [quantity, setQuantity] = useState(1);
+  const [quantity, setQuantity] = useState('');
   const [unit, setUnit] = useState('piece');
   const [calPerUnit, setCalPerUnit] = useState(100);
   const [proteinPerUnit, setProteinPerUnit] = useState(5);
@@ -119,17 +119,13 @@ export const CalorieTracker = ({ selectedDate }) => {
     const itemUnit = item.unitType || 'piece';
     setUnit(itemUnit);
 
-    // Default reasonable quantity: 100 for grams/ml, 1 for pieces
-    if (itemUnit === 'gram' || itemUnit === 'ml') {
-      setQuantity(100);
-    } else {
-      setQuantity(1);
-    }
+    // Provide empty quantity so placeholder (e.g. 100 or e.g. 1) guides user
+    setQuantity('');
 
-    setCalPerUnit(item.caloriesPerUnit);
-    setProteinPerUnit(item.proteinPerUnit || 0);
-    setCarbsPerUnit(item.carbsPerUnit || 0);
-    setFatPerUnit(item.fatPerUnit || 0);
+    setCalPerUnit(item.caloriesPerUnit ?? 100);
+    setProteinPerUnit(item.proteinPerUnit ?? 0);
+    setCarbsPerUnit(item.carbsPerUnit ?? 0);
+    setFatPerUnit(item.fatPerUnit ?? 0);
     setShowSuggestions(false);
   };
 
@@ -138,7 +134,7 @@ export const CalorieTracker = ({ selectedDate }) => {
     setFormMealType(mealType);
     setFormDate(activeDate);
     setItemName('');
-    setQuantity(1);
+    setQuantity('');
     setUnit('piece');
     setCalPerUnit(100);
     setProteinPerUnit(5);
@@ -156,7 +152,7 @@ export const CalorieTracker = ({ selectedDate }) => {
     if (meal.items && meal.items.length > 0) {
       const first = meal.items[0];
       setItemName(first.name || '');
-      setQuantity(first.quantity || 1);
+      setQuantity(first.quantity ?? '');
       const u = first.unit || 'piece';
       setUnit(u);
       const isPer100 = u === 'gram' || u === 'g' || u === 'ml';
@@ -167,7 +163,7 @@ export const CalorieTracker = ({ selectedDate }) => {
       setFatPerUnit(first.fat ? Math.round((first.fat / factor) * 10) / 10 : 2);
     } else {
       setItemName('');
-      setQuantity(1);
+      setQuantity('');
       setUnit('piece');
       setCalPerUnit(100);
       setProteinPerUnit(5);
@@ -184,23 +180,27 @@ export const CalorieTracker = ({ selectedDate }) => {
 
   // Live computed total calories and macros for current item
   const liveItemCalories = useMemo(() => {
-    const factor = isPerHundred ? quantity / 100 : quantity;
-    return Math.round(calPerUnit * factor * 10) / 10;
+    const q = quantity === '' ? (isPerHundred ? 100 : 1) : Number(quantity) || 0;
+    const factor = isPerHundred ? q / 100 : q;
+    return Math.round(Number(calPerUnit || 0) * factor * 10) / 10;
   }, [calPerUnit, quantity, isPerHundred]);
 
   const liveItemProtein = useMemo(() => {
-    const factor = isPerHundred ? quantity / 100 : quantity;
-    return Math.round(proteinPerUnit * factor * 10) / 10;
+    const q = quantity === '' ? (isPerHundred ? 100 : 1) : Number(quantity) || 0;
+    const factor = isPerHundred ? q / 100 : q;
+    return Math.round(Number(proteinPerUnit || 0) * factor * 10) / 10;
   }, [proteinPerUnit, quantity, isPerHundred]);
 
   const liveItemCarbs = useMemo(() => {
-    const factor = isPerHundred ? quantity / 100 : quantity;
-    return Math.round(carbsPerUnit * factor * 10) / 10;
+    const q = quantity === '' ? (isPerHundred ? 100 : 1) : Number(quantity) || 0;
+    const factor = isPerHundred ? q / 100 : q;
+    return Math.round(Number(carbsPerUnit || 0) * factor * 10) / 10;
   }, [carbsPerUnit, quantity, isPerHundred]);
 
   const liveItemFat = useMemo(() => {
-    const factor = isPerHundred ? quantity / 100 : quantity;
-    return Math.round(fatPerUnit * factor * 10) / 10;
+    const q = quantity === '' ? (isPerHundred ? 100 : 1) : Number(quantity) || 0;
+    const factor = isPerHundred ? q / 100 : q;
+    return Math.round(Number(fatPerUnit || 0) * factor * 10) / 10;
   }, [fatPerUnit, quantity, isPerHundred]);
 
   const handleAddMeal = async (e) => {
@@ -208,18 +208,19 @@ export const CalorieTracker = ({ selectedDate }) => {
     if (!itemName.trim()) return;
 
     setSaving(true);
+    const finalQuantity = quantity === '' ? (isPerHundred ? 100 : 1) : Number(quantity) || 1;
     const payload = {
       date: formDate,
       mealType: formMealType,
       items: [
         {
           name: itemName.trim(),
-          quantity: Number(quantity),
+          quantity: finalQuantity,
           unit,
-          caloriesPerUnit: Number(calPerUnit),
-          proteinPerUnit: Number(proteinPerUnit),
-          carbsPerUnit: Number(carbsPerUnit),
-          fatPerUnit: Number(fatPerUnit),
+          caloriesPerUnit: Number(calPerUnit) || 0,
+          proteinPerUnit: Number(proteinPerUnit) || 0,
+          carbsPerUnit: Number(carbsPerUnit) || 0,
+          fatPerUnit: Number(fatPerUnit) || 0,
           calories: liveItemCalories,
           protein: liveItemProtein,
           carbs: liveItemCarbs,
@@ -629,11 +630,12 @@ export const CalorieTracker = ({ selectedDate }) => {
               </label>
               <input
                 type="number"
-                step="0.5"
+                step="any"
                 min="0.1"
                 required
                 value={quantity}
-                onChange={(e) => setQuantity(Number(e.target.value) || 1)}
+                onChange={(e) => setQuantity(e.target.value)}
+                placeholder={isPerHundred ? 'e.g. 100' : 'e.g. 1'}
                 className="input-base"
               />
             </div>
@@ -669,7 +671,8 @@ export const CalorieTracker = ({ selectedDate }) => {
                 <input
                   type="number"
                   value={calPerUnit}
-                  onChange={(e) => setCalPerUnit(Number(e.target.value))}
+                  onChange={(e) => setCalPerUnit(e.target.value)}
+                  placeholder="e.g. 100"
                   className="input-base text-xs py-1.5"
                 />
               </div>
@@ -681,7 +684,8 @@ export const CalorieTracker = ({ selectedDate }) => {
                   type="number"
                   step="0.1"
                   value={proteinPerUnit}
-                  onChange={(e) => setProteinPerUnit(Number(e.target.value))}
+                  onChange={(e) => setProteinPerUnit(e.target.value)}
+                  placeholder="e.g. 5"
                   className="input-base text-xs py-1.5"
                 />
               </div>
@@ -693,7 +697,8 @@ export const CalorieTracker = ({ selectedDate }) => {
                   type="number"
                   step="0.1"
                   value={carbsPerUnit}
-                  onChange={(e) => setCarbsPerUnit(Number(e.target.value))}
+                  onChange={(e) => setCarbsPerUnit(e.target.value)}
+                  placeholder="e.g. 10"
                   className="input-base text-xs py-1.5"
                 />
               </div>
@@ -705,7 +710,8 @@ export const CalorieTracker = ({ selectedDate }) => {
                   type="number"
                   step="0.1"
                   value={fatPerUnit}
-                  onChange={(e) => setFatPerUnit(Number(e.target.value))}
+                  onChange={(e) => setFatPerUnit(e.target.value)}
+                  placeholder="e.g. 2"
                   className="input-base text-xs py-1.5"
                 />
               </div>
@@ -715,7 +721,7 @@ export const CalorieTracker = ({ selectedDate }) => {
           {/* Live Calculated Summary for Portion */}
           <div className="p-3.5 bg-accent/5 rounded-2xl border border-accent/20 flex items-center justify-between text-xs font-bold">
             <span className="text-secondary">
-              Calculated Portion ({quantity} {unit}):
+              Calculated Portion ({quantity || (isPerHundred ? 100 : 1)} {unit}):
             </span>
             <span className="text-accent font-extrabold">
               {liveItemCalories} kcal · {liveItemProtein}g P · {liveItemCarbs}g C · {liveItemFat}g F
