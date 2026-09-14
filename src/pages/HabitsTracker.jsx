@@ -30,6 +30,8 @@ export const HabitsTracker = ({ selectedDate }) => {
   const [heatmap, setHeatmap] = useState([]);
   const [loading, setLoading] = useState(true);
   const [hoveredDay, setHoveredDay] = useState(null);
+  const [selectedTimeframe, setSelectedTimeframe] = useState('past_year');
+  const [serverLifetimeStats, setServerLifetimeStats] = useState(null);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -47,9 +49,16 @@ export const HabitsTracker = ({ selectedDate }) => {
   const fetchData = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
+      const heatmapParams =
+        selectedTimeframe === 'past_year'
+          ? '?weeks=53'
+          : selectedTimeframe === 'lifetime'
+          ? '?weeks=104'
+          : `?year=${selectedTimeframe}`;
+
       const [habitsRes, heatmapRes] = await Promise.all([
         api.get(`/habits?date=${activeDate}`),
-        api.get('/habits/heatmap?weeks=12'),
+        api.get(`/habits/heatmap${heatmapParams}`),
       ]);
 
       const habitsList = Array.isArray(habitsRes.data) ? habitsRes.data : [];
@@ -61,12 +70,15 @@ export const HabitsTracker = ({ selectedDate }) => {
 
       setHabits(habitsList);
       setHeatmap(heatmapList);
+      if (heatmapRes.data?.lifetimeStats) {
+        setServerLifetimeStats(heatmapRes.data.lifetimeStats);
+      }
     } catch (err) {
       console.error('Failed to fetch habits data', err);
     } finally {
       if (showLoading) setLoading(false);
     }
-  }, [activeDate]);
+  }, [activeDate, selectedTimeframe]);
 
   useEffect(() => {
     fetchData(true);
@@ -201,15 +213,27 @@ export const HabitsTracker = ({ selectedDate }) => {
   const completedCount = safeHabits.filter((h) => h.completedToday || h.isCompletedToday).length;
   const longestStreak = safeHabits.reduce((max, h) => Math.max(max, h.streak || h.currentStreak || 0), 0);
 
-  // Build GitHub-style 12-week grid (7 rows: Sun-Sat, 12 week columns)
-  const twelveWeeks = useMemo(() => {
-    let refDate = new Date();
-    if (activeDate) {
-      const parts = activeDate.split('-').map(Number);
-      if (parts.length === 3) {
-        refDate = new Date(parts[0], parts[1] - 1, parts[2]);
-      }
+  // Available timeframe options (Past Year, specific years, Lifetime)
+  const currentYear = new Date().getFullYear();
+  const availableYears = useMemo(() => {
+    if (serverLifetimeStats?.availableYears && serverLifetimeStats.availableYears.length > 0) {
+      return serverLifetimeStats.availableYears;
     }
+    return [currentYear, currentYear - 1];
+  }, [serverLifetimeStats, currentYear]);
+
+  const timeframeOptions = useMemo(() => [
+    { key: 'past_year', label: 'Last 12 Months' },
+    ...availableYears.map((yr) => ({ key: String(yr), label: String(yr) })),
+    { key: 'lifetime', label: 'Lifetime' },
+  ], [availableYears]);
+
+  // Build GitHub-style full-year (53-week) or calendar year contribution grid
+  const contributionWeeks = useMemo(() => {
+    let startDate;
+    let totalWeeks = 53;
+    const today = new Date();
+    const todayStr = today.toISOString().split('T')[0];
 
     const counts = new Map();
     safeHeatmap.forEach((item) => {
@@ -218,26 +242,49 @@ export const HabitsTracker = ({ selectedDate }) => {
       }
     });
 
-    const currentDayOfWeek = refDate.getDay(); // 0 is Sunday, 6 is Saturday
-    const startSunday = new Date(
-      refDate.getFullYear(),
-      refDate.getMonth(),
-      refDate.getDate() - currentDayOfWeek - 11 * 7
-    );
+    const parsedYear = parseInt(selectedTimeframe, 10);
 
-    const todayStr = new Date().toISOString().split('T')[0];
+    if (!isNaN(parsedYear)) {
+      // Specific calendar year: from the Sunday on/before Jan 1 to the Saturday on/after Dec 31
+      const janFirst = new Date(parsedYear, 0, 1);
+      const decLast = new Date(parsedYear, 11, 31);
+
+      startDate = new Date(janFirst);
+      startDate.setDate(janFirst.getDate() - janFirst.getDay()); // Sunday start
+
+      const endDate = new Date(decLast);
+      endDate.setDate(decLast.getDate() + (6 - decLast.getDay())); // Saturday end
+
+      const diffDays = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 3600 * 24)) + 1;
+      totalWeeks = Math.ceil(diffDays / 7);
+    } else if (selectedTimeframe === 'lifetime') {
+      // Lifetime multi-year view: rolling 104 weeks (2 full years)
+      totalWeeks = 104;
+      const currentWeekSunday = new Date(today);
+      currentWeekSunday.setDate(today.getDate() - today.getDay());
+      startDate = new Date(currentWeekSunday);
+      startDate.setDate(startDate.getDate() - (totalWeeks - 1) * 7);
+    } else {
+      // Standard GitHub rolling 53 weeks (371 days)
+      totalWeeks = 53;
+      const currentWeekSunday = new Date(today);
+      currentWeekSunday.setDate(today.getDate() - today.getDay());
+      startDate = new Date(currentWeekSunday);
+      startDate.setDate(startDate.getDate() - (totalWeeks - 1) * 7);
+    }
+
     const weeksList = [];
-    let prevMonth = -1;
+    let lastLabeledWeek = -4; // ensure at least 2-3 columns gap between month headers
 
-    for (let w = 0; w < 12; w++) {
+    for (let w = 0; w < totalWeeks; w++) {
       const weekDays = [];
       let monthLabel = '';
 
       for (let d = 0; d < 7; d++) {
         const current = new Date(
-          startSunday.getFullYear(),
-          startSunday.getMonth(),
-          startSunday.getDate() + w * 7 + d
+          startDate.getFullYear(),
+          startDate.getMonth(),
+          startDate.getDate() + w * 7 + d
         );
         const y = current.getFullYear();
         const m = String(current.getMonth() + 1).padStart(2, '0');
@@ -246,17 +293,23 @@ export const HabitsTracker = ({ selectedDate }) => {
         const isFuture = dateStr > todayStr;
         const count = counts.get(dateStr) || 0;
 
-        if (w === 0 && d === 0) {
+        // Month label detection
+        if (
+          (w === 0 && d === 0) ||
+          (current.getDate() === 1 && w - lastLabeledWeek >= 3)
+        ) {
           monthLabel = MONTH_NAMES[current.getMonth()];
-          prevMonth = current.getMonth();
-        } else if (current.getDate() === 1 || (current.getMonth() !== prevMonth && !monthLabel && d <= 3)) {
-          monthLabel = MONTH_NAMES[current.getMonth()];
-          prevMonth = current.getMonth();
+          lastLabeledWeek = w;
         }
 
         weekDays.push({
           date: dateStr,
-          displayDate: current.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+          displayDate: current.toLocaleDateString('en-US', {
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric',
+            year: 'numeric',
+          }),
           dayOfWeek: d,
           count,
           isFuture,
@@ -271,9 +324,10 @@ export const HabitsTracker = ({ selectedDate }) => {
     }
 
     return weeksList;
-  }, [safeHeatmap, activeDate]);
+  }, [safeHeatmap, selectedTimeframe]);
 
-  const total12WeeksCompletions = useMemo(() => {
+  // Period-specific & Lifetime Metrics
+  const totalPeriodCompletions = useMemo(() => {
     return safeHeatmap.reduce((sum, d) => sum + (d.count || 0), 0);
   }, [safeHeatmap]);
 
@@ -281,14 +335,28 @@ export const HabitsTracker = ({ selectedDate }) => {
     return safeHeatmap.filter((d) => (d.count || 0) > 0).length;
   }, [safeHeatmap]);
 
-  const consistencyPercent = Math.round((activeDaysCount / 84) * 100);
+  const totalDaysInPeriod = contributionWeeks.length * 7;
+  const consistencyPercent = totalDaysInPeriod > 0 ? Math.round((activeDaysCount / totalDaysInPeriod) * 100) : 0;
+
+  // Fallback lifetime calculations
+  const fallbackLifetimeCompletions = useMemo(() => {
+    return safeHabits.reduce((acc, h) => acc + (h.totalCompletions || 0), 0);
+  }, [safeHabits]);
+
+  const fallbackBestStreak = useMemo(() => {
+    return safeHabits.reduce((max, h) => Math.max(max, h.bestStreak || h.streak || h.currentStreak || 0), 0);
+  }, [safeHabits]);
+
+  const totalLifetimeCompletions = serverLifetimeStats?.totalCompletions ?? fallbackLifetimeCompletions;
+  const totalLifetimeActiveDays = serverLifetimeStats?.totalActiveDays ?? activeDaysCount;
+  const allTimeLongestStreak = serverLifetimeStats?.bestStreak ?? fallbackBestStreak;
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
       <PageHeader
         category="Discipline & Consistency"
         title="Habits Tracker"
-        description={`Daily checklist, streak tracking, and rolling 12-week activity heatmap for ${formatDisplayDate(activeDate)}`}
+        description={`Daily discipline routines, streak tracking, and GitHub-style lifetime contribution activity for ${formatDisplayDate(activeDate)}`}
         action={
           <Button variant="gradient" size="md" icon={Plus} onClick={handleOpenCreateModal}>
             New Habit
@@ -421,81 +489,158 @@ export const HabitsTracker = ({ selectedDate }) => {
         )}
       </div>
 
-      {/* GitHub-style Visual Activity Heatmap (Rolling 12 Weeks) */}
+      {/* GitHub-style Contribution & Lifetime Activity Section */}
       <Card
         hover
-        title="Activity Heatmap (Rolling 12 Weeks)"
-        subtitle="Visual consistency and completions per day in unified GitHub-style blocks"
+        title={
+          selectedTimeframe === 'lifetime'
+            ? 'Lifetime Habit Contribution Activity'
+            : selectedTimeframe === 'past_year'
+            ? 'Habit Contribution Activity'
+            : `${selectedTimeframe} Habit Contribution Activity`
+        }
+        subtitle="GitHub-style full-year contribution matrix tracking daily discipline, streaks, and lifelong consistency"
         icon={Calendar}
         badge={
           <Badge variant="success" size="xs">
-            {total12WeeksCompletions} completions
+            {totalPeriodCompletions} completions in period
           </Badge>
         }
+        action={
+          <div className="flex items-center gap-1 bg-subtle/50 p-1 rounded-xl border border-theme/50 overflow-x-auto max-w-full">
+            {timeframeOptions.map((opt) => (
+              <button
+                key={opt.key}
+                type="button"
+                onClick={() => setSelectedTimeframe(opt.key)}
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all duration-150 cursor-pointer shrink-0 ${
+                  selectedTimeframe === opt.key
+                    ? 'bg-accent text-white shadow-xs'
+                    : 'text-secondary hover:text-primary hover:bg-subtle/70'
+                }`}
+              >
+                {opt.label}
+              </button>
+            ))}
+          </div>
+        }
       >
-        <div className="pt-2">
-          {/* Unified GitHub-Style Heatmap Block */}
-          <div className="p-3 sm:p-4 rounded-2xl bg-subtle/30 border border-theme/60 w-fit mx-auto sm:mx-0">
-            {/* Month Labels Header */}
-            <div className="flex text-[10px] font-semibold text-secondary mb-1.5 pl-6 sm:pl-7">
-              {twelveWeeks.map((w, idx) => (
-                <div
-                  key={idx}
-                  className="w-3.5 sm:w-4 md:w-4.5 mr-1 sm:mr-1.5 text-left truncate overflow-visible"
-                >
-                  {w.monthLabel && (
-                    <span className="inline-block">{w.monthLabel}</span>
-                  )}
-                </div>
-              ))}
+        <div className="pt-2 space-y-4">
+          {/* Lifetime & Period Summary KPI Strip */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 sm:gap-3.5">
+            <div className="p-3 sm:p-3.5 rounded-xl bg-subtle/40 border border-theme/50 flex flex-col justify-between">
+              <div className="flex items-center gap-1.5 text-secondary text-[11px] font-semibold">
+                <Sparkles className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+                <span className="truncate">Lifetime Check-ins</span>
+              </div>
+              <div className="text-lg sm:text-xl font-extrabold text-primary mt-1.5">
+                {totalLifetimeCompletions}{' '}
+                <span className="text-xs font-normal text-secondary">total</span>
+              </div>
             </div>
 
-            {/* Grid with Day Labels on Left and 12 Week Columns */}
-            <div className="flex items-start">
-              {/* Day of week labels (Sun - Sat, labeled Mon, Wed, Fri like GitHub) */}
-              <div className="grid grid-rows-7 gap-1 sm:gap-1.5 text-[9px] sm:text-[10px] font-medium text-secondary pr-1.5 sm:pr-2 select-none">
-                <span className="h-3.5 sm:h-4 md:h-4.5 flex items-center leading-none"></span>
-                <span className="h-3.5 sm:h-4 md:h-4.5 flex items-center leading-none">Mon</span>
-                <span className="h-3.5 sm:h-4 md:h-4.5 flex items-center leading-none"></span>
-                <span className="h-3.5 sm:h-4 md:h-4.5 flex items-center leading-none">Wed</span>
-                <span className="h-3.5 sm:h-4 md:h-4.5 flex items-center leading-none"></span>
-                <span className="h-3.5 sm:h-4 md:h-4.5 flex items-center leading-none">Fri</span>
-                <span className="h-3.5 sm:h-4 md:h-4.5 flex items-center leading-none"></span>
+            <div className="p-3 sm:p-3.5 rounded-xl bg-subtle/40 border border-theme/50 flex flex-col justify-between">
+              <div className="flex items-center gap-1.5 text-secondary text-[11px] font-semibold">
+                <Calendar className="w-3.5 h-3.5 text-accent shrink-0" />
+                <span className="truncate">Lifetime Active Days</span>
               </div>
+              <div className="text-lg sm:text-xl font-extrabold text-primary mt-1.5">
+                {totalLifetimeActiveDays}{' '}
+                <span className="text-xs font-normal text-secondary">days logged</span>
+              </div>
+            </div>
 
-              {/* 12 Week Columns as Square Blocks */}
-              <div className="flex gap-1 sm:gap-1.5">
-                {twelveWeeks.map((week) => (
-                  <div key={week.weekIndex} className="grid grid-rows-7 gap-1 sm:gap-1.5">
-                    {week.days.map((day) => {
-                      if (day.isFuture) {
-                        return (
-                          <div
-                            key={day.date}
-                            className="w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 rounded-[3px] border border-dashed border-theme/20 opacity-15 pointer-events-none"
-                          />
-                        );
-                      }
+            <div className="p-3 sm:p-3.5 rounded-xl bg-subtle/40 border border-theme/50 flex flex-col justify-between">
+              <div className="flex items-center gap-1.5 text-secondary text-[11px] font-semibold">
+                <Flame className="w-3.5 h-3.5 text-rose-500 shrink-0" />
+                <span className="truncate">All-Time Best Streak</span>
+              </div>
+              <div className="text-lg sm:text-xl font-extrabold text-primary mt-1.5">
+                {allTimeLongestStreak}{' '}
+                <span className="text-xs font-normal text-secondary">days record</span>
+              </div>
+            </div>
 
-                      const count = day.count || 0;
-                      let bg = 'bg-subtle/70 border-theme/60 hover:border-theme';
-                      if (count === 1) bg = 'bg-emerald-200 dark:bg-emerald-950/70 border-emerald-300 dark:border-emerald-800/60';
-                      else if (count === 2) bg = 'bg-emerald-400 dark:bg-emerald-700/80 border-emerald-400 dark:border-emerald-600';
-                      else if (count === 3) bg = 'bg-emerald-500 dark:bg-emerald-600 border-emerald-500 shadow-xs shadow-emerald-500/20';
-                      else if (count >= 4) bg = 'bg-emerald-600 dark:bg-emerald-400 border-emerald-600 dark:border-emerald-300 shadow-sm shadow-emerald-500/30';
+            <div className="p-3 sm:p-3.5 rounded-xl bg-subtle/40 border border-theme/50 flex flex-col justify-between">
+              <div className="flex items-center gap-1.5 text-secondary text-[11px] font-semibold">
+                <CheckCircle2 className="w-3.5 h-3.5 text-indigo-500 shrink-0" />
+                <span className="truncate">Period Consistency</span>
+              </div>
+              <div className="text-lg sm:text-xl font-extrabold text-primary mt-1.5">
+                {consistencyPercent}%{' '}
+                <span className="text-xs font-normal text-secondary">
+                  ({activeDaysCount}/{totalDaysInPeriod}d)
+                </span>
+              </div>
+            </div>
+          </div>
 
-                      return (
-                        <div
-                          key={day.date}
-                          onMouseEnter={() => setHoveredDay(day)}
-                          onMouseLeave={() => setHoveredDay(null)}
-                          title={`${day.displayDate}: ${count} habit${count === 1 ? '' : 's'} completed`}
-                          className={`w-3.5 h-3.5 sm:w-4 sm:h-4 md:w-4.5 md:h-4.5 rounded-[3px] border transition-all duration-150 hover:scale-125 hover:z-20 cursor-pointer ${bg}`}
-                        />
-                      );
-                    })}
+          {/* Full GitHub-Style Heatmap Grid Container */}
+          <div className="p-3.5 sm:p-5 rounded-2xl bg-subtle/30 border border-theme/60 w-full">
+            <div className="overflow-x-auto custom-scrollbar pb-2">
+              <div className="min-w-fit">
+                {/* Month Labels Header */}
+                <div className="flex text-[10px] font-semibold text-secondary mb-1.5 pl-6 sm:pl-7">
+                  {contributionWeeks.map((w, idx) => (
+                    <div
+                      key={idx}
+                      className="w-3 h-3 sm:w-3.5 sm:h-3.5 mr-1 sm:mr-1 text-left relative overflow-visible shrink-0"
+                    >
+                      {w.monthLabel && (
+                        <span className="absolute left-0 top-0 whitespace-nowrap">{w.monthLabel}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+
+                {/* Grid with Day Labels on Left and Week Columns */}
+                <div className="flex items-start">
+                  {/* Day of week labels (Sun - Sat, labeled Mon, Wed, Fri like GitHub) */}
+                  <div className="grid grid-rows-7 gap-1 sm:gap-1 text-[9px] sm:text-[10px] font-medium text-secondary pr-1.5 sm:pr-2 select-none shrink-0">
+                    <span className="h-3 sm:h-3.5 flex items-center leading-none"></span>
+                    <span className="h-3 sm:h-3.5 flex items-center leading-none">Mon</span>
+                    <span className="h-3 sm:h-3.5 flex items-center leading-none"></span>
+                    <span className="h-3 sm:h-3.5 flex items-center leading-none">Wed</span>
+                    <span className="h-3 sm:h-3.5 flex items-center leading-none"></span>
+                    <span className="h-3 sm:h-3.5 flex items-center leading-none">Fri</span>
+                    <span className="h-3 sm:h-3.5 flex items-center leading-none"></span>
                   </div>
-                ))}
+
+                  {/* Week Columns as Square Blocks */}
+                  <div className="flex gap-1 sm:gap-1">
+                    {contributionWeeks.map((week) => (
+                      <div key={week.weekIndex} className="grid grid-rows-7 gap-1 sm:gap-1 shrink-0">
+                        {week.days.map((day) => {
+                          if (day.isFuture) {
+                            return (
+                              <div
+                                key={day.date}
+                                className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[2.5px] border border-dashed border-theme/20 opacity-15 pointer-events-none"
+                              />
+                            );
+                          }
+
+                          const count = day.count || 0;
+                          let bg = 'bg-subtle/70 border-theme/60 hover:border-theme';
+                          if (count === 1) bg = 'bg-emerald-200 dark:bg-emerald-950/70 border-emerald-300 dark:border-emerald-800/60';
+                          else if (count === 2) bg = 'bg-emerald-400 dark:bg-emerald-700/80 border-emerald-400 dark:border-emerald-600';
+                          else if (count === 3) bg = 'bg-emerald-500 dark:bg-emerald-600 border-emerald-500 shadow-xs shadow-emerald-500/20';
+                          else if (count >= 4) bg = 'bg-emerald-600 dark:bg-emerald-400 border-emerald-600 dark:border-emerald-300 shadow-sm shadow-emerald-500/30';
+
+                          return (
+                            <div
+                              key={day.date}
+                              onMouseEnter={() => setHoveredDay(day)}
+                              onMouseLeave={() => setHoveredDay(null)}
+                              title={`${day.displayDate}: ${count} habit${count === 1 ? '' : 's'} completed`}
+                              className={`w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[2.5px] border transition-all duration-150 hover:scale-130 hover:z-20 cursor-pointer ${bg}`}
+                            />
+                          );
+                        })}
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
             </div>
 
@@ -508,7 +653,7 @@ export const HabitsTracker = ({ selectedDate }) => {
                   </span>
                 ) : (
                   <span>
-                    <strong className="text-primary font-bold">{activeDaysCount}</strong> active days out of 84 ({consistencyPercent}% consistency)
+                    <strong className="text-primary font-bold">{activeDaysCount}</strong> active days out of {totalDaysInPeriod} ({consistencyPercent}% consistency in period)
                   </span>
                 )}
               </div>
@@ -516,11 +661,11 @@ export const HabitsTracker = ({ selectedDate }) => {
               <div className="flex items-center gap-1.5 self-end sm:self-auto select-none">
                 <span className="text-[10px]">Less</span>
                 <div className="flex gap-1 items-center">
-                  <span className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[3px] bg-subtle/70 border border-theme/60" title="0 habits" />
-                  <span className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[3px] bg-emerald-200 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-800/60" title="1 habit" />
-                  <span className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[3px] bg-emerald-400 dark:bg-emerald-700/80 border border-emerald-400 dark:border-emerald-600" title="2 habits" />
-                  <span className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[3px] bg-emerald-500 dark:bg-emerald-600 border border-emerald-500" title="3 habits" />
-                  <span className="w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-[3px] bg-emerald-600 dark:bg-emerald-400 border border-emerald-600 dark:border-emerald-300 shadow-xs shadow-emerald-500/20" title="4+ habits" />
+                  <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[2.5px] bg-subtle/70 border border-theme/60" title="0 habits" />
+                  <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[2.5px] bg-emerald-200 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-800/60" title="1 habit" />
+                  <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[2.5px] bg-emerald-400 dark:bg-emerald-700/80 border border-emerald-400 dark:border-emerald-600" title="2 habits" />
+                  <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[2.5px] bg-emerald-500 dark:bg-emerald-600 border border-emerald-500" title="3 habits" />
+                  <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[2.5px] bg-emerald-600 dark:bg-emerald-400 border border-emerald-600 dark:border-emerald-300 shadow-xs shadow-emerald-500/20" title="4+ habits" />
                 </div>
                 <span className="text-[10px]">More</span>
               </div>
