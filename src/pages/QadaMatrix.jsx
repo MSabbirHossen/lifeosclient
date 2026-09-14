@@ -19,11 +19,24 @@ import {
   ArrowRight,
   ShieldCheck,
   Calculator,
+  Sunrise,
+  Sun,
+  Sunset,
+  Moon,
 } from 'lucide-react';
 import api from '../utils/api';
 import { DateInput } from '../components/DateInput';
 
 const ALL_PRAYERS = ['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha', 'Witr'];
+
+const PRAYER_META = {
+  Fajr: { icon: Sunrise, subtitle: 'Dawn prayer' },
+  Dhuhr: { icon: Sun, subtitle: 'Noon prayer' },
+  Asr: { icon: Clock, subtitle: 'Afternoon prayer' },
+  Maghrib: { icon: Sunset, subtitle: 'Sunset prayer' },
+  Isha: { icon: Moon, subtitle: 'Night prayer' },
+  Witr: { icon: Sparkles, subtitle: 'Wajib prayer' },
+};
 
 export const QadaMatrix = () => {
   const [qadaData, setQadaData] = useState([]);
@@ -368,109 +381,158 @@ export const QadaMatrix = () => {
         />
       </div>
 
-      {/* Main Matrix Table Card */}
-      <Card
-        hover
-        title="Interactive Qada Salah Matrix"
-        subtitle="Track and make up each individual prayer step-by-step"
-        icon={Compass}
-        badge={<Badge variant="success" size="xs">Live Matrix</Badge>}
-      >
-        <div className="overflow-x-auto touch-scroll-x mt-3">
-          <table className="w-full min-w-[650px] text-left text-xs border-collapse">
-            <thead>
-              <tr className="border-b border-theme text-secondary uppercase tracking-wider text-[11px] font-bold">
-                <th className="py-3 px-4">Prayer</th>
-                <th className="py-3 px-4 text-center">Total Owed</th>
-                <th className="py-3 px-4 text-center">Completed</th>
-                <th className="py-3 px-4 text-center">Remaining</th>
-                <th className="py-3 px-4">Progress</th>
-                <th className="py-3 px-4 text-center">Quick Make-Up (+/-)</th>
-                <th className="py-3 px-4 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-theme">
-              {ALL_PRAYERS.map((prayer) => {
-                const record = qadaData.find((q) => q.prayerName === prayer) || {
-                  prayerName: prayer,
-                  totalOwed: 0,
-                  totalCompleted: 0,
-                };
-                const remaining = Math.max(0, record.totalOwed - record.totalCompleted);
-                const percent =
-                  record.totalOwed > 0
-                    ? Math.min(100, Math.round((record.totalCompleted / record.totalOwed) * 100))
-                    : 100;
-
-                return (
-                  <tr key={prayer} className="hover:bg-subtle/50 transition-colors">
-                    <td className="py-3.5 px-4 font-extrabold text-primary flex items-center gap-2">
-                      <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
-                      {prayer}
-                      {prayer === 'Witr' && (
-                        <Badge variant="purple" size="xs">Wajib</Badge>
-                      )}
-                    </td>
-                    <td className="py-3.5 px-4 text-center font-bold text-secondary">
-                      {record.totalOwed}
-                    </td>
-                    <td className="py-3.5 px-4 text-center font-bold text-emerald-600 dark:text-emerald-400">
-                      {record.totalCompleted}
-                    </td>
-                    <td className="py-3.5 px-4 text-center font-extrabold text-[var(--color-danger)]">
-                      {remaining}
-                    </td>
-                    <td className="py-3.5 px-4 min-w-[140px]">
-                      <div className="flex items-center gap-2">
-                        <div className="flex-1 h-2 bg-subtle rounded-full overflow-hidden border border-theme">
-                          <div
-                            className="h-full bg-emerald-500 rounded-full transition-all duration-300"
-                            style={{ width: `${percent}%` }}
-                          />
-                        </div>
-                        <span className="text-[10px] font-bold text-secondary w-8 text-right">
-                          {percent}%
-                        </span>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4">
-                      <div className="flex items-center justify-center gap-1.5">
-                        <button
-                          type="button"
-                          onClick={() => handleStep(prayer, -1)}
-                          disabled={record.totalCompleted <= 0}
-                          className="p-1.5 rounded-lg bg-subtle text-secondary hover:text-rose-500 hover:bg-rose-500/10 transition-colors disabled:opacity-30 cursor-pointer"
-                          title="Decrease completed count"
-                        >
-                          <Minus className="w-3.5 h-3.5" />
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => handleStep(prayer, 1)}
-                          className="px-3 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all text-xs font-black flex items-center gap-1 cursor-pointer"
-                          title="Make up 1 prayer"
-                        >
-                          <Plus className="w-3.5 h-3.5" /> +1 Make-up
-                        </button>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-4 text-right">
-                      <button
-                        type="button"
-                        onClick={() => handleOpenEdit(record)}
-                        className="p-1.5 rounded-lg text-secondary hover:text-primary hover:bg-subtle transition-colors cursor-pointer"
-                        title="Edit Baseline Owed / Completed"
-                      >
-                        <Edit2 className="w-3.5 h-3.5" />
-                      </button>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+      {/* Interactive Qada Salah Matrix Section */}
+      <div className="space-y-4">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center font-bold">
+              <Compass className="w-5 h-5" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <h2 className="text-base sm:text-lg font-bold text-primary tracking-tight">
+                  Interactive Qada Salah Matrix
+                </h2>
+                <Badge variant="success" size="xs">Live Matrix</Badge>
+              </div>
+              <p className="text-xs text-secondary">
+                Track, log, and fulfill each prayer individually without horizontal scrolling
+              </p>
+            </div>
+          </div>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setIsCalculatorOpen(true)}
+            className="self-start sm:self-auto gap-1.5 text-xs font-semibold"
+          >
+            <Calculator className="w-3.5 h-3.5" />
+            Lifetime Calculator
+          </Button>
         </div>
-      </Card>
+
+        {/* 6 Responsive Prayer Cards Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          {ALL_PRAYERS.map((prayer) => {
+            const record = qadaData.find((q) => q.prayerName === prayer) || {
+              prayerName: prayer,
+              totalOwed: 0,
+              totalCompleted: 0,
+            };
+            const remaining = Math.max(0, record.totalOwed - record.totalCompleted);
+            const percent =
+              record.totalOwed > 0
+                ? Math.min(100, Math.round((record.totalCompleted / record.totalOwed) * 100))
+                : 100;
+            const isCompleted = record.totalOwed > 0 && remaining === 0;
+
+            const prayerCfg = PRAYER_META[prayer] || { icon: Clock, subtitle: 'Salah' };
+            const PrayerIcon = prayerCfg.icon;
+
+            return (
+              <Card
+                key={prayer}
+                hover
+                title={prayer}
+                subtitle={prayerCfg.subtitle}
+                icon={PrayerIcon}
+                badge={
+                  <div className="flex items-center gap-1.5">
+                    {prayer === 'Witr' && (
+                      <Badge variant="purple" size="xs">Wajib</Badge>
+                    )}
+                    <Badge variant={isCompleted ? 'success' : percent > 50 ? 'info' : 'warning'} size="xs">
+                      {isCompleted ? 'Completed' : `${percent}% Done`}
+                    </Badge>
+                  </div>
+                }
+                bottomAction={
+                  <div className="flex items-center bg-surface/90 dark:bg-zinc-900/90 backdrop-blur-md border border-theme rounded-lg p-0.5 shadow-sm">
+                    <button
+                      type="button"
+                      onClick={() => handleOpenEdit(record)}
+                      className="p-1 text-secondary hover:text-primary hover:bg-subtle rounded transition-colors cursor-pointer"
+                      title={`Edit ${prayer} baseline or dates`}
+                    >
+                      <Edit2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                }
+                className="overflow-hidden"
+              >
+                {/* 3 Metric Badges: Owed, Made Up, Remaining */}
+                <div className="grid grid-cols-3 gap-2 my-1 text-center">
+                  <div className="bg-subtle/60 border border-theme rounded-xl p-2.5 flex flex-col justify-center">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-secondary">
+                      Owed
+                    </span>
+                    <span className="text-sm sm:text-base font-extrabold text-primary mt-0.5">
+                      {record.totalOwed.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2.5 flex flex-col justify-center">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                      Made Up
+                    </span>
+                    <span className="text-sm sm:text-base font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                      {record.totalCompleted.toLocaleString()}
+                    </span>
+                  </div>
+
+                  <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-2.5 flex flex-col justify-center">
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500">
+                      Remaining
+                    </span>
+                    <span className="text-sm sm:text-base font-extrabold text-rose-600 dark:text-rose-400 mt-0.5">
+                      {remaining.toLocaleString()}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Progress bar */}
+                <div className="mt-3.5 space-y-1.5">
+                  <div className="flex items-center justify-between text-xs">
+                    <span className="text-[11px] font-medium text-secondary">Progress</span>
+                    <span className="text-[11px] font-bold text-primary">{percent}%</span>
+                  </div>
+                  <div className="h-2 bg-subtle rounded-full overflow-hidden border border-theme">
+                    <div
+                      className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-300"
+                      style={{ width: `${percent}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Quick Make-Up Actions with right padding to clear bottomAction */}
+                <div className="mt-4 pt-3 border-t border-subtle flex items-center justify-between gap-2 pr-12">
+                  <span className="text-xs font-semibold text-secondary">Quick Log</span>
+                  <div className="flex items-center gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => handleStep(prayer, -1)}
+                      disabled={record.totalCompleted <= 0}
+                      className="p-2 rounded-xl bg-subtle text-secondary hover:text-rose-500 hover:bg-rose-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                      title="Step back 1 completed prayer"
+                    >
+                      <Minus className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => handleStep(prayer, 1)}
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                      title={`Add 1 completed ${prayer}`}
+                    >
+                      <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                      <span>1 Make-up</span>
+                    </button>
+                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+      </div>
 
       {/* Spiritual Vows & Niyyah Tracker */}
       <Card
@@ -496,29 +558,26 @@ export const QadaMatrix = () => {
               return (
                 <div
                   key={vow._id}
-                  className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-3 ${
-                    isDone
-                      ? 'bg-subtle/40 border-theme opacity-75'
-                      : 'bg-surface border-theme card-shadow'
-                  }`}
+                  className={`p-4 rounded-2xl border transition-all flex items-start justify-between gap-3 ${isDone
+                    ? 'bg-subtle/40 border-theme opacity-75'
+                    : 'bg-surface border-theme card-shadow'
+                    }`}
                 >
                   <div className="flex items-start gap-3">
                     <button
                       type="button"
                       onClick={() => handleToggleVow(vow._id, vow.status)}
-                      className={`mt-0.5 p-1 rounded-lg border transition-colors cursor-pointer ${
-                        isDone
-                          ? 'bg-emerald-500 border-emerald-500 text-white'
-                          : 'border-theme text-transparent hover:border-emerald-500'
-                      }`}
+                      className={`mt-0.5 p-1 rounded-lg border transition-colors cursor-pointer ${isDone
+                        ? 'bg-emerald-500 border-emerald-500 text-white'
+                        : 'border-theme text-transparent hover:border-emerald-500'
+                        }`}
                     >
                       <CheckCircle2 className="w-4 h-4" />
                     </button>
                     <div>
                       <p
-                        className={`text-sm font-bold ${
-                          isDone ? 'line-through text-secondary' : 'text-primary'
-                        }`}
+                        className={`text-sm font-bold ${isDone ? 'line-through text-secondary' : 'text-primary'
+                          }`}
                       >
                         {vow.title}
                       </p>
@@ -581,14 +640,14 @@ export const QadaMatrix = () => {
                   </span>
                   <Badge variant="neutral" size="xs">Date Helper</Badge>
                 </div>
-                <p className="text-[11px] text-secondary">
+                {/* <p className="text-[11px] text-secondary">
                   Enter the start and end dates when prayers were missed to automatically calculate total owed days.
-                </p>
+                </p> */}
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <DateInput
                     id="qada-start-date"
-                    label="Start Date of Qada"
+                    label="Start Date"
                     value={qadaStartDate}
                     onChange={(val) => {
                       setQadaStartDate(val);
@@ -598,7 +657,7 @@ export const QadaMatrix = () => {
                   />
                   <DateInput
                     id="qada-end-date"
-                    label="End Date of Qada"
+                    label="End Date"
                     value={qadaEndDate}
                     onChange={(val) => {
                       setQadaEndDate(val);
@@ -738,7 +797,7 @@ export const QadaMatrix = () => {
                 <Compass className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                 <div>
                   <p className="font-bold text-primary">Islamic Fiqh Method for Qada-e-Umri:</p>
-                  <p className="mt-0.5 text-[11px] leading-relaxed">
+                  <p className="mt-1 text-[11px] leading-relaxed">
                     Set the <strong>Start Date</strong> when prayers became obligatory upon reaching puberty (Bulugh), or when prayers stopped being offered, and the <strong>End Date</strong> when regular daily prayers resumed.
                   </p>
                 </div>
@@ -748,14 +807,14 @@ export const QadaMatrix = () => {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <DateInput
                   id="calc-start-date"
-                  label="Start Date of Qada (Missed Period Start)"
+                  label="Start Date"
                   value={calcStartDate}
                   onChange={setCalcStartDate}
                   required
                 />
                 <DateInput
                   id="calc-end-date"
-                  label="End Date of Qada (Resumed / Today)"
+                  label="End Date"
                   value={calcEndDate}
                   onChange={setCalcEndDate}
                   required
@@ -788,7 +847,7 @@ export const QadaMatrix = () => {
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-bold text-secondary">
-                    Excused / Already Prayed Days to Deduct (Optional)
+                    Excused Days to Deduct (Optional)
                   </label>
                   <span className="text-[10px] text-secondary">e.g. Haiz days, illness, or travel</span>
                 </div>
@@ -866,11 +925,10 @@ export const QadaMatrix = () => {
                     return (
                       <label
                         key={p}
-                        className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${
-                          isChecked
-                            ? 'bg-emerald-500/10 border-emerald-500/30 text-primary font-bold'
-                            : 'bg-subtle/40 border-theme text-secondary'
-                        }`}
+                        className={`flex items-center gap-2 p-2.5 rounded-xl border cursor-pointer transition-all ${isChecked
+                          ? 'bg-emerald-500/10 border-emerald-500/30 text-primary font-bold'
+                          : 'bg-subtle/40 border-theme text-secondary'
+                          }`}
                       >
                         <input
                           type="checkbox"
