@@ -30,8 +30,16 @@ export const AuthProvider = ({ children }) => {
       }
       try {
         const res = await api.get('/auth/profile');
-        setUser(res.data);
-        localStorage.setItem('lifeos_user', JSON.stringify(res.data));
+        const savedCurrency = localStorage.getItem('lifeos_currency');
+        const userData = {
+          ...res.data,
+          currency: res.data?.currency || savedCurrency || 'USD',
+        };
+        setUser(userData);
+        localStorage.setItem('lifeos_user', JSON.stringify(userData));
+        if (userData.currency) {
+          localStorage.setItem('lifeos_currency', userData.currency);
+        }
       } catch (err) {
         console.warn('Profile fetch validation notice:', err.message);
         // Only clear credentials if the backend explicitly declares the token invalid/expired (401/403)
@@ -51,6 +59,12 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     const res = await api.post('/auth/login', { email, password });
     const { token, ...userData } = res.data;
+    const savedCurrency = localStorage.getItem('lifeos_currency');
+    if (!userData.currency && savedCurrency) {
+      userData.currency = savedCurrency;
+    } else if (userData.currency) {
+      localStorage.setItem('lifeos_currency', userData.currency);
+    }
     localStorage.setItem('lifeos_token', token);
     localStorage.setItem('lifeos_user', JSON.stringify(userData));
     setUser(userData);
@@ -60,6 +74,12 @@ export const AuthProvider = ({ children }) => {
   const register = async (name, email, password) => {
     const res = await api.post('/auth/register', { name, email, password });
     const { token, ...userData } = res.data;
+    const savedCurrency = localStorage.getItem('lifeos_currency');
+    if (!userData.currency && savedCurrency) {
+      userData.currency = savedCurrency;
+    } else if (userData.currency) {
+      localStorage.setItem('lifeos_currency', userData.currency);
+    }
     localStorage.setItem('lifeos_token', token);
     localStorage.setItem('lifeos_user', JSON.stringify(userData));
     setUser(userData);
@@ -75,6 +95,12 @@ export const AuthProvider = ({ children }) => {
     }
     const res = await api.post('/auth/google', payload);
     const { token, ...userData } = res.data;
+    const savedCurrency = localStorage.getItem('lifeos_currency');
+    if (!userData.currency && savedCurrency) {
+      userData.currency = savedCurrency;
+    } else if (userData.currency) {
+      localStorage.setItem('lifeos_currency', userData.currency);
+    }
     localStorage.setItem('lifeos_token', token);
     localStorage.setItem('lifeos_user', JSON.stringify(userData));
     setUser(userData);
@@ -88,10 +114,32 @@ export const AuthProvider = ({ children }) => {
   };
 
   const updateUser = async (updatedData) => {
-    const res = await api.put('/auth/profile', updatedData);
-    setUser(res.data);
-    localStorage.setItem('lifeos_user', JSON.stringify(res.data));
-    return res.data;
+    if (updatedData.currency) {
+      localStorage.setItem('lifeos_currency', updatedData.currency);
+    }
+    try {
+      const res = await api.put('/auth/profile', updatedData);
+      const savedCurrency = localStorage.getItem('lifeos_currency');
+      const merged = {
+        ...res.data,
+        currency: res.data?.currency || updatedData.currency || savedCurrency || 'USD',
+      };
+      setUser(merged);
+      localStorage.setItem('lifeos_user', JSON.stringify(merged));
+      return merged;
+    } catch (err) {
+      console.warn('Backend update notice (updating local state):', err.message);
+      const currentUser = JSON.parse(localStorage.getItem('lifeos_user') || '{}');
+      const savedCurrency = localStorage.getItem('lifeos_currency');
+      const merged = {
+        ...currentUser,
+        ...updatedData,
+        currency: updatedData.currency || currentUser.currency || savedCurrency || 'USD',
+      };
+      setUser(merged);
+      localStorage.setItem('lifeos_user', JSON.stringify(merged));
+      return merged;
+    }
   };
 
   return (

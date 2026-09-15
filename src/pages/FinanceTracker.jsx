@@ -7,6 +7,7 @@ import { Modal } from '../components/Modal';
 import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
 import api from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 import { DateInput } from '../components/DateInput';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import {
@@ -20,6 +21,9 @@ import {
   ArrowRightLeft,
   CreditCard,
   Layers,
+  Coins,
+  RefreshCw,
+  ArrowLeftRight,
 } from 'lucide-react';
 
 const NESTED_EXPENSE_CATEGORIES = {
@@ -39,12 +43,191 @@ const NESTED_EXPENSE_CATEGORIES = {
 const EXPENSE_CATEGORIES = Object.keys(NESTED_EXPENSE_CATEGORIES);
 const INCOME_CATEGORIES = ['Salary', 'Freelance & Business', 'Investments', 'Gift & Support', 'Other Income'];
 const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'Debit Card', 'Credit Card', 'Mobile Wallet (bKash/Nagad)', 'Other'];
-const CURRENCIES = ['SAR', 'BDT', 'USD'];
+
+export const POPULAR_CURRENCIES = [
+  'USD',
+  'BDT',
+  'SAR',
+  'EUR',
+  'GBP',
+  'AED',
+  'INR',
+  'CAD',
+  'AUD',
+  'QAR',
+  'MYR',
+  'TRY',
+  'JPY',
+  'KWD',
+  'OMR',
+  'PKR',
+];
+
+export const CURRENCY_SYMBOLS = {
+  USD: '$',
+  BDT: '৳',
+  SAR: '﷼',
+  EUR: '€',
+  GBP: '£',
+  AED: 'د.إ',
+  INR: '₹',
+  CAD: 'C$',
+  AUD: 'A$',
+  QAR: 'ر.ق',
+  MYR: 'RM',
+  TRY: '₺',
+  JPY: '¥',
+  KWD: 'د.ك',
+  OMR: 'ر.ع',
+  PKR: '₨',
+};
+
+// Rates relative to 1 USD
+export const RATES_TO_USD = {
+  USD: 1.0,
+  SAR: 3.75,
+  BDT: 120.0,
+  EUR: 0.92,
+  GBP: 0.79,
+  AED: 3.67,
+  INR: 83.5,
+  CAD: 1.37,
+  AUD: 1.52,
+  QAR: 3.64,
+  MYR: 4.70,
+  TRY: 33.0,
+  JPY: 155.0,
+  KWD: 0.31,
+  OMR: 0.38,
+  PKR: 278.0,
+};
+
+export const getConversionRate = (from, to) => {
+  const f = (from || 'USD').toUpperCase();
+  const t = (to || 'USD').toUpperCase();
+  if (f === t) return 1;
+  const fRate = RATES_TO_USD[f];
+  const tRate = RATES_TO_USD[t];
+  if (fRate && tRate) {
+    return tRate / fRate;
+  }
+  return 1;
+};
+
+export const convertAmount = (amt, from, to) => {
+  if (!amt || isNaN(Number(amt))) return '';
+  const rate = getConversionRate(from, to);
+  const result = Number(amt) * rate;
+  return result >= 100 ? result.toFixed(2) : result.toFixed(4);
+};
+
+// Reusable Currency Selector with custom input capability
+const CurrencySelectorInput = ({
+  value,
+  onChange,
+  label,
+  availableCurrencies,
+  className = '',
+  id,
+}) => {
+  const [customMode, setCustomMode] = useState(false);
+  const [customVal, setCustomVal] = useState('');
+
+  const isValueInList = availableCurrencies.includes(value);
+
+  const handleSelectChange = (e) => {
+    const val = e.target.value;
+    if (val === '__custom__') {
+      setCustomMode(true);
+      setCustomVal(value || '');
+    } else {
+      setCustomMode(false);
+      onChange(val);
+    }
+  };
+
+  const handleCustomChange = (e) => {
+    const u = e.target.value.toUpperCase();
+    setCustomVal(u);
+    if (u.trim()) {
+      onChange(u.trim());
+    }
+  };
+
+  return (
+    <div className={className}>
+      {label && (
+        <div className="flex items-center justify-between mb-1.5">
+          <label htmlFor={id} className="block text-xs font-bold text-secondary uppercase tracking-wider">
+            {label}
+          </label>
+          <button
+            type="button"
+            onClick={() => {
+              if (!customMode) {
+                setCustomVal(value || '');
+                setCustomMode(true);
+              } else {
+                setCustomMode(false);
+              }
+            }}
+            className="text-[10px] font-bold text-accent hover:underline cursor-pointer transition-colors"
+          >
+            {customMode ? '← Common Currencies' : '+ Custom Code'}
+          </button>
+        </div>
+      )}
+
+      {customMode ? (
+        <div className="flex items-center gap-1.5">
+          <input
+            id={id}
+            type="text"
+            maxLength={6}
+            value={customVal}
+            onChange={handleCustomChange}
+            placeholder="e.g. CAD, SGD"
+            className="input-base text-xs font-mono uppercase font-bold"
+            autoFocus
+          />
+          <button
+            type="button"
+            onClick={() => setCustomMode(false)}
+            className="px-2.5 py-2 rounded-xl border border-theme text-secondary hover:text-primary text-xs cursor-pointer hover:bg-subtle transition-colors"
+            title="Switch back to currency list"
+          >
+            ✕
+          </button>
+        </div>
+      ) : (
+        <select
+          id={id}
+          value={isValueInList ? value : '__custom__'}
+          onChange={handleSelectChange}
+          className="select-base font-semibold"
+        >
+          {availableCurrencies.map((c) => (
+            <option key={c} value={c}>
+              {c} {CURRENCY_SYMBOLS[c] ? `(${CURRENCY_SYMBOLS[c]})` : ''}
+            </option>
+          ))}
+          <option value="__custom__">+ Custom ISO Code...</option>
+        </select>
+      )}
+    </div>
+  );
+};
 
 export const FinanceTracker = ({ selectedDate }) => {
+  const { user } = useAuth();
+  const defaultCurrency = (user?.currency || localStorage.getItem('lifeos_currency') || 'USD').toUpperCase();
+  const [customCurrencies, setCustomCurrencies] = useState([]);
+  const availableCurrencies = Array.from(new Set([defaultCurrency, ...POPULAR_CURRENCIES, ...customCurrencies]));
+  const displayCurrency = defaultCurrency || 'USD';
+
   const [transactions, setTransactions] = useState([]);
   const [summary, setSummary] = useState({
-    currency: 'SAR',
+    currency: defaultCurrency,
     totalIncome: 0,
     totalExpenses: 0,
     netSavings: 0,
@@ -63,27 +246,28 @@ export const FinanceTracker = ({ selectedDate }) => {
   const [editingTransactionId, setEditingTransactionId] = useState(null);
   const [deleteId, setDeleteId] = useState(null);
 
-  // Transaction Form State
+  // Transaction Form State (Log Income / Expense)
   const [formDate, setFormDate] = useState(selectedDate || getFormattedDate());
   const [formType, setFormType] = useState('expense');
   const [title, setTitle] = useState('');
   const [amount, setAmount] = useState('');
-  const [currency, setCurrency] = useState('SAR');
+  const [currency, setCurrency] = useState(defaultCurrency);
   const [category, setCategory] = useState('Food & Dining');
   const [subCategory, setSubCategory] = useState('Breakfast');
   const [paymentMethod, setPaymentMethod] = useState('Debit Card');
   const [notes, setNotes] = useState('');
   const [savingTx, setSavingTx] = useState(false);
 
-  // Fund Transfer Form State
+  // Fund Transfer & Currency Exchange Form State
   const [transferDate, setTransferDate] = useState(selectedDate || getFormattedDate());
   const [transferTitle, setTransferTitle] = useState('');
   const [fromMethod, setFromMethod] = useState('Bank Transfer');
   const [toMethod, setToMethod] = useState('Cash');
-  const [fromCurrency, setFromCurrency] = useState('SAR');
-  const [toCurrency, setToCurrency] = useState('SAR');
+  const [fromCurrency, setFromCurrency] = useState(defaultCurrency);
+  const [toCurrency, setToCurrency] = useState(defaultCurrency);
   const [fromAmount, setFromAmount] = useState('');
   const [toAmount, setToAmount] = useState('');
+  const [isCustomRate, setIsCustomRate] = useState(false);
   const [transferNotes, setTransferNotes] = useState('');
   const [savingTransfer, setSavingTransfer] = useState(false);
 
@@ -92,12 +276,12 @@ export const FinanceTracker = ({ selectedDate }) => {
     try {
       const [txRes, summaryRes] = await Promise.all([
         api.get('/finance/transactions'),
-        api.get('/finance/summary'),
+        api.get(`/finance/summary?currency=${defaultCurrency}`),
       ]);
       setTransactions(txRes.data.transactions || txRes.data || []);
       setSummary(
         summaryRes.data || {
-          currency: 'SAR',
+          currency: defaultCurrency,
           totalIncome: 0,
           totalExpenses: 0,
           netSavings: 0,
@@ -110,19 +294,29 @@ export const FinanceTracker = ({ selectedDate }) => {
     } finally {
       if (showLoading) setLoading(false);
     }
-  }, []);
+  }, [defaultCurrency]);
 
   useEffect(() => {
     fetchFinanceData(true);
   }, [fetchFinanceData, selectedDate]);
 
+  useEffect(() => {
+    if (user?.currency) {
+      const uCurr = user.currency.toUpperCase();
+      setCurrency(uCurr);
+      setFromCurrency(uCurr);
+      setToCurrency(uCurr);
+    }
+  }, [user?.currency]);
+
+  // Open Log Income / Log Expense modal with default currency
   const openTransactionModal = (type = 'expense') => {
     setEditingTransactionId(null);
     setFormType(type);
     setFormDate(selectedDate || getFormattedDate());
     setTitle('');
     setAmount('');
-    setCurrency('SAR');
+    setCurrency(defaultCurrency);
     setCategory(type === 'income' ? 'Salary' : 'Food & Dining');
     setSubCategory('Breakfast');
     setPaymentMethod('Debit Card');
@@ -136,7 +330,7 @@ export const FinanceTracker = ({ selectedDate }) => {
     setFormDate(tx.date || getFormattedDate());
     setTitle(tx.title || '');
     setAmount(tx.amount !== undefined ? tx.amount.toString() : '');
-    setCurrency(tx.currency || 'SAR');
+    setCurrency(tx.currency || defaultCurrency);
     setCategory(tx.category || 'Food & Dining');
     setSubCategory(tx.subCategory || '');
     setPaymentMethod(tx.paymentMethod || 'Debit Card');
@@ -144,17 +338,108 @@ export const FinanceTracker = ({ selectedDate }) => {
     setIsTransactionModalOpen(true);
   };
 
-  const openTransferModal = () => {
+  // Open Transfer / Exchange Modal
+  const openTransferModal = (initFromCurr = null, initToCurr = null) => {
     setTransferDate(selectedDate || getFormattedDate());
     setTransferTitle('');
     setFromMethod('Bank Transfer');
     setToMethod('Cash');
-    setFromCurrency('SAR');
-    setToCurrency('SAR');
+    const sourceCurr = initFromCurr || defaultCurrency;
+    const destCurr = initToCurr || (initFromCurr && initFromCurr !== defaultCurrency ? defaultCurrency : defaultCurrency);
+    setFromCurrency(sourceCurr);
+    setToCurrency(destCurr);
     setFromAmount('');
     setToAmount('');
+    setIsCustomRate(false);
     setTransferNotes('');
     setIsTransferModalOpen(true);
+  };
+
+  // Handle fromAmount typing & auto-conversion
+  const handleFromAmountChange = (val) => {
+    setFromAmount(val);
+    if (!isCustomRate) {
+      if (fromCurrency === toCurrency) {
+        setToAmount(val);
+      } else if (val && !isNaN(Number(val))) {
+        setToAmount(convertAmount(val, fromCurrency, toCurrency));
+      } else {
+        setToAmount('');
+      }
+    }
+  };
+
+  // Handle toAmount manual override
+  const handleToAmountChange = (val) => {
+    setToAmount(val);
+    if (fromCurrency !== toCurrency) {
+      setIsCustomRate(true);
+    }
+  };
+
+  // Reset to reference rate
+  const resetToMarketRate = () => {
+    setIsCustomRate(false);
+    if (fromAmount && !isNaN(Number(fromAmount))) {
+      setToAmount(convertAmount(fromAmount, fromCurrency, toCurrency));
+    }
+  };
+
+  // Swap currencies & payment methods back and forth
+  const handleSwapCurrenciesAndMethods = () => {
+    const prevFromCurr = fromCurrency;
+    const prevToCurr = toCurrency;
+    const prevFromMethod = fromMethod;
+    const prevToMethod = toMethod;
+    const prevFromAmt = fromAmount;
+    const prevToAmt = toAmount;
+
+    setFromCurrency(prevToCurr);
+    setToCurrency(prevFromCurr);
+    setFromMethod(prevToMethod);
+    setToMethod(prevFromMethod);
+    setIsCustomRate(false);
+
+    // Swap amounts and re-estimate
+    if (prevToAmt && !isNaN(Number(prevToAmt))) {
+      setFromAmount(prevToAmt);
+      if (prevToCurr === prevFromCurr) {
+        setToAmount(prevToAmt);
+      } else {
+        setToAmount(convertAmount(prevToAmt, prevToCurr, prevFromCurr));
+      }
+    } else if (prevFromAmt && !isNaN(Number(prevFromAmt))) {
+      setFromAmount(prevFromAmt);
+      setToAmount(convertAmount(prevFromAmt, prevToCurr, prevFromCurr));
+    }
+  };
+
+  const handleFromCurrencyChange = (newFrom) => {
+    setFromCurrency(newFrom);
+    if (!availableCurrencies.includes(newFrom)) {
+      setCustomCurrencies((prev) => Array.from(new Set([...prev, newFrom])));
+    }
+    if (!isCustomRate && fromAmount && !isNaN(Number(fromAmount))) {
+      if (newFrom === toCurrency) {
+        setToAmount(fromAmount);
+      } else {
+        setToAmount(convertAmount(fromAmount, newFrom, toCurrency));
+      }
+    }
+  };
+
+  const handleToCurrencyChange = (newTo) => {
+    setToCurrency(newTo);
+    if (!availableCurrencies.includes(newTo)) {
+      setCustomCurrencies((prev) => Array.from(new Set([...prev, newTo])));
+    }
+    if (!isCustomRate && fromAmount && !isNaN(Number(fromAmount))) {
+      if (fromCurrency === newTo) {
+        setToAmount(fromAmount);
+      } else {
+        setToAmount(convertAmount(fromAmount, fromCurrency, newTo));
+      }
+    }
   };
 
   const handleCreateTransaction = async (e) => {
@@ -202,17 +487,28 @@ export const FinanceTracker = ({ selectedDate }) => {
 
     setSavingTransfer(true);
     try {
+      const numFromAmount = Number(fromAmount);
+      const numToAmount = toAmount && !isNaN(Number(toAmount))
+        ? Number(toAmount)
+        : numFromAmount;
+
+      const isCrossCurrency = fromCurrency !== toCurrency;
+      const autoTitle = isCrossCurrency
+        ? `Exchange: ${numFromAmount} ${fromCurrency} → ${numToAmount} ${toCurrency}`
+        : `Transfer: ${fromMethod} → ${toMethod}`;
+
       const res = await api.post('/finance/transfer', {
         date: transferDate,
-        title: transferTitle.trim() || `Transfer: ${fromMethod} → ${toMethod}`,
+        title: transferTitle.trim() || autoTitle,
         fromPaymentMethod: fromMethod,
         toPaymentMethod: toMethod,
         fromCurrency,
         toCurrency,
-        fromAmount: Number(fromAmount),
-        toAmount: toAmount ? Number(toAmount) : Number(fromAmount),
+        fromAmount: numFromAmount,
+        toAmount: numToAmount,
         notes: transferNotes.trim(),
       });
+
       setIsTransferModalOpen(false);
       if (res.data) setTransactions((prev) => [res.data, ...prev]);
       fetchFinanceData(false);
@@ -238,26 +534,47 @@ export const FinanceTracker = ({ selectedDate }) => {
     }
   };
 
-  // Filtered List
+  // Filtered Ledger List
   const filteredTransactions = transactions.filter((tx) => {
     if (filterType !== 'all' && tx.type !== filterType) return false;
-    if (filterCurrency !== 'all' && tx.currency !== filterCurrency) return false;
+    if (filterCurrency !== 'all') {
+      const matchFrom = tx.currency === filterCurrency;
+      const matchTo = tx.toCurrency === filterCurrency;
+      if (!matchFrom && !matchTo) return false;
+    }
     return true;
   });
+
+  // Calculate rate references for transfer modal
+  const referenceRate = getConversionRate(fromCurrency, toCurrency);
+  const inverseReferenceRate = getConversionRate(toCurrency, fromCurrency);
+  const effectiveCustomRate =
+    fromAmount && toAmount && Number(fromAmount) > 0
+      ? Number(toAmount) / Number(fromAmount)
+      : referenceRate;
+  const isCrossCurrency = fromCurrency !== toCurrency;
+
+  // Active Multi-Currency Holdings
+  const activeCurrencies = Object.keys(summary.currencyTotals || {}).filter(
+    (c) => summary.currencyTotals[c]?.balance !== 0 || c === defaultCurrency
+  );
+  if (!activeCurrencies.includes(defaultCurrency)) {
+    activeCurrencies.unshift(defaultCurrency);
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
       <PageHeader
         category="Wealth & Budgeting"
         title="Finance & Fund Transfers"
-        description="Monitor income, expenses, multi-currency assets (SAR, BDT, USD), and transfer funds between payment methods."
+        description={`Monitor income, expenses, multi-currency assets (${defaultCurrency}), and exchange currencies seamlessly.`}
         action={
           <div className="flex items-center gap-2.5 flex-wrap">
             <Button
               variant="secondary"
               size="md"
               icon={ArrowRightLeft}
-              onClick={openTransferModal}
+              onClick={() => openTransferModal()}
             >
               Transfer Funds
             </Button>
@@ -281,33 +598,112 @@ export const FinanceTracker = ({ selectedDate }) => {
         }
       />
 
-      {/* Top Summary Stats (in default SAR) */}
+      {/* Top Summary Stats */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
         <StatCard
           title="Net Wealth Balance"
-          value={`${(summary.netSavings || 0).toFixed(2)} SAR`}
-          subtitle="All accounts combined"
+          value={`${(summary.netSavings || 0).toFixed(2)} ${displayCurrency}`}
+          subtitle="All currency vaults combined"
           icon={Wallet}
           color="indigo"
         />
         <StatCard
           title="Total Income"
-          value={`${(summary.totalIncome || 0).toFixed(2)} SAR`}
+          value={`${(summary.totalIncome || 0).toFixed(2)} ${displayCurrency}`}
           subtitle="All recorded earnings"
           icon={TrendingUp}
           color="emerald"
         />
         <StatCard
           title="Total Expenses"
-          value={`${(summary.totalExpenses || 0).toFixed(2)} SAR`}
+          value={`${(summary.totalExpenses || 0).toFixed(2)} ${displayCurrency}`}
           subtitle="All recorded outflows"
           icon={TrendingDown}
           color="rose"
         />
       </div>
 
+      {/* Multi-Currency Asset Holdings & Vaults */}
+      <Card
+        title="Multi-Currency Asset Holdings"
+        subtitle={`Live balances per currency · Converted total valuations in ${displayCurrency}`}
+        icon={Coins}
+        action={
+          <Button
+            variant="secondary"
+            size="sm"
+            icon={ArrowRightLeft}
+            onClick={() => openTransferModal()}
+          >
+            Exchange Currencies ⇄
+          </Button>
+        }
+      >
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-2">
+          {activeCurrencies.map((c) => {
+            const holding = summary.currencyTotals?.[c] || { balance: 0, balanceInTarget: 0 };
+            const bal = holding.balance || 0;
+            const balInTarget = holding.balanceInTarget !== undefined ? holding.balanceInTarget : bal;
+            const sym = CURRENCY_SYMBOLS[c] || c;
+
+            return (
+              <div
+                key={c}
+                className="p-3.5 rounded-2xl bg-subtle border border-theme flex flex-col justify-between relative overflow-hidden group hover:border-accent/40 transition-all shadow-sm"
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="w-8 h-8 rounded-xl bg-accent/10 text-accent font-extrabold text-sm flex items-center justify-center">
+                      {sym}
+                    </span>
+                    <div>
+                      <span className="text-xs font-bold text-primary block leading-tight">
+                        {c}
+                      </span>
+                      {c === defaultCurrency ? (
+                        <span className="text-[9px] font-bold text-accent uppercase tracking-wider block">
+                          Default
+                        </span>
+                      ) : (
+                        <span className="text-[9px] text-secondary font-medium block">
+                          Holdings
+                        </span>
+                      )}
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => openTransferModal(c)}
+                    className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1 opacity-80 hover:opacity-100 cursor-pointer"
+                    title={`Exchange ${c} to another currency`}
+                  >
+                    Swap ⇄
+                  </button>
+                </div>
+
+                <div className="mt-3">
+                  <div
+                    className={`text-base font-extrabold tracking-tight truncate ${
+                      bal >= 0 ? 'text-primary' : 'text-[var(--color-danger)]'
+                    }`}
+                  >
+                    {bal >= 0 ? '' : '-'}{sym} {Math.abs(bal).toFixed(2)}{' '}
+                    <span className="text-[10px] text-secondary font-medium">{c}</span>
+                  </div>
+                  {c !== displayCurrency && (
+                    <div className="text-[11px] text-secondary mt-0.5 font-medium">
+                      ≈ {(balInTarget || 0).toFixed(2)} {displayCurrency}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </Card>
+
       {/* Payment Method Balance Breakdown */}
-      <Card title="Payment Method & Account Balances" subtitle="Live net balance per method in SAR equivalent" icon={Layers}>
+      <Card title="Payment Method & Account Balances" subtitle={`Live net balance per method in ${displayCurrency} equivalent`} icon={Layers}>
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-2">
           {PAYMENT_METHODS.map((method) => {
             const bal = summary.methodBalances?.[method] || 0;
@@ -324,7 +720,7 @@ export const FinanceTracker = ({ selectedDate }) => {
                     bal >= 0 ? 'text-primary' : 'text-[var(--color-danger)]'
                   }`}
                 >
-                  {bal.toFixed(2)} <span className="text-[10px] text-secondary">SAR</span>
+                  {bal.toFixed(2)} <span className="text-[10px] text-secondary">{displayCurrency}</span>
                 </div>
               </div>
             );
@@ -335,19 +731,19 @@ export const FinanceTracker = ({ selectedDate }) => {
       {/* Filter Bar & Transactions List */}
       <Card
         title="Transaction & Transfer Ledger"
-        subtitle="Chronological list of all financial entries"
+        subtitle="Chronological list of all financial entries and currency exchanges"
         icon={CreditCard}
         action={
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
             <select
               value={filterCurrency}
               onChange={(e) => setFilterCurrency(e.target.value)}
-              className="select-base text-xs py-1.5 px-2.5 rounded-lg flex-1 sm:flex-initial"
+              className="select-base text-xs py-1.5 px-2.5 rounded-lg flex-1 sm:flex-initial font-medium"
             >
               <option value="all">All Currencies</option>
-              {CURRENCIES.map((c) => (
+              {availableCurrencies.map((c) => (
                 <option key={c} value={c}>
-                  {c}
+                  {c} {CURRENCY_SYMBOLS[c] ? `(${CURRENCY_SYMBOLS[c]})` : ''}
                 </option>
               ))}
             </select>
@@ -355,12 +751,12 @@ export const FinanceTracker = ({ selectedDate }) => {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="select-base text-xs py-1.5 px-2.5 rounded-lg flex-1 sm:flex-initial"
+              className="select-base text-xs py-1.5 px-2.5 rounded-lg flex-1 sm:flex-initial font-medium"
             >
               <option value="all">All Types</option>
               <option value="income">Income</option>
               <option value="expense">Expense</option>
-              <option value="transfer">Transfer</option>
+              <option value="transfer">Transfer & Exchange</option>
             </select>
           </div>
         }
@@ -373,7 +769,7 @@ export const FinanceTracker = ({ selectedDate }) => {
           <EmptyState
             icon={Wallet}
             title="No transactions found"
-            description="Log your first income, expense, or fund transfer to build your financial ledger."
+            description="Log your first income, expense, or currency transfer to build your financial ledger."
             actionText="Log Transaction"
             onAction={() => openTransactionModal('expense')}
           />
@@ -385,7 +781,7 @@ export const FinanceTracker = ({ selectedDate }) => {
                   <th className="pb-3 px-3">Date</th>
                   <th className="pb-3 px-3">Title / Details</th>
                   <th className="pb-3 px-3">Type</th>
-                  <th className="pb-3 px-3">Method</th>
+                  <th className="pb-3 px-3">Method / Route</th>
                   <th className="pb-3 px-3">Notes</th>
                   <th className="pb-3 px-3 text-right">Amount</th>
                   <th className="pb-3 px-3 text-right">Actions</th>
@@ -394,6 +790,8 @@ export const FinanceTracker = ({ selectedDate }) => {
               <tbody className="divide-y divide-subtle font-medium">
                 {filteredTransactions.map((tx) => {
                   const isTransfer = tx.type === 'transfer';
+                  const isExchange = isTransfer && tx.toCurrency && tx.currency !== tx.toCurrency;
+
                   return (
                     <tr key={tx._id} className="hover:bg-subtle/50 transition-colors">
                       <td className="py-3 px-3 text-primary font-bold whitespace-nowrap">
@@ -405,7 +803,7 @@ export const FinanceTracker = ({ selectedDate }) => {
                         </span>
                         {isTransfer && tx.toPaymentMethod && (
                           <span className="text-[11px] text-secondary">
-                            {tx.paymentMethod} → {tx.toPaymentMethod}
+                            {tx.paymentMethod} ({tx.currency}) → {tx.toPaymentMethod} ({tx.toCurrency || tx.currency})
                           </span>
                         )}
                       </td>
@@ -414,18 +812,24 @@ export const FinanceTracker = ({ selectedDate }) => {
                           variant={
                             tx.type === 'income'
                               ? 'success'
-                              : tx.type === 'transfer'
+                              : isExchange
+                              ? 'cyan'
+                              : isTransfer
                               ? 'purple'
                               : 'neutral'
                           }
                           size="xs"
                           dot
                         >
-                          {tx.type}
+                          {isExchange ? 'Exchange' : tx.type}
                         </Badge>
                       </td>
-                      <td className="py-3 px-3 text-secondary whitespace-nowrap">
-                        {tx.paymentMethod || 'Debit Card'}
+                      <td className="py-3 px-3 text-secondary whitespace-nowrap font-medium">
+                        {isTransfer && tx.toPaymentMethod ? (
+                          <span>{tx.paymentMethod} ➔ {tx.toPaymentMethod}</span>
+                        ) : (
+                          tx.paymentMethod || 'Debit Card'
+                        )}
                       </td>
                       <td className="py-3 px-3 text-secondary max-w-xs truncate">
                         {tx.notes || '—'}
@@ -434,13 +838,25 @@ export const FinanceTracker = ({ selectedDate }) => {
                         className={`py-3 px-3 text-right font-extrabold whitespace-nowrap ${
                           tx.type === 'income'
                             ? 'text-emerald-600 dark:text-emerald-400'
-                            : tx.type === 'transfer'
+                            : isTransfer
                             ? 'text-indigo-600 dark:text-indigo-400'
                             : 'text-[var(--color-danger)]'
                         }`}
                       >
-                        {tx.type === 'income' ? '+' : tx.type === 'transfer' ? '⇄ ' : '-'}
-                        {tx.amount.toFixed(2)} {tx.currency || 'SAR'}
+                        {tx.type === 'income' && `+${tx.amount.toFixed(2)} ${tx.currency || displayCurrency}`}
+                        {tx.type === 'expense' && `-${tx.amount.toFixed(2)} ${tx.currency || displayCurrency}`}
+                        {isTransfer && (
+                          isExchange ? (
+                            <div className="flex flex-col items-end leading-tight">
+                              <span>{tx.amount.toFixed(2)} {tx.currency}</span>
+                              <span className="text-[11px] text-accent font-semibold">
+                                ➔ {(tx.toAmount !== undefined ? tx.toAmount : tx.amount).toFixed(2)} {tx.toCurrency}
+                              </span>
+                            </div>
+                          ) : (
+                            <span>⇄ {tx.amount.toFixed(2)} {tx.currency || displayCurrency}</span>
+                          )
+                        )}
                       </td>
                       <td className="py-3 px-3 text-right whitespace-nowrap">
                         <div className="flex items-center justify-end gap-1">
@@ -474,7 +890,7 @@ export const FinanceTracker = ({ selectedDate }) => {
         isOpen={isTransactionModalOpen}
         onClose={() => setIsTransactionModalOpen(false)}
         title={editingTransactionId ? 'Edit Transaction' : formType === 'income' ? 'Log Income' : 'Log Expense'}
-        subtitle={editingTransactionId ? 'Update financial entry details' : 'Record income or expense transaction'}
+        subtitle={editingTransactionId ? 'Update financial entry details' : `Record transaction (Default: ${defaultCurrency})`}
       >
         <form onSubmit={handleCreateTransaction} className="space-y-4">
           <div>
@@ -504,25 +920,18 @@ export const FinanceTracker = ({ selectedDate }) => {
                 placeholder="0.00"
                 value={amount}
                 onChange={(e) => setAmount(e.target.value)}
-                className="input-base"
+                className="input-base font-bold"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Currency
-              </label>
-              <select
+              <CurrencySelectorInput
+                id="tx-currency"
+                label="Currency"
                 value={currency}
-                onChange={(e) => setCurrency(e.target.value)}
-                className="select-base"
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+                onChange={setCurrency}
+                availableCurrencies={availableCurrencies}
+              />
             </div>
           </div>
 
@@ -617,12 +1026,12 @@ export const FinanceTracker = ({ selectedDate }) => {
         </form>
       </Modal>
 
-      {/* Fund Transfer Modal */}
+      {/* Fund Transfer & Currency Exchange Modal */}
       <Modal
         isOpen={isTransferModalOpen}
         onClose={() => setIsTransferModalOpen(false)}
-        title="Transfer Funds"
-        subtitle="Move balances between payment methods and currencies"
+        title={isCrossCurrency ? 'Currency Exchange & Transfer' : 'Transfer Funds'}
+        subtitle="Exchange currencies back and forth or move balances between payment methods"
       >
         <form onSubmit={handleCreateTransfer} className="space-y-4">
           <div>
@@ -631,85 +1040,205 @@ export const FinanceTracker = ({ selectedDate }) => {
             </label>
             <input
               type="text"
-              placeholder="e.g. ATM Cash Withdrawal, Currency Exchange"
+              placeholder={
+                isCrossCurrency
+                  ? `e.g. Currency Exchange: ${fromCurrency} → ${toCurrency}`
+                  : `e.g. Moved funds from ${fromMethod} to ${toMethod}`
+              }
               value={transferTitle}
               onChange={(e) => setTransferTitle(e.target.value)}
               className="input-base"
             />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                From Payment Method
-              </label>
-              <select
-                value={fromMethod}
-                onChange={(e) => setFromMethod(e.target.value)}
-                className="select-base"
-              >
-                {PAYMENT_METHODS.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
+          {/* Transfer & Exchange Box */}
+          <div className="p-4 rounded-2xl bg-subtle border border-theme space-y-4">
+            {/* SOURCE (FROM) SECTION */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-rose-500"></span>
+                  From (Send / Outflow)
+                </span>
+                <span className="text-[11px] text-secondary font-medium">
+                  Source Account
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1">
+                    From Method
+                  </label>
+                  <select
+                    value={fromMethod}
+                    onChange={(e) => setFromMethod(e.target.value)}
+                    className="select-base text-xs"
+                  >
+                    {PAYMENT_METHODS.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <CurrencySelectorInput
+                    id="transfer-from-currency"
+                    label="Send Currency"
+                    value={fromCurrency}
+                    onChange={handleFromCurrencyChange}
+                    availableCurrencies={availableCurrencies}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1">
+                  Amount to Send ({fromCurrency})
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    placeholder="0.00"
+                    value={fromAmount}
+                    onChange={(e) => handleFromAmountChange(e.target.value)}
+                    className="input-base font-extrabold text-base"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-secondary pointer-events-none">
+                    {fromCurrency}
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                To Payment Method
-              </label>
-              <select
-                value={toMethod}
-                onChange={(e) => setToMethod(e.target.value)}
-                className="select-base"
+            {/* INTERACTIVE SWAP BUTTON BAR */}
+            <div className="relative flex items-center justify-center my-2">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full border-t border-theme"></div>
+              </div>
+              <button
+                type="button"
+                onClick={handleSwapCurrenciesAndMethods}
+                className="relative z-10 px-3.5 py-1.5 rounded-full bg-background border border-theme text-xs font-bold text-accent hover:bg-accent hover:text-white shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer group"
+                title="Swap Currencies & Accounts (⇄)"
               >
-                {PAYMENT_METHODS.map((m) => (
-                  <option key={m} value={m}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Transfer Amount
-              </label>
-              <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                required
-                placeholder="0.00"
-                value={fromAmount}
-                onChange={(e) => setFromAmount(e.target.value)}
-                className="input-base"
-              />
+                <ArrowLeftRight className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-300" />
+                <span>Swap Currencies (⇄)</span>
+              </button>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Currency
-              </label>
-              <select
-                value={fromCurrency}
-                onChange={(e) => {
-                  setFromCurrency(e.target.value);
-                  setToCurrency(e.target.value);
-                }}
-                className="select-base"
-              >
-                {CURRENCIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+            {/* DESTINATION (TO) SECTION */}
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
+                  To (Receive / Inflow)
+                </span>
+                <span className="text-[11px] text-secondary font-medium">
+                  Destination Account
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1">
+                    To Method
+                  </label>
+                  <select
+                    value={toMethod}
+                    onChange={(e) => setToMethod(e.target.value)}
+                    className="select-base text-xs"
+                  >
+                    {PAYMENT_METHODS.map((m) => (
+                      <option key={m} value={m}>
+                        {m}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <CurrencySelectorInput
+                    id="transfer-to-currency"
+                    label="Receive Currency"
+                    value={toCurrency}
+                    onChange={handleToCurrencyChange}
+                    availableCurrencies={availableCurrencies}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider">
+                    Amount Received ({toCurrency})
+                  </label>
+                  {isCustomRate && (
+                    <button
+                      type="button"
+                      onClick={resetToMarketRate}
+                      className="text-[10px] font-bold text-accent hover:underline flex items-center gap-0.5 cursor-pointer"
+                    >
+                      <RefreshCw className="w-3 h-3" />
+                      Reset to Market Rate
+                    </button>
+                  )}
+                </div>
+                <div className="relative">
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    required
+                    placeholder="0.00"
+                    value={toAmount}
+                    onChange={(e) => handleToAmountChange(e.target.value)}
+                    className="input-base font-extrabold text-base text-emerald-600 dark:text-emerald-400"
+                  />
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-secondary pointer-events-none">
+                    {toCurrency}
+                  </div>
+                </div>
+              </div>
             </div>
+
+            {/* LIVE EXCHANGE RATE & SPREAD PREVIEW */}
+            {isCrossCurrency ? (
+              <div className="p-3 rounded-xl bg-background/80 border border-theme/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+                <div className="space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="font-extrabold text-primary">
+                      1 {fromCurrency} ≈ {referenceRate >= 100 ? referenceRate.toFixed(2) : referenceRate.toFixed(4)} {toCurrency}
+                    </span>
+                    <Badge variant={isCustomRate ? 'purple' : 'primary'} size="xs">
+                      {isCustomRate ? 'Custom User Rate' : 'Market Reference'}
+                    </Badge>
+                  </div>
+                  <div className="text-[11px] text-secondary">
+                    1 {toCurrency} ≈ {inverseReferenceRate >= 100 ? inverseReferenceRate.toFixed(2) : inverseReferenceRate.toFixed(4)} {fromCurrency}
+                  </div>
+                </div>
+
+                {isCustomRate && fromAmount && toAmount && Number(fromAmount) > 0 && (
+                  <div className="text-right text-[11px]">
+                    <span className="text-secondary font-medium block">Effective Applied Rate:</span>
+                    <span className="font-bold text-accent">
+                      1 {fromCurrency} = {effectiveCustomRate.toFixed(4)} {toCurrency}
+                    </span>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="p-2.5 rounded-xl bg-background/60 border border-theme/60 text-xs text-secondary flex items-center justify-between">
+                <span>Direct Transfer: Moving funds within {fromCurrency}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-accent">1:1 Ratio</span>
+              </div>
+            )}
           </div>
 
           <DateInput
@@ -725,7 +1254,7 @@ export const FinanceTracker = ({ selectedDate }) => {
             </label>
             <input
               type="text"
-              placeholder="e.g. Moved savings to checking account"
+              placeholder="e.g. Bank currency exchange, cash withdrawal, online conversion"
               value={transferNotes}
               onChange={(e) => setTransferNotes(e.target.value)}
               className="input-base"
@@ -736,8 +1265,8 @@ export const FinanceTracker = ({ selectedDate }) => {
             <Button variant="secondary" onClick={() => setIsTransferModalOpen(false)}>
               Cancel
             </Button>
-            <Button type="submit" variant="primary" loading={savingTransfer}>
-              Execute Transfer
+            <Button type="submit" variant="primary" loading={savingTransfer} icon={ArrowRightLeft}>
+              {isCrossCurrency ? 'Execute Currency Exchange' : 'Execute Transfer'}
             </Button>
           </div>
         </form>
@@ -752,7 +1281,7 @@ export const FinanceTracker = ({ selectedDate }) => {
       >
         <div className="space-y-4">
           <p className="text-sm text-secondary">
-            Are you sure you want to delete this financial record? It will be removed from all balances.
+            Are you sure you want to delete this financial record? It will be removed from all balances and multi-currency accounts.
           </p>
           <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
             <Button variant="secondary" onClick={() => setDeleteId(null)}>

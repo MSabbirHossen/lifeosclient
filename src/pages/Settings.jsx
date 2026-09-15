@@ -21,7 +21,27 @@ import {
   Sparkles,
   Code2,
   ExternalLink,
+  Coins,
 } from 'lucide-react';
+
+const CURRENCY_OPTIONS = [
+  { code: 'USD', symbol: '$', name: 'US Dollar', region: 'Global / USA' },
+  { code: 'BDT', symbol: '৳', name: 'Bangladeshi Taka', region: 'Bangladesh' },
+  { code: 'SAR', symbol: '﷼', name: 'Saudi Riyal', region: 'Saudi Arabia' },
+  { code: 'EUR', symbol: '€', name: 'Euro', region: 'European Union' },
+  { code: 'GBP', symbol: '£', name: 'British Pound', region: 'United Kingdom' },
+  { code: 'AED', symbol: 'د.إ', name: 'UAE Dirham', region: 'United Arab Emirates' },
+  { code: 'INR', symbol: '₹', name: 'Indian Rupee', region: 'India' },
+  { code: 'CAD', symbol: '$', name: 'Canadian Dollar', region: 'Canada' },
+  { code: 'AUD', symbol: '$', name: 'Australian Dollar', region: 'Australia' },
+  { code: 'QAR', symbol: '﷼', name: 'Qatari Riyal', region: 'Qatar' },
+  { code: 'MYR', symbol: 'RM', name: 'Malaysian Ringgit', region: 'Malaysia' },
+  { code: 'TRY', symbol: '₺', name: 'Turkish Lira', region: 'Turkey' },
+  { code: 'JPY', symbol: '¥', name: 'Japanese Yen', region: 'Japan' },
+  { code: 'KWD', symbol: 'د.ك', name: 'Kuwaiti Dinar', region: 'Kuwait' },
+  { code: 'OMR', symbol: '﷼', name: 'Omani Rial', region: 'Oman' },
+  { code: 'PKR', symbol: '₨', name: 'Pakistani Rupee', region: 'Pakistan' },
+];
 
 export const Settings = () => {
   const { user, updateUser } = useAuth();
@@ -30,6 +50,13 @@ export const Settings = () => {
   // Profile Form
   const [name, setName] = useState(user?.name || '');
   const [email, setEmail] = useState(user?.email || '');
+
+  // Currency Preference
+  const [currency, setCurrency] = useState(() => {
+    return user?.currency || localStorage.getItem('lifeos_currency') || 'USD';
+  });
+  const [customCurrency, setCustomCurrency] = useState('');
+  const [isCustom, setIsCustom] = useState(false);
 
   // Goals Preferences
   const [calorieGoal, setCalorieGoal] = useState(user?.dailyCalorieGoal || 2000);
@@ -48,25 +75,46 @@ export const Settings = () => {
       setCalorieGoal(user.dailyCalorieGoal || 2000);
       setWeightGoal(user.weightGoal || 70);
       setStudyMinutesGoal(user.dailyStudyMinutesGoal || 120);
+
+      const userCurr = (user.currency || localStorage.getItem('lifeos_currency') || 'USD').toUpperCase();
+      const match = CURRENCY_OPTIONS.find((c) => c.code === userCurr);
+      if (match) {
+        setCurrency(userCurr);
+        setIsCustom(false);
+        setCustomCurrency('');
+      } else {
+        setCurrency('CUSTOM');
+        setIsCustom(true);
+        setCustomCurrency(userCurr);
+      }
     }
   }, [user]);
+
+  const effectiveCurrency = (isCustom ? customCurrency.trim().toUpperCase() : currency) || 'USD';
 
   const handleSaveSettings = async (e) => {
     e.preventDefault();
     setSaving(true);
     setSaveSuccess(false);
 
+    const resolvedCurrency = (isCustom ? customCurrency.trim().toUpperCase() : currency) || 'USD';
+    localStorage.setItem('lifeos_currency', resolvedCurrency);
+
     try {
-      const res = await api.put('/users/profile', {
+      const payload = {
         name,
+        currency: resolvedCurrency,
         dailyCalorieGoal: Number(calorieGoal),
         weightGoal: Number(weightGoal),
         dailyStudyMinutesGoal: Number(studyMinutesGoal),
-      });
+      };
 
       if (updateUser) {
-        updateUser(res.data);
+        await updateUser(payload);
+      } else {
+        await api.put('/auth/profile', payload);
       }
+
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err) {
@@ -184,6 +232,114 @@ export const Settings = () => {
                 value={email}
                 className="input-base opacity-60 cursor-not-allowed"
               />
+            </div>
+          </div>
+        </Card>
+
+        {/* Default Currency & Financial Preferences Card */}
+        <Card
+          hover
+          title="Default Currency & Financial Unit"
+          subtitle="Select your preferred currency for financial balances, expense tracking, and ledgers"
+          icon={Coins}
+        >
+          <div className="space-y-4 mt-2">
+            {/* Live Financial Formatting Preview */}
+            <div className="p-3.5 rounded-2xl bg-subtle border border-theme flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div>
+                <span className="text-[11px] font-bold text-secondary uppercase tracking-wider block">
+                  Financial Formatting Preview
+                </span>
+                <span className="text-sm font-extrabold text-primary mt-0.5 block">
+                  Net Wealth Sample:{' '}
+                  <span className="text-emerald-600 dark:text-emerald-400">
+                    2,500.00 {effectiveCurrency}
+                  </span>{' '}
+                  <span className="text-xs text-secondary font-medium">
+                    (Expense: -150.00 {effectiveCurrency})
+                  </span>
+                </span>
+              </div>
+              <Badge variant="purple" size="xs">
+                Active Code: {effectiveCurrency}
+              </Badge>
+            </div>
+
+            {/* Quick Currency Selection Grid */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5">
+              {CURRENCY_OPTIONS.slice(0, 8).map((curr) => {
+                const isSelected = !isCustom && currency === curr.code;
+                return (
+                  <button
+                    key={curr.code}
+                    type="button"
+                    onClick={() => {
+                      setCurrency(curr.code);
+                      setIsCustom(false);
+                    }}
+                    className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between ${
+                      isSelected
+                        ? 'bg-accent/10 border-accent shadow-sm'
+                        : 'bg-subtle border-theme hover:border-[var(--color-border-hover)]'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className={`text-xs font-black ${isSelected ? 'text-accent' : 'text-primary'}`}>
+                        {curr.code}
+                      </span>
+                      <span className="text-xs font-bold text-secondary">{curr.symbol}</span>
+                    </div>
+                    <span className="text-[10px] text-secondary truncate mt-1">{curr.name}</span>
+                  </button>
+                );
+              })}
+            </div>
+
+            {/* Comprehensive Dropdown & Custom Option */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-1">
+              <div>
+                <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
+                  All Global Currencies
+                </label>
+                <select
+                  value={isCustom ? 'CUSTOM' : currency}
+                  onChange={(e) => {
+                    if (e.target.value === 'CUSTOM') {
+                      setIsCustom(true);
+                    } else {
+                      setIsCustom(false);
+                      setCurrency(e.target.value);
+                    }
+                  }}
+                  className="select-base"
+                >
+                  {CURRENCY_OPTIONS.map((c) => (
+                    <option key={c.code} value={c.code}>
+                      {c.code} ({c.symbol}) — {c.name} ({c.region})
+                    </option>
+                  ))}
+                  <option value="CUSTOM">✏️ Custom Currency Code...</option>
+                </select>
+              </div>
+
+              {isCustom && (
+                <div className="animate-fade-in">
+                  <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
+                    Custom Currency Code (ISO 3-Letter)
+                  </label>
+                  <input
+                    type="text"
+                    maxLength={6}
+                    placeholder="e.g. CHF, SGD, NZD, SEK"
+                    value={customCurrency}
+                    onChange={(e) => setCustomCurrency(e.target.value.toUpperCase())}
+                    className="input-base font-mono uppercase"
+                  />
+                  <span className="text-[10px] text-secondary mt-1 block">
+                    Enter any 3 to 5 letter international currency symbol.
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </Card>

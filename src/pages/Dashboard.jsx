@@ -6,6 +6,7 @@ import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { FastingTimer } from '../components/FastingTimer';
 import { GuidedReflectionModal } from '../components/GuidedReflectionModal';
+import { useAuth } from '../context/AuthContext';
 import api from '../utils/api';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import {
@@ -47,6 +48,7 @@ const SALAH_CYCLE = ['pending', 'onTime', 'jamaah', 'late', 'missed', 'qada'];
 
 export const Dashboard = ({ selectedDate }) => {
   const navigate = useNavigate();
+  const { user } = useAuth();
   const activeDate = selectedDate || getFormattedDate();
 
   const [data, setData] = useState(null);
@@ -148,6 +150,8 @@ export const Dashboard = ({ selectedDate }) => {
     name,
     value,
   }));
+
+  const currentCurrency = summary.finance?.currency || (user?.currency || localStorage.getItem('lifeos_currency') || 'USD').toUpperCase();
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
@@ -360,13 +364,13 @@ export const Dashboard = ({ selectedDate }) => {
                 <div className="p-3 rounded-xl bg-subtle border border-theme flex items-center justify-between">
                   <span className="text-xs font-bold text-secondary">Today's Expenses</span>
                   <span className="text-lg font-black text-[var(--color-danger)]">
-                    {(summary.finance?.expensesToday || 0).toFixed(2)} SAR
+                    {(summary.finance?.expensesToday || 0).toFixed(2)} {currentCurrency}
                   </span>
                 </div>
                 <div className="p-3 rounded-xl bg-subtle border border-theme flex items-center justify-between">
                   <span className="text-xs font-bold text-secondary">Month to Date</span>
                   <span className="text-base font-extrabold text-primary">
-                    {(summary.finance?.expensesMonth || 0).toFixed(2)} SAR
+                    {(summary.finance?.expensesMonth || 0).toFixed(2)} {currentCurrency}
                   </span>
                 </div>
               </div>
