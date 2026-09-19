@@ -20,8 +20,11 @@ import {
   PieChart as PieChartIcon,
   Sparkles,
   Search,
+  Timer,
+  Trophy,
 } from 'lucide-react';
 import { FastingTimer } from '../components/FastingTimer';
+import { getFastingStats, subscribeFastingUpdates } from '../utils/fastingService';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 
 const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
@@ -42,6 +45,7 @@ export const CalorieTracker = ({ selectedDate }) => {
     waterGlasses: 0,
     waterMl: 0,
   });
+  const [fastingStats, setFastingStats] = useState(() => getFastingStats());
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -88,6 +92,14 @@ export const CalorieTracker = ({ selectedDate }) => {
   useEffect(() => {
     fetchData(true);
   }, [fetchData]);
+
+  // Subscribe to live Intermittent Fasting (IF) count and streak updates
+  useEffect(() => {
+    const unsub = subscribeFastingUpdates((newStats) => {
+      setFastingStats(newStats);
+    });
+    return unsub;
+  }, []);
 
   // Autocomplete Food Item Search
   useEffect(() => {
@@ -315,7 +327,7 @@ export const CalorieTracker = ({ selectedDate }) => {
       />
 
       {/* Top Stat Cards Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-5">
         <StatCard
           title="Calories Consumed"
           value={`${summary.caloriesConsumed || 0} kcal`}
@@ -343,6 +355,13 @@ export const CalorieTracker = ({ selectedDate }) => {
           subtitle={`${summary.waterMl || 0} ml consumed`}
           icon={Droplets}
           color="cyan"
+        />
+        <StatCard
+          title="IF Completed Fasts"
+          value={`${fastingStats.completedCount} Done`}
+          subtitle={`${fastingStats.streak}d streak · ${fastingStats.partialCount} partial · ${fastingStats.earlyEndedCount} <20%`}
+          icon={Trophy}
+          color="emerald"
         />
       </div>
 
