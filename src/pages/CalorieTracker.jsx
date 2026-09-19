@@ -22,9 +22,18 @@ import {
   Search,
   Timer,
   Trophy,
+  Calculator,
+  BookOpen,
 } from 'lucide-react';
 import { FastingTimer } from '../components/FastingTimer';
 import { getFastingStats, subscribeFastingUpdates } from '../utils/fastingService';
+import {
+  calculateMacroTargets,
+  getSavedMacroSettings,
+} from '../utils/calorieCalculator';
+import { CalorieCalculatorModal } from '../components/CalorieCalculatorModal';
+import { MacroDocumentationModal } from '../components/MacroDocumentationModal';
+import { MacroBreakdownCard } from '../components/MacroBreakdownCard';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 
 const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
@@ -46,6 +55,9 @@ export const CalorieTracker = ({ selectedDate }) => {
     waterMl: 0,
   });
   const [fastingStats, setFastingStats] = useState(() => getFastingStats());
+  const [macroSettings, setMacroSettings] = useState(() => getSavedMacroSettings());
+  const [showCalculatorModal, setShowCalculatorModal] = useState(false);
+  const [showDocsModal, setShowDocsModal] = useState(false);
   const [loading, setLoading] = useState(true);
 
   // Modal State
@@ -100,6 +112,24 @@ export const CalorieTracker = ({ selectedDate }) => {
     });
     return unsub;
   }, []);
+
+  // Subscribe to live macro settings updates
+  useEffect(() => {
+    const handleMacroUpdate = (e) => {
+      if (e.detail) setMacroSettings(e.detail);
+    };
+    window.addEventListener('lifeos_macro_updated', handleMacroUpdate);
+    return () => window.removeEventListener('lifeos_macro_updated', handleMacroUpdate);
+  }, []);
+
+  // Compute live target macros based on daily calorie goal & selected split
+  const currentMacroTargets = useMemo(() => {
+    return calculateMacroTargets(
+      summary.dailyCalorieGoal || 2000,
+      macroSettings.presetId || 'balanced',
+      macroSettings.customSplits
+    );
+  }, [summary.dailyCalorieGoal, macroSettings]);
 
   // Autocomplete Food Item Search
   useEffect(() => {
@@ -368,7 +398,37 @@ export const CalorieTracker = ({ selectedDate }) => {
       {/* Calorie Goal Progress & Hydration Quick Bar */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 sm:gap-7">
         {/* Calorie Progress Card */}
-        <Card hover title="Daily Calorie Budget" subtitle="Intake progress against goal" icon={Flame} className="lg:col-span-2">
+        <Card
+          hover
+          title="Daily Calorie Budget"
+          subtitle="Intake progress against goal"
+          icon={Flame}
+          className="lg:col-span-2"
+          badge={
+            <div className="flex items-center gap-1.5 flex-wrap">
+              <Button
+                variant="ghost"
+                size="xs"
+                icon={BookOpen}
+                onClick={() => setShowDocsModal(true)}
+                className="text-secondary hover:text-primary text-[11px] cursor-pointer"
+                title="Read Calorie & Macro Science Documentation"
+              >
+                Science Docs
+              </Button>
+              <Button
+                variant="outline"
+                size="xs"
+                icon={Calculator}
+                onClick={() => setShowCalculatorModal(true)}
+                className="font-bold text-[11px] cursor-pointer"
+                title="Calculate Personal Body Calorie Budget (Mifflin-St Jeor)"
+              >
+                Calculate Body Budget
+              </Button>
+            </div>
+          }
+        >
           <div className="space-y-4 pt-2">
             <div className="flex items-center justify-between text-xs font-bold">
               <span className="text-secondary">Progress: {caloriePercentage}%</span>
@@ -430,6 +490,14 @@ export const CalorieTracker = ({ selectedDate }) => {
           </div>
         </Card>
       </div>
+
+      {/* Macronutrient Budget & Intake Breakdown (Taken vs Yet to Take) */}
+      <MacroBreakdownCard
+        summary={summary}
+        macroTargets={currentMacroTargets}
+        onOpenCalculator={() => setShowCalculatorModal(true)}
+        onOpenDocs={() => setShowDocsModal(true)}
+      />
 
       {/* Dynamic Intermittent Fasting Timer */}
       <FastingTimer />
@@ -762,23 +830,46 @@ export const CalorieTracker = ({ selectedDate }) => {
       <Modal
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
-        title="Confirm Deletion"
+        title="Delete Meal Log"
         subtitle="This action cannot be undone."
       >
-        <div className="space-y-4">
+        <div className="space-y-4 pt-2">
           <p className="text-sm text-secondary">
-            Are you sure you want to delete this meal log? It will be permanently removed.
+            Are you sure you want to remove this logged meal? Your consumed calories and macros will be recalculated automatically.
           </p>
-          <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
-            <Button variant="secondary" onClick={() => setDeleteId(null)}>
+          <div className="flex items-center justify-end gap-3 pt-2">
+            <Button variant="ghost" size="sm" onClick={() => setDeleteId(null)}>
               Cancel
             </Button>
-            <Button variant="danger" onClick={handleDeleteMeal}>
-              Delete
+            <Button variant="danger" size="sm" onClick={handleDeleteMeal}>
+              Delete Meal
             </Button>
           </div>
         </div>
       </Modal>
+
+      {/* Body Calorie Budget & Macro Calculator Modal */}
+      <CalorieCalculatorModal
+        isOpen={showCalculatorModal}
+        onClose={() => setShowCalculatorModal(false)}
+        onApplied={(result) => {
+          setSummary((prev) => ({
+            ...prev,
+            dailyCalorieGoal: result.budgetKcal,
+            remainingCalories: Math.max(0, result.budgetKcal - (prev.caloriesConsumed || 0)),
+          }));
+        }}
+        onOpenDocs={() => {
+          setShowCalculatorModal(false);
+          setShowDocsModal(true);
+        }}
+      />
+
+      {/* Macronutrient & Calorie Science Documentation Modal */}
+      <MacroDocumentationModal
+        isOpen={showDocsModal}
+        onClose={() => setShowDocsModal(false)}
+      />
     </div>
   );
 };
