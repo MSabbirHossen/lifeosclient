@@ -8,6 +8,7 @@ import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
 import api from '../utils/api';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
+import { notifyStreakUpdate } from '../utils/streakEvents';
 import {
   CheckSquare,
   Plus,
@@ -147,6 +148,7 @@ export const HabitsTracker = ({ selectedDate }) => {
 
     try {
       await api.post(`/habits/${habitId}/toggle`, { date: activeDate });
+      notifyStreakUpdate();
       fetchData(false);
     } catch (err) {
       console.error('Failed to toggle habit', err);
