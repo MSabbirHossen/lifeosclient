@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Flame, Clock, ShieldCheck, AlertTriangle } from 'lucide-react';
 import api from '../utils/api';
 import { getFormattedDate } from '../utils/dateHelpers';
+import { subscribeStreakUpdates } from '../utils/streakEvents';
 
 export const StreakWidget = ({ compact = false, className = '' }) => {
   const [streakData, setStreakData] = useState({
@@ -40,10 +41,8 @@ export const StreakWidget = ({ compact = false, className = '' }) => {
 
   useEffect(() => {
     fetchStreak();
-    // Refresh streak status when user focuses window
-    const handleFocus = () => fetchStreak();
-    window.addEventListener('focus', handleFocus);
-    return () => window.removeEventListener('focus', handleFocus);
+    const unsubscribe = subscribeStreakUpdates(fetchStreak);
+    return () => unsubscribe();
   }, []);
 
   // Live ticking countdown to midnight local time
