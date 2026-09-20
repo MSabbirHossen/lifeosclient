@@ -23,13 +23,27 @@ api.interceptors.request.use(
   (error) => Promise.reject(error)
 );
 
-// Response Interceptor: Catch 401 unauth errors
+// Response Interceptor: Handle auth errors cleanly
 api.interceptors.response.use(
   (response) => response,
   (error) => {
+    // Only handle genuine 401 authentication rejections on protected routes
     if (error.response && error.response.status === 401) {
-      // Clear token on 401 unauthorized
-      localStorage.removeItem('lifeos_token');
+      const url = error.config?.url || '';
+      const isAuthAttempt = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/google');
+
+      // Do not clear existing session if it was just a failed login attempt with wrong credentials
+      if (!isAuthAttempt) {
+        const msg = (error.response.data?.message || '').toLowerCase();
+        // Clear full session only if backend confirms token invalidity or user removed
+        if (msg.includes('token') || msg.includes('user no longer exists') || msg.includes('not authorized')) {
+          localStorage.removeItem('lifeos_token');
+          localStorage.removeItem('lifeos_user');
+          if (typeof window !== 'undefined') {
+            window.dispatchEvent(new CustomEvent('lifeos-session-expired'));
+          }
+        }
+      }
     }
     return Promise.reject(error);
   }

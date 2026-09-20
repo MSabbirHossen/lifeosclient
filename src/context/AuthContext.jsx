@@ -22,6 +22,17 @@ export const AuthProvider = ({ children }) => {
   });
 
   useEffect(() => {
+    const handleSessionExpired = () => {
+      localStorage.removeItem('lifeos_token');
+      localStorage.removeItem('lifeos_user');
+      setUser(null);
+    };
+
+    window.addEventListener('lifeos-session-expired', handleSessionExpired);
+    return () => window.removeEventListener('lifeos-session-expired', handleSessionExpired);
+  }, []);
+
+  useEffect(() => {
     const fetchUser = async () => {
       const token = localStorage.getItem('lifeos_token');
       if (!token) {
@@ -37,16 +48,23 @@ export const AuthProvider = ({ children }) => {
         };
         setUser(userData);
         localStorage.setItem('lifeos_user', JSON.stringify(userData));
+        if (res.data?.token) {
+          localStorage.setItem('lifeos_token', res.data.token);
+        }
         if (userData.currency) {
           localStorage.setItem('lifeos_currency', userData.currency);
         }
       } catch (err) {
         console.warn('Profile fetch validation notice:', err.message);
         // Only clear credentials if the backend explicitly declares the token invalid/expired (401/403)
+        // and NOT on server/database connection failures (500, 503, network errors)
         if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-          localStorage.removeItem('lifeos_token');
-          localStorage.removeItem('lifeos_user');
-          setUser(null);
+          const msg = (err.response.data?.message || '').toLowerCase();
+          if (msg.includes('token') || msg.includes('user no longer exists') || msg.includes('not authorized')) {
+            localStorage.removeItem('lifeos_token');
+            localStorage.removeItem('lifeos_user');
+            setUser(null);
+          }
         }
       } finally {
         setLoading(false);
