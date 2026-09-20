@@ -327,11 +327,10 @@ export const Auth = () => {
               setIsLogin(true);
               setError('');
             }}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              isLogin
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${isLogin
                 ? 'bg-surface text-primary card-shadow'
                 : 'text-secondary hover:text-primary'
-            }`}
+              }`}
           >
             Sign In
           </button>
@@ -341,11 +340,10 @@ export const Auth = () => {
               setIsLogin(false);
               setError('');
             }}
-            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${
-              !isLogin
+            className={`flex-1 py-2 text-xs font-bold rounded-lg transition-all cursor-pointer ${!isLogin
                 ? 'bg-surface text-primary card-shadow'
                 : 'text-secondary hover:text-primary'
-            }`}
+              }`}
           >
             Create Account
           </button>
@@ -487,9 +485,8 @@ export const Auth = () => {
                   {[1, 2, 3, 4].map((step) => (
                     <div
                       key={step}
-                      className={`h-full rounded-full transition-all duration-300 ${
-                        pwdStrength.score >= step ? pwdStrength.barColor : 'bg-surface border border-theme/40'
-                      }`}
+                      className={`h-full rounded-full transition-all duration-300 ${pwdStrength.score >= step ? pwdStrength.barColor : 'bg-surface border border-theme/40'
+                        }`}
                     />
                   ))}
                 </div>
@@ -497,36 +494,32 @@ export const Auth = () => {
                 {/* Validation Criteria Checkpoints */}
                 <div className="grid grid-cols-2 gap-x-2 gap-y-1 pt-1 text-[11px]">
                   <div
-                    className={`flex items-center gap-1.5 transition-colors duration-150 ${
-                      pwdStrength.hasMinLength ? 'text-emerald-500 font-medium' : 'text-secondary'
-                    }`}
+                    className={`flex items-center gap-1.5 transition-colors duration-150 ${pwdStrength.hasMinLength ? 'text-emerald-500 font-medium' : 'text-secondary'
+                      }`}
                   >
                     <Check className={`w-3 h-3 ${pwdStrength.hasMinLength ? 'text-emerald-500 stroke-[3]' : 'opacity-30'}`} />
                     <span>8+ characters</span>
                   </div>
 
                   <div
-                    className={`flex items-center gap-1.5 transition-colors duration-150 ${
-                      pwdStrength.hasUppercase ? 'text-emerald-500 font-medium' : 'text-secondary'
-                    }`}
+                    className={`flex items-center gap-1.5 transition-colors duration-150 ${pwdStrength.hasUppercase ? 'text-emerald-500 font-medium' : 'text-secondary'
+                      }`}
                   >
                     <Check className={`w-3 h-3 ${pwdStrength.hasUppercase ? 'text-emerald-500 stroke-[3]' : 'opacity-30'}`} />
                     <span>Uppercase (A-Z)</span>
                   </div>
 
                   <div
-                    className={`flex items-center gap-1.5 transition-colors duration-150 ${
-                      pwdStrength.hasNumber ? 'text-emerald-500 font-medium' : 'text-secondary'
-                    }`}
+                    className={`flex items-center gap-1.5 transition-colors duration-150 ${pwdStrength.hasNumber ? 'text-emerald-500 font-medium' : 'text-secondary'
+                      }`}
                   >
                     <Check className={`w-3 h-3 ${pwdStrength.hasNumber ? 'text-emerald-500 stroke-[3]' : 'opacity-30'}`} />
                     <span>Number (0-9)</span>
                   </div>
 
                   <div
-                    className={`flex items-center gap-1.5 transition-colors duration-150 ${
-                      pwdStrength.hasSpecial ? 'text-emerald-500 font-medium' : 'text-secondary'
-                    }`}
+                    className={`flex items-center gap-1.5 transition-colors duration-150 ${pwdStrength.hasSpecial ? 'text-emerald-500 font-medium' : 'text-secondary'
+                      }`}
                   >
                     <Check className={`w-3 h-3 ${pwdStrength.hasSpecial ? 'text-emerald-500 stroke-[3]' : 'opacity-30'}`} />
                     <span>Special symbol (!@#)</span>
@@ -551,11 +544,7 @@ export const Auth = () => {
           </div>
         </form>
 
-        {/* Security & Privacy Micro-Footer */}
-        <div className="mt-6 pt-4 border-t border-theme/60 flex items-center justify-center gap-1.5 text-[11px] text-secondary font-medium text-center">
-          <ShieldCheck className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-          <span>Secured with JWT authentication & encryption</span>
-        </div>
+
       </div>
     </div>
   );
