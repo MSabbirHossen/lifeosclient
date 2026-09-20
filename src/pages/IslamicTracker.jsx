@@ -9,6 +9,7 @@ import { Badge } from '../components/Badge';
 import api from '../utils/api';
 import { DateInput } from '../components/DateInput';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
+import { notifyStreakUpdate } from '../utils/streakEvents';
 import { AdhkarCounter } from '../components/AdhkarCounter';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -127,6 +128,7 @@ export const IslamicTracker = ({ selectedDate }) => {
         salah: prayerName,
         status,
       });
+      notifyStreakUpdate();
       fetchData(false);
     } catch (err) {
       console.error('Failed to update salah log', err);
@@ -175,6 +177,7 @@ export const IslamicTracker = ({ selectedDate }) => {
 
     try {
       await api.post('/islamic/adhkar', payload);
+      notifyStreakUpdate();
       fetchData(false);
     } catch (err) {
       console.error('Failed to toggle adhkar', err);
@@ -373,6 +376,7 @@ export const IslamicTracker = ({ selectedDate }) => {
       setQuranSurah('');
       setQuranPages('');
       setQuranAyats('');
+      notifyStreakUpdate();
       fetchData(false);
     } catch (err) {
       console.error('Failed to log Quran', err);
