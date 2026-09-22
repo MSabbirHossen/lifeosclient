@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { StatCard } from '../components/StatCard';
@@ -51,6 +52,7 @@ const getHabitIncompleteDays = (habit, targetDateStr) => {
 };
 
 export const HabitsTracker = ({ selectedDate }) => {
+  const { t, isRTL } = useLanguage();
   const activeDate = selectedDate || getFormattedDate();
 
   const [habits, setHabits] = useState([]);
@@ -418,12 +420,12 @@ export const HabitsTracker = ({ selectedDate }) => {
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
       <PageHeader
-        category="Discipline & Consistency"
-        title="Habits Tracker"
-        description={`Daily discipline routines, streak tracking, and GitHub-style lifetime contribution activity for ${formatDisplayDate(activeDate)}`}
+        category={t('categories.habits', 'Discipline & Consistency')}
+        title={t('habits.title', 'Habits Tracker')}
+        description={`${t('habits.subtitle', 'Build sustainable daily routines, track completion streaks, and minimize habit decay.')} (${formatDisplayDate(activeDate)})`}
         action={
           <Button variant="gradient" size="md" icon={Plus} onClick={handleOpenCreateModal}>
-            New Habit
+            {t('habits.newHabit', 'New Habit')}
           </Button>
         }
       />
@@ -431,22 +433,22 @@ export const HabitsTracker = ({ selectedDate }) => {
       {/* Top Stat Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
         <StatCard
-          title="Completed Today"
+          title={t('habits.completedToday', 'Completed Today')}
           value={`${completedCount} / ${safeHabits.length}`}
           subtitle={`${Math.max(0, safeHabits.length - completedCount)} habits remaining`}
           icon={CheckSquare}
           color="emerald"
         />
         <StatCard
-          title="Active Habits"
+          title={t('habits.activeHabits', 'Active Habits')}
           value={safeHabits.length}
           subtitle="Daily discipline routines"
           icon={Layers}
           color="indigo"
         />
         <StatCard
-          title="Longest Streak"
-          value={`${longestStreak} Days`}
+          title={t('habits.bestStreak', 'Longest Streak')}
+          value={`${longestStreak} ${t('common.days', 'Days')}`}
           subtitle="Top consistency record"
           icon={Flame}
           color="rose"
@@ -456,7 +458,7 @@ export const HabitsTracker = ({ selectedDate }) => {
       {/* Daily Habits Checklist */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-primary tracking-tight">Today's Habits Checklist</h2>
+          <h2 className="text-lg font-bold text-primary tracking-tight">{t('habits.activeHabits', "Today's Habits Checklist")}</h2>
           <span className="text-xs font-semibold text-secondary">
             {completedCount} of {safeHabits.length} done
           </span>
@@ -490,17 +492,17 @@ export const HabitsTracker = ({ selectedDate }) => {
                     isDone ? 'border-emerald-500/40 bg-emerald-500/5 opacity-85' : ''
                   }`}
                   bottomAction={
-                    <div className="flex items-center gap-0.5 bg-surface/90 dark:bg-surface/90 backdrop-blur-xs rounded-xl p-0.5 border border-theme/40 shadow-xs">
+                    <div className="flex items-center gap-1.5">
                       <button
                         onClick={() => handleEditHabit(habit)}
-                        className="p-1 rounded-lg text-secondary hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-accent hover:border-accent/40 hover:bg-accent/10 shadow-xs transition-all cursor-pointer"
                         title="Edit Habit"
                       >
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
                         onClick={() => setDeleteId(habit._id)}
-                        className="p-1 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-xs transition-all cursor-pointer"
                         title="Delete Habit"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
@@ -521,7 +523,7 @@ export const HabitsTracker = ({ selectedDate }) => {
                       <CheckCircle2 className="w-5 h-5" />
                     </button>
 
-                    <div className="min-w-0 flex-1 space-y-1.5 pr-14">
+                    <div className="min-w-0 flex-1 space-y-1.5">
                       <div className="flex items-center justify-between gap-2 flex-wrap">
                         <h4
                           className={`text-sm font-bold truncate transition-colors duration-150 ${
@@ -756,7 +758,7 @@ export const HabitsTracker = ({ selectedDate }) => {
               </div>
 
               <div className="flex items-center gap-1.5 self-end sm:self-auto select-none">
-                <span className="text-[10px]">Less</span>
+                <span className="text-[10px]">−</span>
                 <div className="flex gap-1 items-center">
                   <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[2.5px] bg-subtle/70 border border-theme/60" title="0 habits" />
                   <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[2.5px] bg-emerald-200 dark:bg-emerald-950/70 border border-emerald-300 dark:border-emerald-800/60" title="1 habit" />
@@ -764,7 +766,7 @@ export const HabitsTracker = ({ selectedDate }) => {
                   <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[2.5px] bg-emerald-500 dark:bg-emerald-600 border border-emerald-500" title="3 habits" />
                   <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-[2.5px] bg-emerald-600 dark:bg-emerald-400 border border-emerald-600 dark:border-emerald-300 shadow-xs shadow-emerald-500/20" title="4+ habits" />
                 </div>
-                <span className="text-[10px]">More</span>
+                <span className="text-[10px]">+</span>
               </div>
             </div>
           </div>
@@ -775,8 +777,8 @@ export const HabitsTracker = ({ selectedDate }) => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingHabitId ? 'Edit Habit' : 'Build New Habit'}
-        subtitle={editingHabitId ? 'Update your daily discipline routine' : 'Define your daily discipline routine and trigger'}
+        title={editingHabitId ? `${t('common.edit')} ${t('habits.title')}` : t('habits.newHabit')}
+        subtitle={editingHabitId ? t('habits.subtitle') : t('habits.subtitle')}
       >
         <form onSubmit={handleCreateHabit} className="space-y-4">
           {createError && (
@@ -786,7 +788,7 @@ export const HabitsTracker = ({ selectedDate }) => {
           )}
           <div>
             <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Habit Name
+              {t('habits.habitName', 'Habit Name')}
             </label>
             <input
               type="text"
@@ -801,7 +803,7 @@ export const HabitsTracker = ({ selectedDate }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Category
+                {t('common.category')}
               </label>
               <select
                 value={category}
@@ -818,22 +820,22 @@ export const HabitsTracker = ({ selectedDate }) => {
 
             <div>
               <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Target Frequency
+                {t('habits.frequency')}
               </label>
               <select
                 value={targetFrequency}
                 onChange={(e) => setTargetFrequency(e.target.value)}
                 className="select-base"
               >
-                <option value="daily">Daily</option>
-                <option value="weekly">Weekly</option>
+                <option value="daily">{t('habits.daily')}</option>
+                <option value="weekly">{t('habits.weekly')}</option>
               </select>
             </div>
           </div>
 
           <div>
             <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Description (Optional)
+              {t('common.notes')} ({t('common.optional')})
             </label>
             <input
               type="text"
@@ -846,10 +848,10 @@ export const HabitsTracker = ({ selectedDate }) => {
 
           <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" variant="primary" loading={saving}>
-              {editingHabitId ? 'Update Habit' : 'Create Habit'}
+              {editingHabitId ? t('common.update') : t('common.create')}
             </Button>
           </div>
         </form>
@@ -859,19 +861,19 @@ export const HabitsTracker = ({ selectedDate }) => {
       <Modal
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
-        title="Confirm Deletion"
-        subtitle="This action cannot be undone."
+        title={t('common.confirmDeleteTitle')}
+        subtitle={t('common.confirmDeleteDesc')}
       >
         <div className="space-y-4">
           <p className="text-sm text-secondary">
-            Are you sure you want to delete this habit and reset its streak history?
+            {t('common.confirmDeleteDesc')}
           </p>
           <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
             <Button variant="secondary" onClick={() => setDeleteId(null)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button variant="danger" onClick={handleDeleteHabit}>
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         </div>
