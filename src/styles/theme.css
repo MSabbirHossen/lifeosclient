@@ -134,22 +134,15 @@ h1, h2, h3, h4, h5, h6 {
   background: var(--color-text-muted);
 }
 
-/* Glassmorphism & Surface Utilities */
-.glass-panel {
+/* Solid Surface & Header Utilities (No Glassmorphism) */
+.solid-panel {
   background-color: var(--color-surface);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
   border: 1px solid var(--color-border);
 }
 
-.glass-header {
-  background-color: rgba(255, 255, 255, 0.85);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
+.solid-header {
+  background-color: var(--color-surface);
   border-bottom: 1px solid var(--color-border);
-}
-[data-theme="dark"] .glass-header {
-  background-color: rgba(24, 24, 27, 0.8);
 }
 
 .bg-surface {
@@ -162,6 +155,10 @@ h1, h2, h3, h4, h5, h6 {
 
 .border-theme {
   border-color: var(--color-border);
+}
+
+.border-theme-strong {
+  border-color: var(--color-border-hover);
 }
 
 .border-subtle {
@@ -230,10 +227,18 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* Explicit icon-offset classes for inputs with left/right icons */
-.input-with-icon-left {
+.input-with-icon-left,
+.input-base.input-with-icon-left,
+.input-base.pl-8,
+.input-base.pl-10,
+.input-base.pl-12 {
   padding-left: 2.75rem !important;
 }
-.input-with-icon-right {
+.input-with-icon-right,
+.input-base.input-with-icon-right,
+.input-base.pr-8,
+.input-base.pr-10,
+.input-base.pr-12 {
   padding-right: 2.75rem !important;
 }
 
@@ -247,6 +252,21 @@ input:-webkit-autofill:active {
   box-shadow: 0 0 0 1000px var(--color-surface) inset !important;
   transition: background-color 5000s ease-in-out 0s;
   caret-color: var(--color-text-primary);
+}
+
+/* Native date picker transparent overlay to prevent double calendar icons */
+input[type="date"]::-webkit-calendar-picker-indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  width: auto;
+  height: auto;
+  color: transparent;
+  background: transparent;
+  cursor: pointer;
+  z-index: 1;
 }
 
 /* Google Sign-In wrapper styling */
@@ -347,4 +367,24 @@ html, body {
   max-width: 100vw;
   overflow-x: hidden;
 }
+
+/* Multilingual Font Families */
+body.font-bengali, [lang="bn"] {
+  font-family: 'Hind Siliguri', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+body.font-arabic, [lang="ar"], [dir="rtl"] {
+  font-family: 'Cairo', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif !important;
+}
+
+/* RTL Layout Enhancements */
+[dir="rtl"] {
+  text-align: right;
+}
+
+[dir="rtl"] .ltr-only {
+  direction: ltr;
+  text-align: left;
+}
+
 
