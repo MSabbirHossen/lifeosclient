@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { Modal } from './Modal';
 import { Button } from './Button';
 import { Badge } from './Badge';
+import { useLanguage } from '../context/LanguageContext';
 import {
   Calculator,
   Flame,
@@ -31,14 +32,17 @@ export const CalorieCalculatorModal = ({
   onClose,
   onApplied,
   onOpenDocs,
-  currentWeight = 70,
+  currentWeight,
 }) => {
+  const { t } = useLanguage();
   const [savedSettings] = useState(() => getSavedMacroSettings());
 
   const [gender, setGender] = useState(savedSettings?.bodyProfile?.gender || 'male');
-  const [weightKg, setWeightKg] = useState(currentWeight || savedSettings?.bodyProfile?.weightKg || 70);
-  const [heightCm, setHeightCm] = useState(savedSettings?.bodyProfile?.heightCm || 175);
-  const [age, setAge] = useState(savedSettings?.bodyProfile?.age || 26);
+  const [weightKg, setWeightKg] = useState(
+    savedSettings?.bodyProfile?.weightKg ?? (currentWeight || '')
+  );
+  const [heightCm, setHeightCm] = useState(savedSettings?.bodyProfile?.heightCm ?? '');
+  const [age, setAge] = useState(savedSettings?.bodyProfile?.age ?? '');
   const [activityLevel, setActivityLevel] = useState(savedSettings?.bodyProfile?.activityLevel || 'moderate');
   const [goal, setGoal] = useState(savedSettings?.bodyProfile?.goal || 'maintain');
   const [macroPreset, setMacroPreset] = useState(savedSettings?.presetId || 'balanced');
@@ -47,7 +51,7 @@ export const CalorieCalculatorModal = ({
 
   // Sync weight if parent passes a fresh currentWeight
   useEffect(() => {
-    if (currentWeight && currentWeight > 0) {
+    if (currentWeight && currentWeight > 0 && !weightKg) {
       setWeightKg(currentWeight);
     }
   }, [currentWeight]);
@@ -79,9 +83,9 @@ export const CalorieCalculatorModal = ({
         presetId: macroPreset,
         bodyProfile: {
           gender,
-          weightKg: Number(weightKg) || 70,
-          heightCm: Number(heightCm) || 175,
-          age: Number(age) || 26,
+          weightKg: weightKg ? Number(weightKg) : 70,
+          heightCm: heightCm ? Number(heightCm) : 175,
+          age: age ? Number(age) : 25,
           activityLevel,
           goal,
         },
@@ -107,7 +111,14 @@ export const CalorieCalculatorModal = ({
       // Fallback: still save locally
       saveMacroSettings({
         presetId: macroPreset,
-        bodyProfile: { gender, weightKg, heightCm, age, activityLevel, goal },
+        bodyProfile: {
+          gender,
+          weightKg: weightKg ? Number(weightKg) : 70,
+          heightCm: heightCm ? Number(heightCm) : 175,
+          age: age ? Number(age) : 25,
+          activityLevel,
+          goal,
+        },
       });
       if (onApplied) {
         onApplied({ budgetKcal: budgetResult.budgetKcal, macroTargets, bmr, tdee: budgetResult.tdee });
@@ -122,8 +133,8 @@ export const CalorieCalculatorModal = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title="Body Calorie & Macro Budget Calculator"
-      subtitle="Clinical Mifflin-St Jeor TDEE & Macronutrient Allocation Engine"
+      title={t('calculatorModal.title')}
+      subtitle={t('calculatorModal.subtitle')}
       maxWidth="max-w-2xl"
     >
       <div className="space-y-5 text-xs">
@@ -131,7 +142,7 @@ export const CalorieCalculatorModal = ({
         {/* Step 1: Body Metrics Grid */}
         <div className="p-3.5 bg-subtle rounded-2xl border border-theme space-y-3">
           <span className="text-xs font-bold text-primary flex items-center gap-1.5">
-            <Scale className="w-4 h-4 text-indigo-500" /> 1. Enter Your Body Metrics
+            <Scale className="w-4 h-4 text-indigo-500" /> 1. {t('fitness.logMeasurements')}
           </span>
 
           {/* Gender Selector */}
@@ -145,7 +156,7 @@ export const CalorieCalculatorModal = ({
                   : 'bg-surface hover:bg-subtle text-secondary border-theme'
               }`}
             >
-              Male (♂)
+              {t('calculatorModal.male')} (♂)
             </button>
             <button
               type="button"
@@ -156,43 +167,46 @@ export const CalorieCalculatorModal = ({
                   : 'bg-surface hover:bg-subtle text-secondary border-theme'
               }`}
             >
-              Female (♀)
+              {t('calculatorModal.female')} (♀)
             </button>
           </div>
 
           {/* Age, Height, Weight inputs */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             <div>
-              <label className="text-[11px] font-semibold text-secondary mb-1 block">Age (years)</label>
+              <label className="text-[11px] font-semibold text-secondary mb-1 block text-center">{t('calculatorModal.age')}</label>
               <input
                 type="number"
-                min="12"
-                max="100"
+                min="1"
+                max="120"
+                placeholder="e.g. 25"
                 value={age}
-                onChange={(e) => setAge(Math.max(12, Number(e.target.value) || 25))}
+                onChange={(e) => setAge(e.target.value)}
                 className="input-base w-full py-1.5 font-bold text-primary text-center"
               />
             </div>
             <div>
-              <label className="text-[11px] font-semibold text-secondary mb-1 block">Height (cm)</label>
+              <label className="text-[11px] font-semibold text-secondary mb-1 block text-center">{t('calculatorModal.height')}</label>
               <input
                 type="number"
-                min="100"
-                max="250"
+                min="1"
+                max="260"
+                placeholder="e.g. 175"
                 value={heightCm}
-                onChange={(e) => setHeightCm(Math.max(100, Number(e.target.value) || 175))}
+                onChange={(e) => setHeightCm(e.target.value)}
                 className="input-base w-full py-1.5 font-bold text-primary text-center"
               />
             </div>
             <div>
-              <label className="text-[11px] font-semibold text-secondary mb-1 block">Weight (kg)</label>
+              <label className="text-[11px] font-semibold text-secondary mb-1 block text-center">{t('calculatorModal.weight')}</label>
               <input
                 type="number"
-                step="0.5"
-                min="30"
-                max="300"
+                step="0.1"
+                min="1"
+                max="400"
+                placeholder="e.g. 70"
                 value={weightKg}
-                onChange={(e) => setWeightKg(Math.max(30, Number(e.target.value) || 70))}
+                onChange={(e) => setWeightKg(e.target.value)}
                 className="input-base w-full py-1.5 font-bold text-primary text-center"
               />
             </div>
@@ -204,7 +218,7 @@ export const CalorieCalculatorModal = ({
           {/* Activity Level */}
           <div className="p-3.5 bg-subtle rounded-2xl border border-theme space-y-2">
             <span className="text-xs font-bold text-primary flex items-center gap-1.5">
-              <Activity className="w-4 h-4 text-emerald-500" /> 2. Daily Activity Level
+              <Activity className="w-4 h-4 text-emerald-500" /> 2. {t('calculatorModal.activityLevel')}
             </span>
             <div className="space-y-1.5">
               {ACTIVITY_MULTIPLIERS.map((act) => (
@@ -233,7 +247,7 @@ export const CalorieCalculatorModal = ({
           {/* Goal Setting */}
           <div className="p-3.5 bg-subtle rounded-2xl border border-theme space-y-2">
             <span className="text-xs font-bold text-primary flex items-center gap-1.5">
-              <TrendingUp className="w-4 h-4 text-amber-500" /> 3. Physiological Goal
+              <TrendingUp className="w-4 h-4 text-amber-500" /> 3. {t('calculatorModal.goal')}
             </span>
             <div className="space-y-1.5">
               {GOAL_OFFSETS.map((g) => (
@@ -264,7 +278,7 @@ export const CalorieCalculatorModal = ({
         <div className="p-3.5 bg-subtle rounded-2xl border border-theme space-y-2.5">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-primary flex items-center gap-1.5">
-              <Sparkles className="w-4 h-4 text-purple-500" /> 4. Macronutrient Distribution
+              <Sparkles className="w-4 h-4 text-purple-500" /> 4. {t('calculatorModal.presets')}
             </span>
             {onOpenDocs && (
               <button
@@ -272,7 +286,7 @@ export const CalorieCalculatorModal = ({
                 onClick={onOpenDocs}
                 className="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline flex items-center gap-1 font-semibold cursor-pointer"
               >
-                <BookOpen className="w-3 h-3" /> Read Science Documentation
+                <BookOpen className="w-3 h-3" /> {t('macroCard.scienceDocs')}
               </button>
             )}
           </div>
@@ -307,15 +321,15 @@ export const CalorieCalculatorModal = ({
           <div className="flex items-center justify-between flex-wrap gap-2">
             <div>
               <span className="text-[10px] font-bold uppercase tracking-wider text-secondary">
-                Calculated Daily Calorie Budget
+                {t('calculatorModal.dailyBudget')}
               </span>
               <div className="text-3xl font-black text-primary tracking-tight mt-0.5">
                 {budgetResult.budgetKcal} <span className="text-sm font-semibold text-secondary">kcal / day</span>
               </div>
             </div>
             <div className="text-right text-[11px] text-secondary space-y-0.5">
-              <div>BMR (At Rest): <strong className="text-primary">{bmr} kcal</strong></div>
-              <div>TDEE (Burned): <strong className="text-primary">{budgetResult.tdee} kcal</strong></div>
+              <div>{t('calculatorModal.bmr')}: <strong className="text-primary">{bmr} kcal</strong></div>
+              <div>{t('calculatorModal.tdee')}: <strong className="text-primary">{budgetResult.tdee} kcal</strong></div>
             </div>
           </div>
 
@@ -324,7 +338,7 @@ export const CalorieCalculatorModal = ({
             {/* Protein Target */}
             <div className="p-2.5 bg-surface/80 rounded-xl border border-indigo-500/20 text-center">
               <span className="text-[10px] font-bold text-indigo-600 dark:text-indigo-400 uppercase tracking-wider block">
-                Protein ({macroTargets.percentages.protein}%)
+                {t('calories.protein')} ({macroTargets.percentages.protein}%)
               </span>
               <span className="text-lg font-black text-primary block mt-0.5">
                 {macroTargets.targetGrams.protein}g
@@ -335,7 +349,7 @@ export const CalorieCalculatorModal = ({
             {/* Carbs Target */}
             <div className="p-2.5 bg-surface/80 rounded-xl border border-emerald-500/20 text-center">
               <span className="text-[10px] font-bold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider block">
-                Carbs ({macroTargets.percentages.carbs}%)
+                {t('calories.carbs')} ({macroTargets.percentages.carbs}%)
               </span>
               <span className="text-lg font-black text-primary block mt-0.5">
                 {macroTargets.targetGrams.carbs}g
@@ -346,7 +360,7 @@ export const CalorieCalculatorModal = ({
             {/* Fat Target */}
             <div className="p-2.5 bg-surface/80 rounded-xl border border-amber-500/20 text-center">
               <span className="text-[10px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">
-                Fat ({macroTargets.percentages.fat}%)
+                {t('calories.fat')} ({macroTargets.percentages.fat}%)
               </span>
               <span className="text-lg font-black text-primary block mt-0.5">
                 {macroTargets.targetGrams.fat}g
@@ -359,7 +373,7 @@ export const CalorieCalculatorModal = ({
         {/* Footer Actions */}
         <div className="flex items-center justify-between pt-1">
           <Button variant="ghost" size="sm" onClick={onClose}>
-            Cancel
+            {t('common.cancel')}
           </Button>
 
           <Button
@@ -370,7 +384,7 @@ export const CalorieCalculatorModal = ({
             onClick={handleApply}
             className="font-bold px-6"
           >
-            {appliedSuccess ? 'Applied to Profile!' : 'Apply to My Calorie Budget'}
+            {appliedSuccess ? t('common.save') : t('calculatorModal.applyTargets')}
           </Button>
         </div>
 

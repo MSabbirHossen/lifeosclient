@@ -13,6 +13,7 @@ import {
   ArrowRight,
 } from 'lucide-react';
 import { computeMacroProgress } from '../utils/calorieCalculator';
+import { useLanguage } from '../context/LanguageContext';
 
 export const MacroBreakdownCard = ({
   summary = {},
@@ -20,6 +21,7 @@ export const MacroBreakdownCard = ({
   onOpenCalculator,
   onOpenDocs,
 }) => {
+  const { t } = useLanguage();
   const progress = computeMacroProgress({
     caloriesConsumed: summary.caloriesConsumed || 0,
     calorieBudget: summary.dailyCalorieGoal || 2000,
@@ -32,10 +34,10 @@ export const MacroBreakdownCard = ({
   return (
     <Card
       hover
-      title="Macronutrient Budget & Intake Breakdown"
-      subtitle="Real-time tracking of macros taken vs. yet to take"
+      title={t('macroCard.title')}
+      subtitle={t('macroCard.subtitle')}
       icon={PieChartIcon}
-      badge={
+      action={
         <div className="flex items-center gap-1.5 flex-wrap">
           <Button
             variant="ghost"
@@ -45,7 +47,7 @@ export const MacroBreakdownCard = ({
             className="text-secondary hover:text-primary cursor-pointer text-[11px]"
             title="Read Official Macro & Calorie Science Documentation"
           >
-            Science Docs
+            {t('macroCard.scienceDocs')}
           </Button>
           <Button
             variant="outline"
@@ -54,7 +56,7 @@ export const MacroBreakdownCard = ({
             onClick={onOpenCalculator}
             className="font-bold text-[11px] cursor-pointer"
           >
-            Recalculate
+            {t('macroCard.recalculate')}
           </Button>
         </div>
       }
@@ -65,31 +67,42 @@ export const MacroBreakdownCard = ({
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-4">
           
           {/* 1. PROTEIN */}
-          <div className="p-3.5 rounded-2xl bg-indigo-500/10 border border-indigo-500/20 flex flex-col justify-between space-y-2.5">
+          <div className="p-4 rounded-2xl bg-indigo-500/5 dark:bg-indigo-950/20 border border-indigo-500/20 dark:border-indigo-500/30 hover:border-indigo-500/45 hover:shadow-lg hover:shadow-indigo-500/5 transition-all duration-300 flex flex-col justify-between space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider flex items-center gap-1">
-                Protein <span className="text-[10px] text-muted font-normal">(4 kcal/g)</span>
-              </span>
-              <Badge variant="purple" size="xs">
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-indigo-500 shrink-0 shadow-xs shadow-indigo-500/50" />
+                <span className="text-xs font-bold text-indigo-700 dark:text-indigo-300 uppercase tracking-wider truncate">
+                  Protein
+                </span>
+                <span className="text-[10px] text-secondary font-medium shrink-0">
+                  (4 kcal/g)
+                </span>
+              </div>
+              <Badge variant="indigo" size="xs">
                 {progress.percentages.protein}% target
               </Badge>
             </div>
 
             <div>
               <div className="flex items-baseline justify-between">
-                <span className="text-xl sm:text-2xl font-black text-primary">
-                  {progress.protein.taken} <span className="text-xs font-semibold text-secondary">/ {progress.protein.target}g</span>
-                </span>
-                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl sm:text-3xl font-black text-primary tracking-tight">
+                    {progress.protein.taken}
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold text-secondary">
+                    / {progress.protein.target}g
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 px-2 py-0.5 rounded-lg border border-indigo-500/20">
                   {progress.protein.totalPercent}%
                 </span>
               </div>
 
               {/* Progress bar */}
-              <div className="w-full h-2 bg-subtle rounded-full overflow-hidden border border-theme mt-1.5 p-0.5">
+              <div className="w-full h-2.5 bg-subtle/80 dark:bg-white/5 rounded-full overflow-hidden border border-theme/60 mt-2 p-0.5">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
-                    progress.protein.over > 0 ? 'bg-indigo-400' : 'bg-gradient-to-r from-indigo-500 to-indigo-600'
+                    progress.protein.over > 0 ? 'bg-indigo-400' : 'bg-gradient-to-r from-indigo-500 to-violet-500 shadow-xs shadow-indigo-500/40'
                   }`}
                   style={{ width: `${progress.protein.percent}%` }}
                 />
@@ -97,7 +110,7 @@ export const MacroBreakdownCard = ({
             </div>
 
             {/* Yet to take status */}
-            <div className="pt-2 border-t border-indigo-500/20 flex items-center justify-between text-[11px]">
+            <div className="pt-2.5 border-t border-indigo-500/15 flex items-center justify-between text-[11px] sm:text-xs">
               <span className="text-secondary font-medium">Yet to take:</span>
               {progress.protein.remaining > 0 ? (
                 <span className="font-extrabold text-indigo-600 dark:text-indigo-400">
@@ -105,7 +118,7 @@ export const MacroBreakdownCard = ({
                 </span>
               ) : (
                 <span className="font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Target met
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Target met
                   {progress.protein.over > 0 && ` (+${progress.protein.over}g)`}
                 </span>
               )}
@@ -113,11 +126,17 @@ export const MacroBreakdownCard = ({
           </div>
 
           {/* 2. CARBOHYDRATES */}
-          <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col justify-between space-y-2.5">
+          <div className="p-4 rounded-2xl bg-emerald-500/5 dark:bg-emerald-950/20 border border-emerald-500/20 dark:border-emerald-500/30 hover:border-emerald-500/45 hover:shadow-lg hover:shadow-emerald-500/5 transition-all duration-300 flex flex-col justify-between space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider flex items-center gap-1">
-                Carbs <span className="text-[10px] text-muted font-normal">(4 kcal/g)</span>
-              </span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-emerald-500 shrink-0 shadow-xs shadow-emerald-500/50" />
+                <span className="text-xs font-bold text-emerald-700 dark:text-emerald-300 uppercase tracking-wider truncate">
+                  Carbs
+                </span>
+                <span className="text-[10px] text-secondary font-medium shrink-0">
+                  (4 kcal/g)
+                </span>
+              </div>
               <Badge variant="emerald" size="xs">
                 {progress.percentages.carbs}% target
               </Badge>
@@ -125,19 +144,24 @@ export const MacroBreakdownCard = ({
 
             <div>
               <div className="flex items-baseline justify-between">
-                <span className="text-xl sm:text-2xl font-black text-primary">
-                  {progress.carbs.taken} <span className="text-xs font-semibold text-secondary">/ {progress.carbs.target}g</span>
-                </span>
-                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl sm:text-3xl font-black text-primary tracking-tight">
+                    {progress.carbs.taken}
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold text-secondary">
+                    / {progress.carbs.target}g
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-emerald-600 dark:text-emerald-400 bg-emerald-500/10 px-2 py-0.5 rounded-lg border border-emerald-500/20">
                   {progress.carbs.totalPercent}%
                 </span>
               </div>
 
               {/* Progress bar */}
-              <div className="w-full h-2 bg-subtle rounded-full overflow-hidden border border-theme mt-1.5 p-0.5">
+              <div className="w-full h-2.5 bg-subtle/80 dark:bg-white/5 rounded-full overflow-hidden border border-theme/60 mt-2 p-0.5">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
-                    progress.carbs.over > 0 ? 'bg-amber-500' : 'bg-gradient-to-r from-emerald-500 to-teal-500'
+                    progress.carbs.over > 0 ? 'bg-amber-500' : 'bg-gradient-to-r from-emerald-500 to-teal-400 shadow-xs shadow-emerald-500/40'
                   }`}
                   style={{ width: `${progress.carbs.percent}%` }}
                 />
@@ -145,7 +169,7 @@ export const MacroBreakdownCard = ({
             </div>
 
             {/* Yet to take status */}
-            <div className="pt-2 border-t border-emerald-500/20 flex items-center justify-between text-[11px]">
+            <div className="pt-2.5 border-t border-emerald-500/15 flex items-center justify-between text-[11px] sm:text-xs">
               <span className="text-secondary font-medium">Yet to take:</span>
               {progress.carbs.remaining > 0 ? (
                 <span className="font-extrabold text-emerald-600 dark:text-emerald-400">
@@ -153,7 +177,7 @@ export const MacroBreakdownCard = ({
                 </span>
               ) : (
                 <span className="font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Target met
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Target met
                   {progress.carbs.over > 0 && ` (+${progress.carbs.over}g)`}
                 </span>
               )}
@@ -161,11 +185,17 @@ export const MacroBreakdownCard = ({
           </div>
 
           {/* 3. DIETARY FATS */}
-          <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex flex-col justify-between space-y-2.5">
+          <div className="p-4 rounded-2xl bg-amber-500/5 dark:bg-amber-950/20 border border-amber-500/20 dark:border-amber-500/30 hover:border-amber-500/45 hover:shadow-lg hover:shadow-amber-500/5 transition-all duration-300 flex flex-col justify-between space-y-3">
             <div className="flex items-center justify-between">
-              <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider flex items-center gap-1">
-                Fats <span className="text-[10px] text-muted font-normal">(9 kcal/g)</span>
-              </span>
+              <div className="flex items-center gap-1.5 min-w-0">
+                <span className="w-2 h-2 rounded-full bg-amber-500 shrink-0 shadow-xs shadow-amber-500/50" />
+                <span className="text-xs font-bold text-amber-700 dark:text-amber-300 uppercase tracking-wider truncate">
+                  Fats
+                </span>
+                <span className="text-[10px] text-secondary font-medium shrink-0">
+                  (9 kcal/g)
+                </span>
+              </div>
               <Badge variant="amber" size="xs">
                 {progress.percentages.fat}% target
               </Badge>
@@ -173,19 +203,24 @@ export const MacroBreakdownCard = ({
 
             <div>
               <div className="flex items-baseline justify-between">
-                <span className="text-xl sm:text-2xl font-black text-primary">
-                  {progress.fat.taken} <span className="text-xs font-semibold text-secondary">/ {progress.fat.target}g</span>
-                </span>
-                <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                <div className="flex items-baseline gap-1">
+                  <span className="text-2xl sm:text-3xl font-black text-primary tracking-tight">
+                    {progress.fat.taken}
+                  </span>
+                  <span className="text-xs sm:text-sm font-semibold text-secondary">
+                    / {progress.fat.target}g
+                  </span>
+                </div>
+                <span className="text-xs font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-0.5 rounded-lg border border-amber-500/20">
                   {progress.fat.totalPercent}%
                 </span>
               </div>
 
               {/* Progress bar */}
-              <div className="w-full h-2 bg-subtle rounded-full overflow-hidden border border-theme mt-1.5 p-0.5">
+              <div className="w-full h-2.5 bg-subtle/80 dark:bg-white/5 rounded-full overflow-hidden border border-theme/60 mt-2 p-0.5">
                 <div
                   className={`h-full rounded-full transition-all duration-500 ${
-                    progress.fat.over > 0 ? 'bg-rose-500' : 'bg-gradient-to-r from-amber-500 to-orange-500'
+                    progress.fat.over > 0 ? 'bg-rose-500' : 'bg-gradient-to-r from-amber-500 to-orange-400 shadow-xs shadow-amber-500/40'
                   }`}
                   style={{ width: `${progress.fat.percent}%` }}
                 />
@@ -193,7 +228,7 @@ export const MacroBreakdownCard = ({
             </div>
 
             {/* Yet to take status */}
-            <div className="pt-2 border-t border-amber-500/20 flex items-center justify-between text-[11px]">
+            <div className="pt-2.5 border-t border-amber-500/15 flex items-center justify-between text-[11px] sm:text-xs">
               <span className="text-secondary font-medium">Yet to take:</span>
               {progress.fat.remaining > 0 ? (
                 <span className="font-extrabold text-amber-600 dark:text-amber-400">
@@ -201,7 +236,7 @@ export const MacroBreakdownCard = ({
                 </span>
               ) : (
                 <span className="font-extrabold text-emerald-600 dark:text-emerald-400 flex items-center gap-1">
-                  <CheckCircle2 className="w-3 h-3" /> Target met
+                  <CheckCircle2 className="w-3.5 h-3.5" /> Target met
                   {progress.fat.over > 0 && ` (+${progress.fat.over}g)`}
                 </span>
               )}
@@ -211,14 +246,14 @@ export const MacroBreakdownCard = ({
         </div>
 
         {/* Energy Balance Summary Strip & Documentation Quick Link */}
-        <div className="p-3 bg-subtle rounded-xl border border-theme flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+        <div className="p-3.5 bg-subtle/90 dark:bg-subtle/50 rounded-2xl border border-theme flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs shadow-xs">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-amber-500/10 text-amber-600 dark:text-amber-400 flex items-center justify-center shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-amber-500/15 border border-amber-500/25 text-amber-500 flex items-center justify-center shrink-0 shadow-xs">
               <Flame className="w-4 h-4" />
             </div>
             <div>
               <div className="font-bold text-primary">
-                Daily Energy Balance: <span className="text-indigo-600 dark:text-indigo-400">{progress.calories.taken} kcal taken</span> / <span className="text-secondary">{progress.calories.target} kcal budget</span>
+                Daily Energy Balance: <span className="text-indigo-600 dark:text-indigo-400 font-extrabold">{progress.calories.taken} kcal taken</span> <span className="text-secondary font-normal">/ {progress.calories.target} kcal budget</span>
               </div>
               <span className="text-[11px] text-secondary">
                 {progress.calories.remaining > 0
@@ -231,10 +266,10 @@ export const MacroBreakdownCard = ({
           <button
             type="button"
             onClick={onOpenDocs}
-            className="text-[11px] text-secondary hover:text-primary flex items-center gap-1 cursor-pointer shrink-0 font-medium group"
+            className="text-xs text-secondary hover:text-accent flex items-center gap-1.5 cursor-pointer shrink-0 font-semibold group transition-colors px-2 py-1 rounded-lg hover:bg-accent/10"
           >
             <span>Documentation & References</span>
-            <ArrowRight className="w-3 h-3 group-hover:translate-x-0.5 transition-transform" />
+            <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-0.5 transition-transform" />
           </button>
         </div>
 

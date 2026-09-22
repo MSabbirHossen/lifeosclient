@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { StatCard } from '../components/StatCard';
@@ -24,6 +25,14 @@ import {
   Trophy,
   Calculator,
   BookOpen,
+  AlertCircle,
+  Info,
+  CheckCircle2,
+  ArrowRight,
+  X,
+  Zap,
+  Dumbbell,
+  Scale,
 } from 'lucide-react';
 import { FastingTimer } from '../components/FastingTimer';
 import { getFastingStats, subscribeFastingUpdates } from '../utils/fastingService';
@@ -37,10 +46,93 @@ import { MacroBreakdownCard } from '../components/MacroBreakdownCard';
 import { ResponsiveContainer, PieChart, Pie, Cell, Tooltip, Legend } from 'recharts';
 
 const MEAL_TYPES = ['Breakfast', 'Lunch', 'Dinner', 'Snack'];
+const MEAL_TYPE_CONFIG = {
+  Breakfast: { label: 'Breakfast', icon: '🌅' },
+  Lunch: { label: 'Lunch', icon: '☀️' },
+  Dinner: { label: 'Dinner', icon: '🌙' },
+  Snack: { label: 'Snack', icon: '🍎' },
+};
+
+const POPULAR_STAPLES = [
+  {
+    name: 'Chicken Breast',
+    category: 'Protein',
+    unitType: 'gram',
+    unit: 'gram',
+    caloriesPer100g: 165,
+    proteinPer100g: 31,
+    carbsPer100g: 0,
+    fatPer100g: 3.6,
+    source: 'USDA Verified',
+    icon: '🍗',
+  },
+  {
+    name: 'Boiled Egg',
+    category: 'Protein',
+    unitType: 'piece',
+    unit: 'piece',
+    caloriesPerPiece: 72,
+    proteinPerPiece: 6.3,
+    carbsPerPiece: 0.4,
+    fatPerPiece: 4.8,
+    source: 'USDA Verified',
+    icon: '🥚',
+  },
+  {
+    name: 'Brown Rice',
+    category: 'Grains',
+    unitType: 'gram',
+    unit: 'gram',
+    caloriesPer100g: 112,
+    proteinPer100g: 2.6,
+    carbsPer100g: 24,
+    fatPer100g: 0.9,
+    source: 'USDA Verified',
+    icon: '🍚',
+  },
+  {
+    name: 'Banana',
+    category: 'Fruits',
+    unitType: 'piece',
+    unit: 'piece',
+    caloriesPerPiece: 105,
+    proteinPerPiece: 1.3,
+    carbsPerPiece: 27,
+    fatPerPiece: 0.3,
+    source: 'USDA Verified',
+    icon: '🍌',
+  },
+  {
+    name: 'Oatmeal',
+    category: 'Grains',
+    unitType: 'gram',
+    unit: 'gram',
+    caloriesPer100g: 389,
+    proteinPer100g: 16.9,
+    carbsPer100g: 66.3,
+    fatPer100g: 6.9,
+    source: 'USDA Verified',
+    icon: '🥣',
+  },
+  {
+    name: 'Avocado',
+    category: 'Healthy Fats',
+    unitType: 'piece',
+    unit: 'piece',
+    caloriesPerPiece: 240,
+    proteinPerPiece: 3,
+    carbsPerPiece: 12,
+    fatPerPiece: 22,
+    source: 'USDA Verified',
+    icon: '🥑',
+  },
+];
+
 const UNITS = ['piece', 'gram', 'ml', 'cup', 'bowl', 'tablespoon', 'teaspoon'];
 const MACRO_COLORS = ['#6366F1', '#10B981', '#F59E0B']; // Protein (Indigo), Carbs (Emerald), Fat (Amber)
 
 export const CalorieTracker = ({ selectedDate }) => {
+  const { t, isRTL } = useLanguage();
   const activeDate = selectedDate || getFormattedDate();
 
   const [meals, setMeals] = useState([]);
@@ -59,6 +151,7 @@ export const CalorieTracker = ({ selectedDate }) => {
   const [showCalculatorModal, setShowCalculatorModal] = useState(false);
   const [showDocsModal, setShowDocsModal] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [frequentFoods, setFrequentFoods] = useState(POPULAR_STAPLES);
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -85,6 +178,17 @@ export const CalorieTracker = ({ selectedDate }) => {
   const [searchingSuggestions, setSearchingSuggestions] = useState(false);
   const [saving, setSaving] = useState(false);
 
+  const fetchFrequentFoods = useCallback(async () => {
+    try {
+      const res = await api.get('/food-items/frequent');
+      if (Array.isArray(res.data) && res.data.length > 0) {
+        setFrequentFoods(res.data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch frequent foods', err);
+    }
+  }, []);
+
   const fetchData = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
     try {
@@ -94,16 +198,18 @@ export const CalorieTracker = ({ selectedDate }) => {
       ]);
       setMeals(mealsRes.data || []);
       setSummary(summaryRes.data || {});
+      fetchFrequentFoods();
     } catch (err) {
       console.error('Failed to fetch calorie tracker data', err);
     } finally {
       if (showLoading) setLoading(false);
     }
-  }, [activeDate]);
+  }, [activeDate, fetchFrequentFoods]);
 
   useEffect(() => {
     fetchData(true);
-  }, [fetchData]);
+    fetchFrequentFoods();
+  }, [fetchData, fetchFrequentFoods]);
 
   // Subscribe to live Intermittent Fasting (IF) count and streak updates
   useEffect(() => {
@@ -158,17 +264,61 @@ export const CalorieTracker = ({ selectedDate }) => {
   const handleSelectFoodItem = (item) => {
     setSelectedFoodItem(item);
     setItemName(item.name);
-    const itemUnit = item.unitType || 'piece';
+    const itemUnit = item.unit || item.unitType || 'piece';
     setUnit(itemUnit);
 
     // Provide empty quantity so placeholder (e.g. 100 or e.g. 1) guides user
     setQuantity('');
 
-    setCalPerUnit(item.caloriesPerUnit ?? 100);
-    setProteinPerUnit(item.proteinPerUnit ?? 0);
-    setCarbsPerUnit(item.carbsPerUnit ?? 0);
-    setFatPerUnit(item.fatPerUnit ?? 0);
+    const isGramOrMl = itemUnit === 'gram' || itemUnit === 'g' || itemUnit === 'ml';
+    const cal = item.caloriesPerUnit !== undefined
+      ? Number(item.caloriesPerUnit)
+      : isGramOrMl
+        ? Number(item.caloriesPer100g ?? 100)
+        : Number(item.caloriesPerPiece ?? 100);
+
+    const p = item.proteinPerUnit !== undefined
+      ? Number(item.proteinPerUnit)
+      : isGramOrMl
+        ? Number(item.proteinPer100g ?? 0)
+        : Number(item.proteinPerPiece ?? 0);
+
+    const c = item.carbsPerUnit !== undefined
+      ? Number(item.carbsPerUnit)
+      : isGramOrMl
+        ? Number(item.carbsPer100g ?? 0)
+        : Number(item.carbsPerPiece ?? 0);
+
+    const f = item.fatPerUnit !== undefined
+      ? Number(item.fatPerUnit)
+      : isGramOrMl
+        ? Number(item.fatPer100g ?? 0)
+        : Number(item.fatPerPiece ?? 0);
+
+    setCalPerUnit(cal);
+    setProteinPerUnit(p);
+    setCarbsPerUnit(c);
+    setFatPerUnit(f);
     setShowSuggestions(false);
+  };
+
+  const handleUnitChange = (newUnit) => {
+    setUnit(newUnit);
+    const isNewGramOrMl = newUnit === 'gram' || newUnit === 'g' || newUnit === 'ml';
+
+    if (selectedFoodItem) {
+      if (isNewGramOrMl && selectedFoodItem.caloriesPer100g !== undefined) {
+        setCalPerUnit(Number(selectedFoodItem.caloriesPer100g) || 100);
+        setProteinPerUnit(Number(selectedFoodItem.proteinPer100g) || 0);
+        setCarbsPerUnit(Number(selectedFoodItem.carbsPer100g) || 0);
+        setFatPerUnit(Number(selectedFoodItem.fatPer100g) || 0);
+      } else if (!isNewGramOrMl && selectedFoodItem.caloriesPerPiece !== undefined) {
+        setCalPerUnit(Number(selectedFoodItem.caloriesPerPiece) || 100);
+        setProteinPerUnit(Number(selectedFoodItem.proteinPerPiece) || 0);
+        setCarbsPerUnit(Number(selectedFoodItem.carbsPerPiece) || 0);
+        setFatPerUnit(Number(selectedFoodItem.fatPerPiece) || 0);
+      }
+    }
   };
 
   const openCreateModal = (mealType = 'Breakfast') => {
@@ -177,11 +327,11 @@ export const CalorieTracker = ({ selectedDate }) => {
     setFormDate(activeDate);
     setItemName('');
     setQuantity('');
-    setUnit('piece');
-    setCalPerUnit(100);
-    setProteinPerUnit(5);
-    setCarbsPerUnit(10);
-    setFatPerUnit(2);
+    setUnit('gram');
+    setCalPerUnit('');
+    setProteinPerUnit('');
+    setCarbsPerUnit('');
+    setFatPerUnit('');
     setSelectedFoodItem(null);
     setShowSuggestions(false);
     setIsModalOpen(true);
@@ -195,22 +345,22 @@ export const CalorieTracker = ({ selectedDate }) => {
       const first = meal.items[0];
       setItemName(first.name || '');
       setQuantity(first.quantity ?? '');
-      const u = first.unit || 'piece';
+      const u = first.unit || 'gram';
       setUnit(u);
       const isPer100 = u === 'gram' || u === 'g' || u === 'ml';
       const factor = isPer100 ? (first.quantity || 100) / 100 : (first.quantity || 1);
       setCalPerUnit(first.calories ? Math.round(first.calories / factor) : 100);
-      setProteinPerUnit(first.protein ? Math.round((first.protein / factor) * 10) / 10 : 5);
-      setCarbsPerUnit(first.carbs ? Math.round((first.carbs / factor) * 10) / 10 : 10);
-      setFatPerUnit(first.fat ? Math.round((first.fat / factor) * 10) / 10 : 2);
+      setProteinPerUnit(first.protein ? Math.round((first.protein / factor) * 10) / 10 : 0);
+      setCarbsPerUnit(first.carbs ? Math.round((first.carbs / factor) * 10) / 10 : 0);
+      setFatPerUnit(first.fat ? Math.round((first.fat / factor) * 10) / 10 : 0);
     } else {
       setItemName('');
       setQuantity('');
-      setUnit('piece');
-      setCalPerUnit(100);
-      setProteinPerUnit(5);
-      setCarbsPerUnit(10);
-      setFatPerUnit(2);
+      setUnit('gram');
+      setCalPerUnit('');
+      setProteinPerUnit('');
+      setCarbsPerUnit('');
+      setFatPerUnit('');
     }
     setSelectedFoodItem(null);
     setShowSuggestions(false);
@@ -220,30 +370,64 @@ export const CalorieTracker = ({ selectedDate }) => {
   // Check if current unit is scaled per 100 units (grams or ml)
   const isPerHundred = unit === 'gram' || unit === 'g' || unit === 'ml';
 
+  // Computed Atwater calories from macros
+  const atwaterCalculatedCalories = useMemo(() => {
+    const p = Number(proteinPerUnit) || 0;
+    const c = Number(carbsPerUnit) || 0;
+    const f = Number(fatPerUnit) || 0;
+    if (p === 0 && c === 0 && f === 0) return 0;
+    return Math.round(p * 4 + c * 4 + f * 9);
+  }, [proteinPerUnit, carbsPerUnit, fatPerUnit]);
+
+  // Effective calories per unit (custom or Atwater fallback)
+  const effectiveCalPerUnit = useMemo(() => {
+    if (calPerUnit !== '' && Number(calPerUnit) >= 0) {
+      return Number(calPerUnit);
+    }
+    return atwaterCalculatedCalories || 0;
+  }, [calPerUnit, atwaterCalculatedCalories]);
+
   // Live computed total calories and macros for current item
   const liveItemCalories = useMemo(() => {
     const q = quantity === '' ? (isPerHundred ? 100 : 1) : Number(quantity) || 0;
     const factor = isPerHundred ? q / 100 : q;
-    return Math.round(Number(calPerUnit || 0) * factor * 10) / 10;
-  }, [calPerUnit, quantity, isPerHundred]);
+    return Math.round(effectiveCalPerUnit * factor * 10) / 10;
+  }, [effectiveCalPerUnit, quantity, isPerHundred]);
 
   const liveItemProtein = useMemo(() => {
     const q = quantity === '' ? (isPerHundred ? 100 : 1) : Number(quantity) || 0;
     const factor = isPerHundred ? q / 100 : q;
-    return Math.round(Number(proteinPerUnit || 0) * factor * 10) / 10;
+    return Math.round((Number(proteinPerUnit) || 0) * factor * 10) / 10;
   }, [proteinPerUnit, quantity, isPerHundred]);
 
   const liveItemCarbs = useMemo(() => {
     const q = quantity === '' ? (isPerHundred ? 100 : 1) : Number(quantity) || 0;
     const factor = isPerHundred ? q / 100 : q;
-    return Math.round(Number(carbsPerUnit || 0) * factor * 10) / 10;
+    return Math.round((Number(carbsPerUnit) || 0) * factor * 10) / 10;
   }, [carbsPerUnit, quantity, isPerHundred]);
 
   const liveItemFat = useMemo(() => {
     const q = quantity === '' ? (isPerHundred ? 100 : 1) : Number(quantity) || 0;
     const factor = isPerHundred ? q / 100 : q;
-    return Math.round(Number(fatPerUnit || 0) * factor * 10) / 10;
+    return Math.round((Number(fatPerUnit) || 0) * factor * 10) / 10;
   }, [fatPerUnit, quantity, isPerHundred]);
+
+  // Live calculated macro percentage split for the portion
+  const portionMacroSplit = useMemo(() => {
+    const pCal = liveItemProtein * 4;
+    const cCal = liveItemCarbs * 4;
+    const fCal = liveItemFat * 9;
+    const totalCal = pCal + cCal + fCal;
+    if (totalCal <= 0) return { proteinPct: 0, carbsPct: 0, fatPct: 0, totalCal: 0 };
+    const pPct = Math.round((pCal / totalCal) * 100);
+    const cPct = Math.round((cCal / totalCal) * 100);
+    const fPct = Math.max(0, 100 - pPct - cPct);
+    return { proteinPct: pPct, carbsPct: cPct, fatPct: fPct, totalCal };
+  }, [liveItemProtein, liveItemCarbs, liveItemFat]);
+
+  const quickPortions = useMemo(() => {
+    return isPerHundred ? [50, 100, 150, 200, 250, 300] : [0.5, 1, 1.5, 2, 3, 4];
+  }, [isPerHundred]);
 
   const handleAddMeal = async (e) => {
     e.preventDefault();
@@ -346,12 +530,12 @@ export const CalorieTracker = ({ selectedDate }) => {
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
       <PageHeader
-        category="Nutrition & Macros"
-        title="Calorie & Meal Tracker"
-        description={`Smart autocomplete meal logger with verified online nutritional profiles and accurate gram/piece conversions for ${formatDisplayDate(activeDate)}`}
+        category={t('categories.nutrition', 'Nutrition & Macros')}
+        title={t('calories.title', 'Calorie & Meal Tracker')}
+        description={`${t('calories.subtitle', 'Manage caloric intake, macronutrient ratios, and dietary goals with precision')} (${formatDisplayDate(activeDate)})`}
         action={
           <Button variant="gradient" size="md" icon={Plus} onClick={() => openCreateModal('Breakfast')}>
-            Log Meal
+            {t('calories.logMeal', 'Log Meal')}
           </Button>
         }
       />
@@ -359,35 +543,35 @@ export const CalorieTracker = ({ selectedDate }) => {
       {/* Top Stat Cards Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 sm:gap-5">
         <StatCard
-          title="Calories Consumed"
+          title={t('dashboard.caloriesToday', 'Calories Consumed')}
           value={`${summary.caloriesConsumed || 0} kcal`}
           subtitle={`Goal: ${summary.dailyCalorieGoal || 2000} kcal`}
           icon={Flame}
           color="amber"
         />
         <StatCard
-          title="Remaining Budget"
+          title={t('calories.budgetRemaining', 'Remaining Budget')}
           value={`${summary.remainingCalories || 0} kcal`}
           subtitle="Energy balance"
           icon={Utensils}
           color="indigo"
         />
         <StatCard
-          title="Total Protein"
+          title={t('calories.protein', 'Total Protein')}
           value={`${summary.totalProtein || 0}g`}
           subtitle="Muscle recovery"
           icon={Sparkles}
           color="purple"
         />
         <StatCard
-          title="Water Hydration"
+          title={t('dashboard.waterToday', 'Water Hydration')}
           value={`${summary.waterGlasses || 0} Glasses`}
           subtitle={`${summary.waterMl || 0} ml consumed`}
           icon={Droplets}
           color="cyan"
         />
         <StatCard
-          title="IF Completed Fasts"
+          title={t('fasting.title', 'IF Completed Fasts')}
           value={`${fastingStats.completedCount} Done`}
           subtitle={`${fastingStats.streak}d streak · ${fastingStats.partialCount} partial · ${fastingStats.earlyEndedCount} <20%`}
           icon={Trophy}
@@ -436,11 +620,10 @@ export const CalorieTracker = ({ selectedDate }) => {
             </div>
             <div className="w-full h-3.5 bg-subtle rounded-full overflow-hidden border border-theme p-0.5">
               <div
-                className={`h-full rounded-full transition-all duration-500 ${
-                  (summary.caloriesConsumed || 0) > (summary.dailyCalorieGoal || 2000)
-                    ? 'bg-rose-500'
-                    : 'bg-gradient-to-r from-indigo-500 to-purple-600'
-                }`}
+                className={`h-full rounded-full transition-all duration-500 ${(summary.caloriesConsumed || 0) > (summary.dailyCalorieGoal || 2000)
+                  ? 'bg-rose-500'
+                  : 'bg-gradient-to-r from-indigo-500 to-purple-600'
+                  }`}
                 style={{ width: `${caloriePercentage}%` }}
               />
             </div>
@@ -479,11 +662,10 @@ export const CalorieTracker = ({ selectedDate }) => {
               {Array.from({ length: Math.max(8, summary.waterGlasses || 0) }).map((_, idx) => (
                 <span
                   key={idx}
-                  className={`w-3.5 h-6 rounded-md border transition-all duration-200 ${
-                    idx < (summary.waterGlasses || 0)
-                      ? 'bg-cyan-500 border-cyan-400 shadow-sm shadow-cyan-500/25 scale-105'
-                      : 'bg-subtle border-theme opacity-40'
-                  }`}
+                  className={`w-3.5 h-6 rounded-md border transition-all duration-200 ${idx < (summary.waterGlasses || 0)
+                    ? 'bg-cyan-500 border-cyan-400 shadow-sm shadow-cyan-500/25 scale-105'
+                    : 'bg-subtle border-theme opacity-40'
+                    }`}
                 />
               ))}
             </div>
@@ -570,25 +752,25 @@ export const CalorieTracker = ({ selectedDate }) => {
                   key={meal._id}
                   hover
                   bottomAction={
-                  <div className="flex items-center gap-0.5 bg-surface/90 dark:bg-surface/90 backdrop-blur-xs rounded-xl p-0.5 border border-theme/40 shadow-xs">
-                    <button
-                      onClick={() => handleEditMeal(meal)}
-                      className="p-1 rounded-lg text-secondary hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
-                      title="Edit Meal"
-                    >
-                      <Edit2 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      onClick={() => setDeleteId(meal._id)}
-                      className="p-1 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                      title="Delete Meal"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                }
-              >
-                <div className="space-y-3 pb-2">
+                    <div className="flex items-center gap-1.5">
+                      <button
+                        onClick={() => handleEditMeal(meal)}
+                        className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-accent hover:border-accent/40 hover:bg-accent/10 shadow-xs transition-all cursor-pointer"
+                        title="Edit Meal"
+                      >
+                        <Edit2 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        onClick={() => setDeleteId(meal._id)}
+                        className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-xs transition-all cursor-pointer"
+                        title="Delete Meal"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  }
+                >
+                  <div className="space-y-3 pb-2">
                     <div className="flex items-center justify-between">
                       <Badge variant="primary" size="sm" dot>
                         {meal.mealType}
@@ -626,201 +808,417 @@ export const CalorieTracker = ({ selectedDate }) => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingMealId ? 'Edit Meal' : 'Log Food / Meal'}
-        subtitle={editingMealId ? 'Update food items, portion size, and nutritional profile' : 'Smart autocomplete with accurate piece/gram conversions'}
-        maxWidth="max-w-xl"
+        title={editingMealId ? t('calories.editMeal') : t('calories.logMeal')}
+        subtitle={editingMealId ? t('calories.editMealSubtitle') : t('calories.logMealSubtitle')}
+        maxWidth="max-w-5xl"
       >
         <form onSubmit={handleAddMeal} className="space-y-4">
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Meal Type
+          {/* Top Row: Meal Type Selection Pills & Date */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end">
+            <div className="sm:col-span-8">
+              <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1.5">
+                {t('calories.mealType')}
               </label>
-              <select
-                value={formMealType}
-                onChange={(e) => setFormMealType(e.target.value)}
-                className="select-base"
-              >
-                {MEAL_TYPES.map((t) => (
-                  <option key={t} value={t}>
-                    {t}
-                  </option>
-                ))}
-              </select>
+              <div className="grid grid-cols-4 gap-1.5">
+                {MEAL_TYPES.map((mType) => {
+                  const conf = MEAL_TYPE_CONFIG[mType] || { icon: '🍽️', label: mType };
+                  const isSelected = formMealType === mType;
+                  const localizedLabel =
+                    mType === 'Breakfast' ? t('calories.breakfast') :
+                      mType === 'Lunch' ? t('calories.lunch') :
+                        mType === 'Dinner' ? t('calories.dinner') :
+                          mType === 'Snack' ? t('calories.snack') : mType;
+                  return (
+                    <button
+                      type="button"
+                      key={mType}
+                      onClick={() => setFormMealType(mType)}
+                      className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl border text-xs font-bold transition-all duration-200 cursor-pointer ${isSelected
+                        ? 'bg-accent/15 border-accent text-accent shadow-xs ring-1 ring-accent/30'
+                        : 'bg-surface hover:bg-subtle border-theme text-secondary hover:text-primary'
+                        }`}
+                    >
+                      <span className="text-sm">{conf.icon}</span>
+                      <span className="truncate">{localizedLabel}</span>
+                    </button>
+                  );
+                })}
+              </div>
             </div>
 
-            <DateInput
-              label="Meal Date"
-              value={formDate}
-              onChange={setFormDate}
-              required
-            />
+            <div className="sm:col-span-4">
+              <DateInput
+                label={t('calories.mealDate')}
+                value={formDate}
+                onChange={setFormDate}
+                required
+              />
+            </div>
           </div>
 
-          {/* Autocomplete Food Search Input */}
-          <div className="relative">
-            <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Food Item Name (Search database & Open Food Facts)
-            </label>
-            <div className="relative">
-              <input
-                type="text"
-                required
-                placeholder="e.g. Oatmeal, Boiled Egg, Chicken Breast, Banana, Rice"
-                value={itemName}
-                onChange={(e) => {
-                  setItemName(e.target.value);
-                  setSelectedFoodItem(null);
-                  setShowSuggestions(true);
-                }}
-                onFocus={() => {
-                  if (suggestions.length > 0) setShowSuggestions(true);
-                }}
-                className="input-base pr-8"
-              />
-              {searchingSuggestions && (
-                <div className="absolute right-2.5 top-2.5">
-                  <div className="w-4 h-4 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+          {/* Main 2-Column Grid: Left (Food & Portions) | Right (Nutrition & Calculations) */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5 items-stretch">
+            {/* Left Column: Food Item Search & Portions */}
+            <div className="space-y-3 flex flex-col justify-between">
+              {/* Autocomplete Food Search Input & Quick Staples */}
+              <div className="space-y-1.5 relative">
+                <div className="flex items-center justify-between">
+                  <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider">
+                    {t('calories.foodSearch')}
+                  </label>
+                  {selectedFoodItem && (
+                    <span className="text-[10px] text-emerald-600 dark:text-emerald-400 font-bold flex items-center gap-1">
+                      <CheckCircle2 className="w-3 h-3" />
+                      {selectedFoodItem.source || 'Database'}
+                    </span>
+                  )}
                 </div>
-              )}
-            </div>
 
-            {showSuggestions && suggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1.5 bg-surface border border-theme rounded-2xl card-shadow z-30 max-h-56 overflow-y-auto divide-y divide-theme/40 shadow-xl">
-                {suggestions.map((food, idx) => (
-                  <div
-                    key={food._id || idx}
-                    onClick={() => handleSelectFoodItem(food)}
-                    className="p-3 hover:bg-subtle cursor-pointer flex items-center justify-between text-xs transition-colors"
-                  >
-                    <div>
-                      <span className="font-bold text-primary block">{food.name}</span>
-                      <span className="text-[11px] text-secondary">
-                        {food.caloriesPerUnit} kcal per {food.unitType === 'gram' ? '100g' : food.unitType === 'ml' ? '100ml' : food.unitType || 'piece'} · P: {food.proteinPerUnit}g, C: {food.carbsPerUnit}g, F: {food.fatPerUnit}g
-                      </span>
+                <div className="relative">
+                  <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none text-secondary z-10">
+                    <Search className="w-4 h-4" />
+                  </div>
+                  <input
+                    type="text"
+                    required
+                    placeholder={t('calories.searchFoodPlaceholder')}
+                    value={itemName}
+                    onChange={(e) => {
+                      setItemName(e.target.value);
+                      setSelectedFoodItem(null);
+                      setShowSuggestions(true);
+                    }}
+                    onFocus={() => {
+                      if (suggestions.length > 0) setShowSuggestions(true);
+                    }}
+                    className="input-base input-with-icon-left input-with-icon-right text-xs py-2"
+                    style={{ paddingLeft: '2.5rem', paddingRight: '2.5rem' }}
+                  />
+                  {itemName && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setItemName('');
+                        setSelectedFoodItem(null);
+                        setShowSuggestions(false);
+                      }}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-secondary hover:text-primary transition-colors cursor-pointer"
+                    >
+                      <X className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                  {searchingSuggestions && (
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                      <div className="w-3.5 h-3.5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
                     </div>
-                    {food.source && (
-                      <span className="text-[9px] px-1.5 py-0.5 rounded bg-surface border border-theme text-secondary shrink-0">
-                        {food.source}
-                      </span>
+                  )}
+                </div>
+
+                {/* Frequently Added Food / Quick Staples Chips */}
+                <div className="flex items-center gap-1 overflow-x-auto pb-1 no-scrollbar pt-0.5">
+                  <span className="text-[10px] font-bold text-secondary uppercase shrink-0 mr-1 flex items-center gap-1">
+                    <Sparkles className="w-2.5 h-2.5 text-accent" /> {t('calories.staples')}
+                  </span>
+                  {frequentFoods.map((staple) => {
+                    const isCurrent =
+                      selectedFoodItem?.name === staple.name ||
+                      (itemName.trim() && itemName.trim().toLowerCase() === staple.name.toLowerCase());
+                    return (
+                      <button
+                        type="button"
+                        key={staple._id || staple.name}
+                        onClick={() => handleSelectFoodItem(staple)}
+                        className={`shrink-0 flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] font-semibold border transition-all cursor-pointer ${isCurrent
+                          ? 'bg-accent/15 border-accent text-accent shadow-xs font-bold'
+                          : 'bg-subtle/70 hover:bg-subtle border-theme text-secondary hover:text-primary'
+                          }`}
+                        title={staple.source ? `${staple.name} • ${staple.source}` : staple.name}
+                      >
+                        <span>{staple.icon || '🍽️'}</span>
+                        <span>{staple.name}</span>
+                        {staple.timesUsed > 1 && (
+                          <span className="text-[9px] px-1 py-0.2 rounded-full bg-accent/20 text-accent font-bold">
+                            {staple.timesUsed}x
+                          </span>
+                        )}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                {/* Suggestions Dropdown */}
+                {showSuggestions && suggestions.length > 0 && (
+                  <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-theme rounded-2xl card-shadow z-40 max-h-52 overflow-y-auto divide-y divide-theme/40 shadow-2xl">
+                    {suggestions.map((food, idx) => (
+                      <div
+                        key={food._id || idx}
+                        onClick={() => handleSelectFoodItem(food)}
+                        className="p-2.5 hover:bg-subtle cursor-pointer flex items-center justify-between text-xs transition-colors group"
+                      >
+                        <div>
+                          <div className="flex items-center gap-1.5">
+                            <span className="font-bold text-primary group-hover:text-accent transition-colors">{food.name}</span>
+                            {food.category && (
+                              <span className="text-[9px] px-1.5 py-0.2 rounded bg-subtle text-secondary border border-theme">
+                                {food.category}
+                              </span>
+                            )}
+                          </div>
+                          <span className="text-[10px] text-secondary font-medium">
+                            {food.caloriesPerUnit} kcal / {food.unitType === 'gram' ? '100g' : food.unitType === 'ml' ? '100ml' : food.unitType || 'piece'} · <strong className="text-purple-600 dark:text-purple-400">{food.proteinPerUnit}g P</strong> · <strong className="text-emerald-600 dark:text-emerald-400">{food.carbsPerUnit}g C</strong> · <strong className="text-amber-600 dark:text-amber-400">{food.fatPerUnit}g F</strong>
+                          </span>
+                        </div>
+                        {food.source && (
+                          <span className="text-[9px] px-2 py-0.5 rounded-full bg-surface border border-theme text-secondary shrink-0 font-medium">
+                            {food.source}
+                          </span>
+                        )}
+                      </div>
+                    ))}
+
+                    {itemName.trim().length >= 2 && (
+                      <div
+                        onClick={() => {
+                          setSelectedFoodItem({ name: itemName.trim(), isCustom: true });
+                          setShowSuggestions(false);
+                        }}
+                        className="p-2 bg-accent/5 hover:bg-accent/10 cursor-pointer flex items-center justify-between text-xs text-accent font-bold transition-colors"
+                      >
+                        <span className="flex items-center gap-1.5 text-xs">
+                          <Sparkles className="w-3.5 h-3.5" />
+                          {t('calories.setCustomNutrition')} "{itemName}"
+                        </span>
+                        <Badge variant="primary" size="xs">{t('calories.customItemBadge')}</Badge>
+                      </div>
                     )}
                   </div>
-                ))}
+                )}
               </div>
-            )}
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Quantity {isPerHundred ? `(in ${unit}s)` : `(${unit}s)`}
-              </label>
-              <input
-                type="number"
-                step="any"
-                min="0.1"
-                required
-                value={quantity}
-                onChange={(e) => setQuantity(e.target.value)}
-                placeholder={isPerHundred ? 'e.g. 100' : 'e.g. 1'}
-                className="input-base"
-              />
+              {/* Portion Size & Unit Selection */}
+              <div className="p-3 bg-subtle/40 rounded-2xl border border-theme space-y-2">
+                <div className="grid grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1">
+                      {t('calories.quantity')} {isPerHundred ? `(in ${unit}s)` : `(${unit}s)`}
+                    </label>
+                    <input
+                      type="number"
+                      step="any"
+                      min="0.1"
+                      required
+                      value={quantity}
+                      onChange={(e) => setQuantity(e.target.value)}
+                      placeholder={isPerHundred ? 'e.g. 100' : 'e.g. 1'}
+                      className="input-base text-xs py-1.5"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1">
+                      {t('calories.measurementUnit')}
+                    </label>
+                    <select
+                      value={unit}
+                      onChange={(e) => handleUnitChange(e.target.value)}
+                      className="select-base capitalize text-xs py-1.5"
+                    >
+                      {UNITS.map((u) => (
+                        <option key={u} value={u}>
+                          {u}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Quick Portion Stepper Chips */}
+                <div className="flex items-center gap-1 overflow-x-auto pb-0.5 no-scrollbar">
+                  <span className="text-[10px] font-bold text-secondary uppercase shrink-0 mr-1 flex items-center gap-0.5">
+                    <Scale className="w-2.5 h-2.5 text-secondary" /> {t('calories.quickPortion')}
+                  </span>
+                  {quickPortions.map((qVal) => {
+                    const isCurrent = String(quantity) === String(qVal);
+                    return (
+                      <button
+                        type="button"
+                        key={qVal}
+                        onClick={() => setQuantity(qVal)}
+                        className={`px-2 py-0.5 rounded-lg text-[11px] font-bold border transition-all cursor-pointer ${isCurrent
+                          ? 'bg-accent border-accent text-white shadow-xs'
+                          : 'bg-surface hover:bg-subtle border-theme text-secondary hover:text-primary'
+                          }`}
+                      >
+                        {qVal}{isPerHundred ? (unit === 'ml' ? 'ml' : 'g') : ''}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
             </div>
 
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Measurement Unit
-              </label>
-              <select
-                value={unit}
-                onChange={(e) => setUnit(e.target.value)}
-                className="select-base"
-              >
-                {UNITS.map((u) => (
-                  <option key={u} value={u}>
-                    {u}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
+            {/* Right Column: Nutritional Baseline & Calculated Portion HUD */}
+            <div className="space-y-3 flex flex-col justify-between">
+              {/* Unit Baseline Values (Micro Macro Cards) */}
+              <div className="p-3 bg-subtle/40 rounded-2xl border border-theme space-y-2">
+                <div className="flex items-center justify-between flex-wrap gap-1">
+                  <div className="flex items-center gap-1.5">
+                    <Zap className="w-3.5 h-3.5 text-accent" />
+                    <span className="text-[10px] font-extrabold text-secondary uppercase tracking-wider">
+                      {t('calories.nutritionalBaseline')} {isPerHundred ? `(per 100 ${unit})` : `(per 1 ${unit})`}
+                    </span>
+                  </div>
+                  {atwaterCalculatedCalories > 0 && Number(calPerUnit) !== atwaterCalculatedCalories && (
+                    <button
+                      type="button"
+                      onClick={() => setCalPerUnit(atwaterCalculatedCalories)}
+                      className="text-[10px] text-accent hover:underline font-bold flex items-center gap-0.5 cursor-pointer bg-accent/10 px-1.5 py-0.5 rounded-md border border-accent/20"
+                      title="Auto-calculate calories"
+                    >
+                      <Sparkles className="w-2.5 h-2.5" />
+                      {atwaterCalculatedCalories} kcal
+                    </button>
+                  )}
+                </div>
 
-          {/* Unit Baseline Values */}
-          <div className="p-3 bg-subtle rounded-2xl border border-theme space-y-2">
-            <span className="text-[11px] font-bold text-secondary uppercase tracking-wider block">
-              Nutritional Profile {isPerHundred ? `(per 100 ${unit})` : `(per 1 ${unit})`}
-            </span>
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-              <div>
-                <label className="block text-[10px] font-bold text-secondary mb-1">
-                  Calories (kcal)
-                </label>
-                <input
-                  type="number"
-                  value={calPerUnit}
-                  onChange={(e) => setCalPerUnit(e.target.value)}
-                  placeholder="e.g. 100"
-                  className="input-base text-xs py-1.5"
-                />
+                <div className="grid grid-cols-4 gap-1.5">
+                  {/* Calories */}
+                  <div className="p-2 rounded-xl bg-surface border-amber-500/20 shadow-xs flex flex-col justify-between">
+                    <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
+                      <Flame className="w-2.5 h-2.5" /> Cal
+                    </span>
+                    <input
+                      type="number"
+                      value={calPerUnit}
+                      onChange={(e) => setCalPerUnit(e.target.value)}
+                      placeholder={atwaterCalculatedCalories ? `${atwaterCalculatedCalories}` : '100'}
+                      className="w-full bg-subtle/60 border border-theme rounded-lg px-1.5 py-1 text-xs font-bold text-primary focus:outline-none focus:border-amber-500 mt-1"
+                    />
+                  </div>
+
+                  {/* Protein */}
+                  <div className="p-2 rounded-xl bg-surface border-indigo-500/20 shadow-xs flex flex-col justify-between">
+                    <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 flex items-center gap-0.5">
+                      <Dumbbell className="w-2.5 h-2.5" /> Prot
+                    </span>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={proteinPerUnit}
+                      onChange={(e) => setProteinPerUnit(e.target.value)}
+                      placeholder="5"
+                      className="w-full bg-subtle/60 border border-theme rounded-lg px-1.5 py-1 text-xs font-bold text-indigo-600 dark:text-indigo-400 focus:outline-none focus:border-indigo-500 mt-1"
+                    />
+                  </div>
+
+                  {/* Carbs */}
+                  <div className="p-2 rounded-xl bg-surface border-emerald-500/20 shadow-xs flex flex-col justify-between">
+                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-0.5">
+                      <Zap className="w-2.5 h-2.5" /> Carb
+                    </span>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={carbsPerUnit}
+                      onChange={(e) => setCarbsPerUnit(e.target.value)}
+                      placeholder="10"
+                      className="w-full bg-subtle/60 border border-theme rounded-lg px-1.5 py-1 text-xs font-bold text-emerald-600 dark:text-emerald-400 focus:outline-none focus:border-emerald-500 mt-1"
+                    />
+                  </div>
+
+                  {/* Fat */}
+                  <div className="p-2 rounded-xl bg-surface border-amber-500/20 shadow-xs flex flex-col justify-between">
+                    <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 flex items-center gap-0.5">
+                      <Droplets className="w-2.5 h-2.5" /> Fat
+                    </span>
+                    <input
+                      type="number"
+                      step="0.1"
+                      value={fatPerUnit}
+                      onChange={(e) => setFatPerUnit(e.target.value)}
+                      placeholder="2"
+                      className="w-full bg-subtle/60 border border-theme rounded-lg px-1.5 py-1 text-xs font-bold text-amber-600 dark:text-amber-400 focus:outline-none focus:border-amber-500 mt-1"
+                    />
+                  </div>
+                </div>
               </div>
-              <div>
-                <label className="block text-[10px] font-bold text-secondary mb-1">
-                  Protein (g)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={proteinPerUnit}
-                  onChange={(e) => setProteinPerUnit(e.target.value)}
-                  placeholder="e.g. 5"
-                  className="input-base text-xs py-1.5"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-secondary mb-1">
-                  Carbs (g)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={carbsPerUnit}
-                  onChange={(e) => setCarbsPerUnit(e.target.value)}
-                  placeholder="e.g. 10"
-                  className="input-base text-xs py-1.5"
-                />
-              </div>
-              <div>
-                <label className="block text-[10px] font-bold text-secondary mb-1">
-                  Fat (g)
-                </label>
-                <input
-                  type="number"
-                  step="0.1"
-                  value={fatPerUnit}
-                  onChange={(e) => setFatPerUnit(e.target.value)}
-                  placeholder="e.g. 2"
-                  className="input-base text-xs py-1.5"
-                />
+
+              {/* Live Calculated Portion HUD */}
+              <div className="p-3 bg-gradient-to-br from-surface to-subtle rounded-2xl border border-theme shadow-xs space-y-2">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Scale className="w-3.5 h-3.5 text-accent" />
+                    <span className="text-[10px] font-bold text-secondary uppercase tracking-wider">
+                      {t('calories.calculatedPortion')}
+                    </span>
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-accent/10 text-accent font-extrabold border border-accent/20">
+                      {quantity || (isPerHundred ? 100 : 1)} {unit}
+                    </span>
+                  </div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-xl font-black text-primary tracking-tight">
+                      {liveItemCalories}
+                    </span>
+                    <span className="text-[11px] font-bold text-secondary">{t('common.calories')}</span>
+                  </div>
+                </div>
+
+                {/* Macro Badges 3-col */}
+                <div className="grid grid-cols-3 gap-2">
+                  <div className="p-1.5 rounded-xl bg-indigo-500/10 border border-indigo-500/20 flex flex-col items-center justify-center">
+                    <span className="text-[9px] font-bold text-indigo-600 dark:text-indigo-400 uppercase">{t('calories.protein')}</span>
+                    <span className="text-xs font-black text-indigo-700 dark:text-indigo-300">{liveItemProtein}g</span>
+                  </div>
+                  <div className="p-1.5 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col items-center justify-center">
+                    <span className="text-[9px] font-bold text-emerald-600 dark:text-emerald-400 uppercase">{t('calories.carbs')}</span>
+                    <span className="text-xs font-black text-emerald-700 dark:text-emerald-300">{liveItemCarbs}g</span>
+                  </div>
+                  <div className="p-1.5 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col items-center justify-center">
+                    <span className="text-[9px] font-bold text-amber-600 dark:text-amber-400 uppercase">{t('calories.fat')}</span>
+                    <span className="text-xs font-black text-amber-700 dark:text-amber-300">{liveItemFat}g</span>
+                  </div>
+                </div>
+
+                {/* Macro Distribution Ratio Progress Bar */}
+                {portionMacroSplit.totalCal > 0 && (
+                  <div className="space-y-1 pt-0.5">
+                    <div className="h-1.5 w-full bg-subtle rounded-full overflow-hidden flex shadow-inner">
+                      <div
+                        style={{ width: `${portionMacroSplit.proteinPct}%` }}
+                        className="h-full bg-indigo-500 transition-all duration-300"
+                      />
+                      <div
+                        style={{ width: `${portionMacroSplit.carbsPct}%` }}
+                        className="h-full bg-emerald-500 transition-all duration-300"
+                      />
+                      <div
+                        style={{ width: `${portionMacroSplit.fatPct}%` }}
+                        className="h-full bg-amber-500 transition-all duration-300"
+                      />
+                    </div>
+                    <div className="flex items-center justify-between text-[9px] font-bold text-secondary px-0.5">
+                      <span className="text-indigo-600 dark:text-indigo-400">
+                        {portionMacroSplit.proteinPct}% {t('calories.protein')}
+                      </span>
+                      <span className="text-emerald-600 dark:text-emerald-400">
+                        {portionMacroSplit.carbsPct}% {t('calories.carbs')}
+                      </span>
+                      <span className="text-amber-600 dark:text-amber-400">
+                        {portionMacroSplit.fatPct}% {t('calories.fat')}
+                      </span>
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
-          </div>
-
-          {/* Live Calculated Summary for Portion */}
-          <div className="p-3.5 bg-accent/5 rounded-2xl border border-accent/20 flex items-center justify-between text-xs font-bold">
-            <span className="text-secondary">
-              Calculated Portion ({quantity || (isPerHundred ? 100 : 1)} {unit}):
-            </span>
-            <span className="text-accent font-extrabold">
-              {liveItemCalories} kcal · {liveItemProtein}g P · {liveItemCarbs}g C · {liveItemFat}g F
-            </span>
           </div>
 
           <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" variant="primary" loading={saving}>
-              {editingMealId ? 'Update Meal' : 'Save Meal'}
+              {editingMealId ? t('calories.updateMeal') : t('calories.saveMeal')}
             </Button>
           </div>
         </form>
@@ -830,19 +1228,19 @@ export const CalorieTracker = ({ selectedDate }) => {
       <Modal
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
-        title="Delete Meal Log"
-        subtitle="This action cannot be undone."
+        title={t('calories.deleteMealTitle')}
+        subtitle={t('common.confirmDeleteDesc')}
       >
         <div className="space-y-4 pt-2">
           <p className="text-sm text-secondary">
-            Are you sure you want to remove this logged meal? Your consumed calories and macros will be recalculated automatically.
+            {t('calories.deleteMealDesc')}
           </p>
           <div className="flex items-center justify-end gap-3 pt-2">
             <Button variant="ghost" size="sm" onClick={() => setDeleteId(null)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button variant="danger" size="sm" onClick={handleDeleteMeal}>
-              Delete Meal
+              {t('common.delete')}
             </Button>
           </div>
         </div>
