@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { StatCard } from '../components/StatCard';
@@ -24,6 +25,9 @@ import {
   Coins,
   RefreshCw,
   ArrowLeftRight,
+  Banknote,
+  Landmark,
+  Smartphone,
 } from 'lucide-react';
 
 const NESTED_EXPENSE_CATEGORIES = {
@@ -43,6 +47,15 @@ const NESTED_EXPENSE_CATEGORIES = {
 const EXPENSE_CATEGORIES = Object.keys(NESTED_EXPENSE_CATEGORIES);
 const INCOME_CATEGORIES = ['Salary', 'Freelance & Business', 'Investments', 'Gift & Support', 'Other Income'];
 const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'Debit Card', 'Credit Card', 'Mobile Wallet (bKash/Nagad)', 'Other'];
+
+const METHOD_ICONS = {
+  Cash: Banknote,
+  'Bank Transfer': Landmark,
+  'Debit Card': CreditCard,
+  'Credit Card': CreditCard,
+  'Mobile Wallet (bKash/Nagad)': Smartphone,
+  Other: Wallet,
+};
 
 export const POPULAR_CURRENCIES = [
   'USD',
@@ -220,6 +233,7 @@ const CurrencySelectorInput = ({
 
 export const FinanceTracker = ({ selectedDate }) => {
   const { user } = useAuth();
+  const { t, isRTL } = useLanguage();
   const defaultCurrency = (user?.currency || localStorage.getItem('lifeos_currency') || 'USD').toUpperCase();
   const [customCurrencies, setCustomCurrencies] = useState([]);
   const availableCurrencies = Array.from(new Set([defaultCurrency, ...POPULAR_CURRENCIES, ...customCurrencies]));
@@ -565,9 +579,9 @@ export const FinanceTracker = ({ selectedDate }) => {
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
       <PageHeader
-        category="Wealth & Budgeting"
-        title="Finance & Fund Transfers"
-        description={`Monitor income, expenses, multi-currency assets (${defaultCurrency}), and exchange currencies seamlessly.`}
+        category={t('nav.finance', 'Wealth & Budgeting')}
+        title={t('finance.title', 'Personal Finance & Wealth')}
+        description={`${t('finance.subtitle', 'Track income streams, categorize daily expenses, and analyze cash flow.')} (${defaultCurrency})`}
         action={
           <div className="flex items-center gap-2.5 flex-wrap">
             <Button
@@ -584,7 +598,7 @@ export const FinanceTracker = ({ selectedDate }) => {
               icon={ArrowUpRight}
               onClick={() => openTransactionModal('income')}
             >
-              + Income
+              + {t('finance.income', 'Income')}
             </Button>
             <Button
               variant="gradient"
@@ -592,7 +606,7 @@ export const FinanceTracker = ({ selectedDate }) => {
               icon={Plus}
               onClick={() => openTransactionModal('expense')}
             >
-              Log Expense
+              {t('finance.addTransaction', 'Log Expense')}
             </Button>
           </div>
         }
@@ -623,110 +637,153 @@ export const FinanceTracker = ({ selectedDate }) => {
         />
       </div>
 
-      {/* Multi-Currency Asset Holdings & Vaults */}
-      <Card
-        title="Multi-Currency Asset Holdings"
-        subtitle={`Live balances per currency · Converted total valuations in ${displayCurrency}`}
-        icon={Coins}
-        action={
-          <Button
-            variant="secondary"
-            size="sm"
-            icon={ArrowRightLeft}
-            onClick={() => openTransferModal()}
+      {/* 2-Column Side-by-Side: Multi-Currency Holdings & Payment Methods */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 sm:gap-7 items-stretch">
+        {/* Left Col: Multi-Currency Asset Holdings & Vaults */}
+        <div className="flex flex-col">
+          <Card
+            hover
+            className="h-full flex flex-col justify-between"
+            title="Multi-Currency Asset Holdings"
+            subtitle={`Live balances per currency · Valuations in ${displayCurrency}`}
+            icon={Coins}
+            action={
+              <Button
+                variant="secondary"
+                size="xs"
+                icon={ArrowRightLeft}
+                onClick={() => openTransferModal()}
+              >
+                Exchange ⇄
+              </Button>
+            }
           >
-            Exchange Currencies ⇄
-          </Button>
-        }
-      >
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 mt-2">
-          {activeCurrencies.map((c) => {
-            const holding = summary.currencyTotals?.[c] || { balance: 0, balanceInTarget: 0 };
-            const bal = holding.balance || 0;
-            const balInTarget = holding.balanceInTarget !== undefined ? holding.balanceInTarget : bal;
-            const sym = CURRENCY_SYMBOLS[c] || c;
+            <div className="flex flex-col justify-between h-full space-y-3 mt-1">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {activeCurrencies.map((c) => {
+                  const holding = summary.currencyTotals?.[c] || { balance: 0, balanceInTarget: 0 };
+                  const bal = holding.balance || 0;
+                  const balInTarget = holding.balanceInTarget !== undefined ? holding.balanceInTarget : bal;
+                  const sym = CURRENCY_SYMBOLS[c] || c;
 
-            return (
-              <div
-                key={c}
-                className="p-3.5 rounded-2xl bg-subtle border border-theme flex flex-col justify-between relative overflow-hidden group hover:border-accent/40 transition-all shadow-sm"
-              >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="w-8 h-8 rounded-xl bg-accent/10 text-accent font-extrabold text-sm flex items-center justify-center">
-                      {sym}
-                    </span>
-                    <div>
-                      <span className="text-xs font-bold text-primary block leading-tight">
-                        {c}
-                      </span>
-                      {c === defaultCurrency ? (
-                        <span className="text-[9px] font-bold text-accent uppercase tracking-wider block">
-                          Default
-                        </span>
-                      ) : (
-                        <span className="text-[9px] text-secondary font-medium block">
-                          Holdings
-                        </span>
-                      )}
+                  return (
+                    <div
+                      key={c}
+                      className="p-3 rounded-2xl bg-subtle/80 border border-theme flex flex-col justify-between relative overflow-hidden group hover:border-accent/40 hover:bg-surface transition-all shadow-xs"
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <span className="w-7 h-7 rounded-xl bg-accent/10 text-accent font-extrabold text-xs flex items-center justify-center">
+                            {sym}
+                          </span>
+                          <div>
+                            <span className="text-xs font-bold text-primary block leading-tight">
+                              {c}
+                            </span>
+                            {c === defaultCurrency ? (
+                              <span className="text-[9px] font-bold text-accent uppercase tracking-wider block">
+                                Default
+                              </span>
+                            ) : (
+                              <span className="text-[9px] text-secondary font-medium block">
+                                Vault
+                              </span>
+                            )}
+                          </div>
+                        </div>
+
+                        <button
+                          onClick={() => openTransferModal(c)}
+                          className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1 opacity-80 hover:opacity-100 cursor-pointer"
+                          title={`Exchange ${c} to another currency`}
+                        >
+                          Swap ⇄
+                        </button>
+                      </div>
+
+                      <div className="mt-2.5">
+                        <div
+                          className={`text-base font-extrabold tracking-tight truncate ${
+                            bal >= 0 ? 'text-primary' : 'text-[var(--color-danger)]'
+                          }`}
+                        >
+                          {bal >= 0 ? '' : '-'}{sym} {Math.abs(bal).toFixed(2)}{' '}
+                          <span className="text-[10px] text-secondary font-semibold">{c}</span>
+                        </div>
+                        {c !== displayCurrency && (
+                          <div className="text-[11px] text-secondary mt-0.5 font-medium">
+                            ≈ {(balInTarget || 0).toFixed(2)} {displayCurrency}
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
-
-                  <button
-                    onClick={() => openTransferModal(c)}
-                    className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1 opacity-80 hover:opacity-100 cursor-pointer"
-                    title={`Exchange ${c} to another currency`}
-                  >
-                    Swap ⇄
-                  </button>
-                </div>
-
-                <div className="mt-3">
-                  <div
-                    className={`text-base font-extrabold tracking-tight truncate ${
-                      bal >= 0 ? 'text-primary' : 'text-[var(--color-danger)]'
-                    }`}
-                  >
-                    {bal >= 0 ? '' : '-'}{sym} {Math.abs(bal).toFixed(2)}{' '}
-                    <span className="text-[10px] text-secondary font-medium">{c}</span>
-                  </div>
-                  {c !== displayCurrency && (
-                    <div className="text-[11px] text-secondary mt-0.5 font-medium">
-                      ≈ {(balInTarget || 0).toFixed(2)} {displayCurrency}
-                    </div>
-                  )}
-                </div>
+                  );
+                })}
               </div>
-            );
-          })}
-        </div>
-      </Card>
 
-      {/* Payment Method Balance Breakdown */}
-      <Card title="Payment Method & Account Balances" subtitle={`Live net balance per method in ${displayCurrency} equivalent`} icon={Layers}>
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-2">
-          {PAYMENT_METHODS.map((method) => {
-            const bal = summary.methodBalances?.[method] || 0;
-            return (
-              <div
-                key={method}
-                className="p-3.5 rounded-2xl bg-subtle border border-theme flex flex-col justify-between"
-              >
-                <span className="text-[11px] font-bold text-secondary uppercase tracking-wider block truncate">
-                  {method}
+              {/* Summary Valuation Pill */}
+              <div className="p-2.5 rounded-xl bg-accent/5 border border-accent/15 text-[11px] text-secondary flex items-center justify-between">
+                <span className="font-medium">Total Multi-Currency Valuation:</span>
+                <span className="font-extrabold text-primary">
+                  {(summary.netSavings || 0).toFixed(2)} {displayCurrency}
                 </span>
-                <div
-                  className={`mt-1.5 text-base font-extrabold tracking-tight truncate ${
-                    bal >= 0 ? 'text-primary' : 'text-[var(--color-danger)]'
-                  }`}
-                >
-                  {bal.toFixed(2)} <span className="text-[10px] text-secondary">{displayCurrency}</span>
-                </div>
               </div>
-            );
-          })}
+            </div>
+          </Card>
         </div>
-      </Card>
+
+        {/* Right Col: Payment Method & Account Balances */}
+        <div className="flex flex-col">
+          <Card
+            hover
+            className="h-full flex flex-col justify-between"
+            title="Payment Methods & Accounts"
+            subtitle={`Live net balance in ${displayCurrency} equivalent`}
+            icon={Layers}
+          >
+            <div className="flex flex-col justify-between h-full space-y-3 mt-1">
+              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
+                {PAYMENT_METHODS.map((method) => {
+                  const bal = summary.methodBalances?.[method] || 0;
+                  const IconComp = METHOD_ICONS[method] || Wallet;
+                  const displayName = method.replace(' (bKash/Nagad)', '');
+
+                  return (
+                    <div
+                      key={method}
+                      className="p-3 rounded-2xl bg-subtle/80 border border-theme flex flex-col justify-between group hover:border-theme-strong hover:bg-surface transition-all shadow-xs"
+                    >
+                      <div className="flex items-center gap-1.5 mb-1.5">
+                        <div className="w-5 h-5 rounded-lg bg-surface border border-theme flex items-center justify-center text-secondary group-hover:text-primary transition-colors shrink-0">
+                          <IconComp className="w-3 h-3" />
+                        </div>
+                        <span className="text-[10px] font-bold text-secondary uppercase tracking-wider truncate block">
+                          {displayName}
+                        </span>
+                      </div>
+                      <div
+                        className={`text-sm sm:text-base font-extrabold tracking-tight truncate ${
+                          bal >= 0 ? 'text-primary' : 'text-[var(--color-danger)]'
+                        }`}
+                      >
+                        {bal.toFixed(2)} <span className="text-[10px] text-secondary font-medium">{displayCurrency}</span>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Status summary */}
+              <div className="p-2.5 rounded-xl bg-subtle border border-theme text-[11px] text-secondary flex items-center justify-between">
+                <span className="font-medium">Active Channels:</span>
+                <span className="font-bold text-secondary">
+                  {PAYMENT_METHODS.length} Recorded Accounts
+                </span>
+              </div>
+            </div>
+          </Card>
+        </div>
+      </div>
 
       {/* Filter Bar & Transactions List */}
       <Card
@@ -813,10 +870,10 @@ export const FinanceTracker = ({ selectedDate }) => {
                             tx.type === 'income'
                               ? 'success'
                               : isExchange
-                              ? 'cyan'
-                              : isTransfer
-                              ? 'purple'
-                              : 'neutral'
+                                ? 'cyan'
+                                : isTransfer
+                                  ? 'purple'
+                                  : 'neutral'
                           }
                           size="xs"
                           dot
@@ -835,13 +892,12 @@ export const FinanceTracker = ({ selectedDate }) => {
                         {tx.notes || '—'}
                       </td>
                       <td
-                        className={`py-3 px-3 text-right font-extrabold whitespace-nowrap ${
-                          tx.type === 'income'
-                            ? 'text-emerald-600 dark:text-emerald-400'
-                            : isTransfer
+                        className={`py-3 px-3 text-right font-extrabold whitespace-nowrap ${tx.type === 'income'
+                          ? 'text-emerald-600 dark:text-emerald-400'
+                          : isTransfer
                             ? 'text-indigo-600 dark:text-indigo-400'
                             : 'text-[var(--color-danger)]'
-                        }`}
+                          }`}
                       >
                         {tx.type === 'income' && `+${tx.amount.toFixed(2)} ${tx.currency || displayCurrency}`}
                         {tx.type === 'expense' && `-${tx.amount.toFixed(2)} ${tx.currency || displayCurrency}`}
@@ -889,18 +945,18 @@ export const FinanceTracker = ({ selectedDate }) => {
       <Modal
         isOpen={isTransactionModalOpen}
         onClose={() => setIsTransactionModalOpen(false)}
-        title={editingTransactionId ? 'Edit Transaction' : formType === 'income' ? 'Log Income' : 'Log Expense'}
-        subtitle={editingTransactionId ? 'Update financial entry details' : `Record transaction (Default: ${defaultCurrency})`}
+        title={editingTransactionId ? t('finance.editTransaction') : formType === 'income' ? t('finance.logIncome') : t('finance.logExpense')}
+        subtitle={editingTransactionId ? t('finance.editTxSubtitle') : `${t('finance.recordTxSubtitle')} (${t('finance.currency')}: ${defaultCurrency})`}
       >
         <form onSubmit={handleCreateTransaction} className="space-y-4">
           <div>
             <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Title / Description
+              {t('finance.titleDescription')}
             </label>
             <input
               type="text"
               required
-              placeholder="e.g. Monthly Salary, Grocery Shopping, Coffee"
+              placeholder={t('finance.titlePlaceholder')}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
               className="input-base"
@@ -910,7 +966,7 @@ export const FinanceTracker = ({ selectedDate }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Amount
+                {t('finance.amount')}
               </label>
               <input
                 type="number"
@@ -927,7 +983,7 @@ export const FinanceTracker = ({ selectedDate }) => {
             <div>
               <CurrencySelectorInput
                 id="tx-currency"
-                label="Currency"
+                label={t('finance.currency')}
                 value={currency}
                 onChange={setCurrency}
                 availableCurrencies={availableCurrencies}
@@ -938,7 +994,7 @@ export const FinanceTracker = ({ selectedDate }) => {
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
               <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Category
+                {t('common.category')}
               </label>
               <select
                 value={category}
@@ -961,7 +1017,7 @@ export const FinanceTracker = ({ selectedDate }) => {
             {formType === 'expense' && NESTED_EXPENSE_CATEGORIES[category] && (
               <div>
                 <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                  Subcategory
+                  {t('finance.subcategory')}
                 </label>
                 <select
                   value={subCategory}
@@ -979,7 +1035,7 @@ export const FinanceTracker = ({ selectedDate }) => {
 
             <div>
               <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Payment Method
+                {t('finance.paymentMethod')}
               </label>
               <select
                 value={paymentMethod}
@@ -996,7 +1052,7 @@ export const FinanceTracker = ({ selectedDate }) => {
           </div>
 
           <DateInput
-            label="Transaction Date"
+            label={t('finance.txDate')}
             value={formDate}
             onChange={setFormDate}
             required
@@ -1004,11 +1060,11 @@ export const FinanceTracker = ({ selectedDate }) => {
 
           <div>
             <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Notes (Optional)
+              {t('common.notes')} ({t('common.optional')})
             </label>
             <input
               type="text"
-              placeholder="e.g. Invoice #1024, Split with friends"
+              placeholder={t('finance.txNotesPlaceholder')}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               className="input-base"
@@ -1017,10 +1073,10 @@ export const FinanceTracker = ({ selectedDate }) => {
 
           <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
             <Button variant="secondary" onClick={() => setIsTransactionModalOpen(false)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button type="submit" variant="primary" loading={savingTx}>
-              {editingTransactionId ? 'Update Transaction' : 'Save Transaction'}
+              {editingTransactionId ? t('finance.updateTransaction') : t('finance.saveTransaction')}
             </Button>
           </div>
         </form>
@@ -1030,178 +1086,191 @@ export const FinanceTracker = ({ selectedDate }) => {
       <Modal
         isOpen={isTransferModalOpen}
         onClose={() => setIsTransferModalOpen(false)}
-        title={isCrossCurrency ? 'Currency Exchange & Transfer' : 'Transfer Funds'}
-        subtitle="Exchange currencies back and forth or move balances between payment methods"
+        title={isCrossCurrency ? t('finance.currencyExchangeAndTransfer') : t('finance.transferFunds')}
+        subtitle={t('finance.transferSubtitle')}
+        maxWidth="max-w-6xl"
       >
-        <form onSubmit={handleCreateTransfer} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Transfer Title (Optional)
-            </label>
-            <input
-              type="text"
-              placeholder={
-                isCrossCurrency
-                  ? `e.g. Currency Exchange: ${fromCurrency} → ${toCurrency}`
-                  : `e.g. Moved funds from ${fromMethod} to ${toMethod}`
-              }
-              value={transferTitle}
-              onChange={(e) => setTransferTitle(e.target.value)}
-              className="input-base"
-            />
+        <form onSubmit={handleCreateTransfer} className="space-y-3.5">
+          {/* Top Row: Title (2 cols) & Date (1 col) */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+            <div className="md:col-span-2">
+              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
+                {t('finance.transferTitle')}
+              </label>
+              <input
+                type="text"
+                placeholder={
+                  isCrossCurrency
+                    ? `e.g. Currency Exchange: ${fromCurrency} → ${toCurrency}`
+                    : `e.g. Moved funds from ${fromMethod} to ${toMethod}`
+                }
+                value={transferTitle}
+                onChange={(e) => setTransferTitle(e.target.value)}
+                className="input-base"
+              />
+            </div>
+            <div>
+              <DateInput
+                label={t('finance.transferDate')}
+                value={transferDate}
+                onChange={setTransferDate}
+                required
+              />
+            </div>
           </div>
 
-          {/* Transfer & Exchange Box */}
-          <div className="p-4 rounded-2xl bg-subtle border border-theme space-y-4">
-            {/* SOURCE (FROM) SECTION */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-rose-500"></span>
-                  From (Send / Outflow)
-                </span>
-                <span className="text-[11px] text-secondary font-medium">
-                  Source Account
-                </span>
-              </div>
+          {/* Main Horizontal Transfer Deck */}
+          <div className="p-3.5 sm:p-4 rounded-2xl bg-subtle border border-theme space-y-3">
+            {/* 2-Column Side-by-Side Cards with Central Swap Action */}
+            <div className="grid grid-cols-1 lg:grid-cols-[1fr_auto_1fr] gap-3 items-center">
+              {/* SOURCE (FROM) CARD */}
+              <div className="p-3.5 rounded-xl bg-surface border border-theme space-y-3 shadow-xs">
+                <div className="flex items-center justify-between pb-1 border-b border-subtle">
+                  <span className="text-xs font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-rose-500 animate-pulse"></span>
+                    {t('finance.fromSend')}
+                  </span>
+                  <span className="text-[10px] text-secondary font-bold uppercase tracking-wider bg-rose-500/10 text-rose-600 dark:text-rose-400 px-2 py-0.5 rounded-md border border-rose-500/20">
+                    {t('finance.sourceAccount')}
+                  </span>
+                </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1">
+                      {t('finance.fromMethod')}
+                    </label>
+                    <select
+                      value={fromMethod}
+                      onChange={(e) => setFromMethod(e.target.value)}
+                      className="select-base text-xs"
+                    >
+                      {PAYMENT_METHODS.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <CurrencySelectorInput
+                      id="transfer-from-currency"
+                      label={t('finance.sendCurrency')}
+                      value={fromCurrency}
+                      onChange={handleFromCurrencyChange}
+                      availableCurrencies={availableCurrencies}
+                    />
+                  </div>
+                </div>
+
                 <div>
                   <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1">
-                    From Method
+                    {t('finance.amountToSend')} ({fromCurrency})
                   </label>
-                  <select
-                    value={fromMethod}
-                    onChange={(e) => setFromMethod(e.target.value)}
-                    className="select-base text-xs"
-                  >
-                    {PAYMENT_METHODS.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <CurrencySelectorInput
-                    id="transfer-from-currency"
-                    label="Send Currency"
-                    value={fromCurrency}
-                    onChange={handleFromCurrencyChange}
-                    availableCurrencies={availableCurrencies}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1">
-                  Amount to Send ({fromCurrency})
-                </label>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    placeholder="0.00"
-                    value={fromAmount}
-                    onChange={(e) => handleFromAmountChange(e.target.value)}
-                    className="input-base font-extrabold text-base"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-secondary pointer-events-none">
-                    {fromCurrency}
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      placeholder="0.00"
+                      value={fromAmount}
+                      onChange={(e) => handleFromAmountChange(e.target.value)}
+                      className="input-base font-extrabold text-base pr-12"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-secondary pointer-events-none">
+                      {fromCurrency}
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
 
-            {/* INTERACTIVE SWAP BUTTON BAR */}
-            <div className="relative flex items-center justify-center my-2">
-              <div className="absolute inset-0 flex items-center">
-                <div className="w-full border-t border-theme"></div>
-              </div>
-              <button
-                type="button"
-                onClick={handleSwapCurrenciesAndMethods}
-                className="relative z-10 px-3.5 py-1.5 rounded-full bg-background border border-theme text-xs font-bold text-accent hover:bg-accent hover:text-white shadow-sm hover:shadow transition-all flex items-center gap-1.5 cursor-pointer group"
-                title="Swap Currencies & Accounts (⇄)"
-              >
-                <ArrowLeftRight className="w-3.5 h-3.5 group-hover:rotate-180 transition-transform duration-300" />
-                <span>Swap Currencies (⇄)</span>
-              </button>
-            </div>
-
-            {/* DESTINATION (TO) SECTION */}
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
-                  <span className="w-2 h-2 rounded-full bg-emerald-500"></span>
-                  To (Receive / Inflow)
-                </span>
-                <span className="text-[11px] text-secondary font-medium">
-                  Destination Account
-                </span>
+              {/* Central Swap Button (Vertical on LG, Horizontal on Mobile) */}
+              <div className="flex items-center justify-center py-1 lg:py-0">
+                <button
+                  type="button"
+                  onClick={handleSwapCurrenciesAndMethods}
+                  className="p-2.5 lg:p-3 rounded-2xl bg-surface border border-theme text-accent hover:bg-accent hover:text-white shadow-xs hover:shadow-md transition-all duration-200 flex items-center justify-center gap-1.5 cursor-pointer group active:scale-95"
+                  title={t('finance.swapCurrencies')}
+                  aria-label={t('finance.swapCurrencies')}
+                >
+                  <ArrowLeftRight className="w-4 h-4 group-hover:rotate-180 transition-transform duration-300" />
+                  <span className="lg:hidden text-xs font-bold">{t('finance.swapCurrencies')}</span>
+                </button>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1">
-                    To Method
-                  </label>
-                  <select
-                    value={toMethod}
-                    onChange={(e) => setToMethod(e.target.value)}
-                    className="select-base text-xs"
-                  >
-                    {PAYMENT_METHODS.map((m) => (
-                      <option key={m} value={m}>
-                        {m}
-                      </option>
-                    ))}
-                  </select>
+              {/* DESTINATION (TO) CARD */}
+              <div className="p-3.5 rounded-xl bg-surface border border-theme space-y-3 shadow-xs">
+                <div className="flex items-center justify-between pb-1 border-b border-subtle">
+                  <span className="text-xs font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    {t('finance.toReceive')}
+                  </span>
+                  <span className="text-[10px] text-secondary font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded-md border border-emerald-500/20">
+                    {t('finance.destAccount')}
+                  </span>
                 </div>
 
-                <div>
-                  <CurrencySelectorInput
-                    id="transfer-to-currency"
-                    label="Receive Currency"
-                    value={toCurrency}
-                    onChange={handleToCurrencyChange}
-                    availableCurrencies={availableCurrencies}
-                  />
-                </div>
-              </div>
-
-              <div>
-                <div className="flex items-center justify-between mb-1">
-                  <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider">
-                    Amount Received ({toCurrency})
-                  </label>
-                  {isCustomRate && (
-                    <button
-                      type="button"
-                      onClick={resetToMarketRate}
-                      className="text-[10px] font-bold text-accent hover:underline flex items-center gap-0.5 cursor-pointer"
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                  <div>
+                    <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1">
+                      {t('finance.toMethod')}
+                    </label>
+                    <select
+                      value={toMethod}
+                      onChange={(e) => setToMethod(e.target.value)}
+                      className="select-base text-xs"
                     >
-                      <RefreshCw className="w-3 h-3" />
-                      Reset to Market Rate
-                    </button>
-                  )}
+                      {PAYMENT_METHODS.map((m) => (
+                        <option key={m} value={m}>
+                          {m}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <CurrencySelectorInput
+                      id="transfer-to-currency"
+                      label={t('finance.receiveCurrency')}
+                      value={toCurrency}
+                      onChange={handleToCurrencyChange}
+                      availableCurrencies={availableCurrencies}
+                    />
+                  </div>
                 </div>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="0.01"
-                    min="0.01"
-                    required
-                    placeholder="0.00"
-                    value={toAmount}
-                    onChange={(e) => handleToAmountChange(e.target.value)}
-                    className="input-base font-extrabold text-base text-emerald-600 dark:text-emerald-400"
-                  />
-                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-bold text-secondary pointer-events-none">
-                    {toCurrency}
+
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider">
+                      {t('finance.amountReceived')} ({toCurrency})
+                    </label>
+                    {isCustomRate && (
+                      <button
+                        type="button"
+                        onClick={resetToMarketRate}
+                        className="text-[10px] font-bold text-accent hover:underline flex items-center gap-0.5 cursor-pointer"
+                      >
+                        <RefreshCw className="w-3 h-3" />
+                        {t('finance.resetMarketRate')}
+                      </button>
+                    )}
+                  </div>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      step="0.01"
+                      min="0.01"
+                      required
+                      placeholder="0.00"
+                      value={toAmount}
+                      onChange={(e) => handleToAmountChange(e.target.value)}
+                      className="input-base font-extrabold text-base text-emerald-600 dark:text-emerald-400 pr-12"
+                    />
+                    <div className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-secondary pointer-events-none">
+                      {toCurrency}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1209,14 +1278,14 @@ export const FinanceTracker = ({ selectedDate }) => {
 
             {/* LIVE EXCHANGE RATE & SPREAD PREVIEW */}
             {isCrossCurrency ? (
-              <div className="p-3 rounded-xl bg-background/80 border border-theme/80 flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs">
+              <div className="p-2.5 sm:p-3 rounded-xl bg-surface border border-theme flex flex-col sm:flex-row sm:items-center justify-between gap-2 text-xs shadow-xs">
                 <div className="space-y-0.5">
                   <div className="flex items-center gap-2">
                     <span className="font-extrabold text-primary">
                       1 {fromCurrency} ≈ {referenceRate >= 100 ? referenceRate.toFixed(2) : referenceRate.toFixed(4)} {toCurrency}
                     </span>
                     <Badge variant={isCustomRate ? 'purple' : 'primary'} size="xs">
-                      {isCustomRate ? 'Custom User Rate' : 'Market Reference'}
+                      {isCustomRate ? t('finance.customUserRate') : t('finance.marketReference')}
                     </Badge>
                   </div>
                   <div className="text-[11px] text-secondary">
@@ -1226,7 +1295,7 @@ export const FinanceTracker = ({ selectedDate }) => {
 
                 {isCustomRate && fromAmount && toAmount && Number(fromAmount) > 0 && (
                   <div className="text-right text-[11px]">
-                    <span className="text-secondary font-medium block">Effective Applied Rate:</span>
+                    <span className="text-secondary font-medium block">{t('finance.effectiveAppliedRate')}:</span>
                     <span className="font-bold text-accent">
                       1 {fromCurrency} = {effectiveCustomRate.toFixed(4)} {toCurrency}
                     </span>
@@ -1234,40 +1303,38 @@ export const FinanceTracker = ({ selectedDate }) => {
                 )}
               </div>
             ) : (
-              <div className="p-2.5 rounded-xl bg-background/60 border border-theme/60 text-xs text-secondary flex items-center justify-between">
-                <span>Direct Transfer: Moving funds within {fromCurrency}</span>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-accent">1:1 Ratio</span>
+              <div className="p-2.5 rounded-xl bg-surface border border-theme text-xs text-secondary flex items-center justify-between shadow-xs">
+                <span className="font-medium">{t('finance.directTransferDesc')} {fromCurrency}</span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-accent bg-accent/10 px-2.5 py-0.5 rounded-md border border-accent/20">
+                  {t('finance.oneToOneRatio', '1:1 Ratio')}
+                </span>
               </div>
             )}
           </div>
 
-          <DateInput
-            label="Transfer Date"
-            value={transferDate}
-            onChange={setTransferDate}
-            required
-          />
+          {/* Bottom Row: Notes & Action Buttons in a single balanced row */}
+          <div className="grid grid-cols-1 sm:grid-cols-12 gap-3 items-end pt-1">
+            <div className="sm:col-span-7">
+              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
+                {t('common.notes')} ({t('common.optional')})
+              </label>
+              <input
+                type="text"
+                placeholder={t('finance.transferNotesPlaceholder')}
+                value={transferNotes}
+                onChange={(e) => setTransferNotes(e.target.value)}
+                className="input-base text-xs"
+              />
+            </div>
 
-          <div>
-            <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Notes (Optional)
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Bank currency exchange, cash withdrawal, online conversion"
-              value={transferNotes}
-              onChange={(e) => setTransferNotes(e.target.value)}
-              className="input-base"
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
-            <Button variant="secondary" onClick={() => setIsTransferModalOpen(false)}>
-              Cancel
-            </Button>
-            <Button type="submit" variant="primary" loading={savingTransfer} icon={ArrowRightLeft}>
-              {isCrossCurrency ? 'Execute Currency Exchange' : 'Execute Transfer'}
-            </Button>
+            <div className="sm:col-span-5 flex items-center justify-end gap-2.5">
+              <Button variant="secondary" onClick={() => setIsTransferModalOpen(false)}>
+                {t('common.cancel')}
+              </Button>
+              <Button type="submit" variant="primary" loading={savingTransfer} icon={ArrowRightLeft}>
+                {isCrossCurrency ? t('finance.executeExchange') : t('finance.executeTransfer')}
+              </Button>
+            </div>
           </div>
         </form>
       </Modal>
@@ -1276,19 +1343,19 @@ export const FinanceTracker = ({ selectedDate }) => {
       <Modal
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
-        title="Confirm Deletion"
-        subtitle="This action cannot be undone."
+        title={t('common.confirmDeleteTitle')}
+        subtitle={t('common.confirmDeleteDesc')}
       >
         <div className="space-y-4">
           <p className="text-sm text-secondary">
-            Are you sure you want to delete this financial record? It will be removed from all balances and multi-currency accounts.
+            {t('finance.deleteTxDesc')}
           </p>
           <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
             <Button variant="secondary" onClick={() => setDeleteId(null)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button variant="danger" onClick={handleDeleteTransaction}>
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         </div>
