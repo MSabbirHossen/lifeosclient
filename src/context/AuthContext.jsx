@@ -4,11 +4,15 @@ import api from '../utils/api';
 const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
-  // Initialize user immediately from localStorage to eliminate flicker and unwanted redirect on refresh
+  // Initialize user immediately from localStorage only if BOTH token and user profile exist
   const [user, setUser] = useState(() => {
     try {
+      const token = localStorage.getItem('lifeos_token');
       const savedUser = localStorage.getItem('lifeos_user');
-      return savedUser ? JSON.parse(savedUser) : null;
+      if (!token || !savedUser) {
+        return null;
+      }
+      return JSON.parse(savedUser);
     } catch (e) {
       return null;
     }
@@ -36,6 +40,7 @@ export const AuthProvider = ({ children }) => {
     const fetchUser = async () => {
       const token = localStorage.getItem('lifeos_token');
       if (!token) {
+        setUser(null);
         setLoading(false);
         return;
       }
@@ -55,16 +60,14 @@ export const AuthProvider = ({ children }) => {
           localStorage.setItem('lifeos_currency', userData.currency);
         }
       } catch (err) {
-        console.warn('Profile fetch validation notice:', err.message);
-        // Only clear credentials if the backend explicitly declares the token invalid/expired (401/403)
-        // and NOT on server/database connection failures (500, 503, network errors)
+        // If the backend returns 401 or 403, the session/token is invalid or expired
         if (err.response && (err.response.status === 401 || err.response.status === 403)) {
-          const msg = (err.response.data?.message || '').toLowerCase();
-          if (msg.includes('token') || msg.includes('user no longer exists') || msg.includes('not authorized')) {
-            localStorage.removeItem('lifeos_token');
-            localStorage.removeItem('lifeos_user');
-            setUser(null);
-          }
+          console.warn('Session expired or unauthorized, clearing local auth credentials');
+          localStorage.removeItem('lifeos_token');
+          localStorage.removeItem('lifeos_user');
+          setUser(null);
+        } else {
+          console.warn('Profile fetch validation notice:', err.message);
         }
       } finally {
         setLoading(false);

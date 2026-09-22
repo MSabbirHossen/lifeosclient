@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { ThemeProvider } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { LanguageProvider } from './context/LanguageContext';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { getFormattedDate } from './utils/dateHelpers';
@@ -16,6 +17,7 @@ import { FitnessTracker } from './pages/FitnessTracker';
 import { CalorieTracker } from './pages/CalorieTracker';
 import { FinanceTracker } from './pages/FinanceTracker';
 import { IslamicTracker } from './pages/IslamicTracker';
+import { IslamicFastingTracker } from './pages/IslamicFastingTracker';
 import { QadaMatrix } from './pages/QadaMatrix';
 import { HabitsTracker } from './pages/HabitsTracker';
 import { GoalsTracker } from './pages/GoalsTracker';
@@ -40,7 +42,9 @@ const Layout = ({ children, selectedDate, setSelectedDate }) => {
       {/* Main Content Area */}
       <div
         className={`flex-1 flex flex-col min-w-0 transition-all duration-300 ${
-          isCollapsed ? 'lg:ml-20' : 'lg:ml-64'
+          isCollapsed
+            ? 'lg:ml-20 rtl:lg:ml-0 rtl:lg:mr-20'
+            : 'lg:ml-64 rtl:lg:ml-0 rtl:lg:mr-64'
         }`}
       >
         <Header
@@ -101,132 +105,146 @@ export function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
-        <Router>
-          <Routes>
-            {/* Auth Routes */}
-            <Route path="/login" element={<PublicOnlyRoute><Auth /></PublicOnlyRoute>} />
-            <Route path="/register" element={<PublicOnlyRoute><Auth /></PublicOnlyRoute>} />
+        <LanguageProvider>
+          <Router>
+            <Routes>
+              {/* Auth Routes */}
+              <Route path="/login" element={<PublicOnlyRoute><Auth /></PublicOnlyRoute>} />
+              <Route path="/register" element={<PublicOnlyRoute><Auth /></PublicOnlyRoute>} />
 
-            {/* Dashboard & Tracker Routes */}
-            <Route
-              path="/"
-              element={<Navigate to="/dashboard" replace />}
-            />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                  <Dashboard selectedDate={selectedDate} />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/journal"
-              element={
-                <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                  <Journal />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/time-tracker"
-              element={
-                <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                  <TimeTracker />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/study"
-              element={
-                <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                  <StudyTracker />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/fitness"
-              element={
-                <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                  <FitnessTracker />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/calories"
-              element={
-                <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                  <CalorieTracker />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/finance"
-              element={
-                <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                  <FinanceTracker />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/islamic"
-              element={
-                <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                  <IslamicTracker />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/qada-matrix"
-              element={
-                <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                  <QadaMatrix />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/habits"
-              element={
-                <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                  <HabitsTracker />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/goals"
-              element={
-                <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                  <GoalsTracker />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/reports"
-              element={
-                <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                  <Reports />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/settings"
-              element={
-                <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                  <Settings />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/developer"
-              element={
-                <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                  <DeveloperInfo />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
-        </Router>
+              {/* Dashboard & Tracker Routes */}
+              <Route
+                path="/"
+                element={<Navigate to="/dashboard" replace />}
+              />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <Dashboard selectedDate={selectedDate} />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/journal"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <Journal />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/time-tracker"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <TimeTracker />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/study"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <StudyTracker />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/fitness"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <FitnessTracker />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/calories"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <CalorieTracker />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/finance"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <FinanceTracker />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/islamic"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <IslamicTracker />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/islamic-fasting"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <IslamicFastingTracker selectedDate={selectedDate} />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/sawm"
+                element={<Navigate to="/islamic-fasting" replace />}
+              />
+              <Route
+                path="/qada-matrix"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <QadaMatrix />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/habits"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <HabitsTracker />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/goals"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <GoalsTracker />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/reports"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <Reports />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/settings"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <Settings />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/developer"
+                element={
+                  <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <DeveloperInfo />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </Router>
+        </LanguageProvider>
       </AuthProvider>
     </ThemeProvider>
   );
