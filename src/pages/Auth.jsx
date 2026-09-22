@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
+import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Mail, Lock, User, ArrowRight, Eye, EyeOff, Check, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/Button';
@@ -96,10 +97,12 @@ export const Auth = () => {
 
   const { login, register, loginWithGoogle } = useAuth();
   const { effectiveTheme } = useTheme();
+  const { t } = useLanguage();
   const navigate = useNavigate();
 
   const googleBtnContainerRef = useRef(null);
   const tokenClientRef = useRef(null);
+  const isGoogleIdInitializedRef = useRef(false);
 
   const googleClientId = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 
@@ -119,6 +122,29 @@ export const Auth = () => {
       setError('Google sign-in failed. Please try again.');
     }
   };
+
+  // Handle Google Token Response from background Google Sign-In button
+  const handleGoogleCredentialResponse = async (response) => {
+    if (!response?.credential) return;
+    setGoogleLoading(true);
+    setError('');
+    try {
+      await loginWithGoogle({
+        credential: response.credential,
+        name: name?.trim() || undefined,
+      });
+      navigate('/dashboard');
+    } catch (err) {
+      handleAuthError(err);
+    } finally {
+      setGoogleLoading(false);
+    }
+  };
+
+  const handleCredentialResponseRef = useRef(handleGoogleCredentialResponse);
+  useEffect(() => {
+    handleCredentialResponseRef.current = handleGoogleCredentialResponse;
+  });
 
   // Initialize Google Identity Services & OAuth2 Token Client
   useEffect(() => {
@@ -178,12 +204,15 @@ export const Auth = () => {
       // 2. Initialize Identity Services (ID Token / One Tap in background)
       if (window.google?.accounts?.id) {
         try {
-          window.google.accounts.id.initialize({
-            client_id: googleClientId,
-            callback: handleGoogleCredentialResponse,
-            auto_select: false,
-            use_fedcm_for_prompt: false,
-          });
+          if (!isGoogleIdInitializedRef.current) {
+            window.google.accounts.id.initialize({
+              client_id: googleClientId,
+              callback: (res) => handleCredentialResponseRef.current?.(res),
+              auto_select: false,
+              use_fedcm_for_prompt: false,
+            });
+            isGoogleIdInitializedRef.current = true;
+          }
 
           if (googleBtnContainerRef.current) {
             googleBtnContainerRef.current.innerHTML = '';
@@ -215,24 +244,6 @@ export const Auth = () => {
       return () => clearInterval(timer);
     }
   }, [googleClientId, isLogin, effectiveTheme]);
-
-  // Handle Google Token Response from background Google Sign-In button
-  const handleGoogleCredentialResponse = async (response) => {
-    if (!response?.credential) return;
-    setGoogleLoading(true);
-    setError('');
-    try {
-      await loginWithGoogle({
-        credential: response.credential,
-        name: name?.trim() || undefined,
-      });
-      navigate('/dashboard');
-    } catch (err) {
-      handleAuthError(err);
-    } finally {
-      setGoogleLoading(false);
-    }
-  };
 
   // Google button click handler (uses OAuth2 token client popup)
   const handleGoogleClick = () => {
@@ -291,9 +302,9 @@ export const Auth = () => {
       } else {
         await register(name, email, password);
       }
-      navigate('/dashboard');
+      navigate('/');
     } catch (err) {
-      setError(err.response?.data?.message || 'Authentication failed. Please verify your credentials.');
+      handleAuthError(err);
     } finally {
       setLoading(false);
     }
@@ -312,10 +323,10 @@ export const Auth = () => {
             <Sparkles className="w-6 h-6" />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
-            {isLogin ? 'Welcome back to Life OS' : 'Create your Account'}
+            {isLogin ? t('auth.welcomeBack') : t('auth.signUpTitle')}
           </h1>
           <p className="text-xs sm:text-sm text-secondary mt-1 font-medium">
-            {isLogin ? 'Access your unified life management system' : 'Start tracking your habits, goals & health with clarity'}
+            {isLogin ? t('auth.signInSubtitle') : t('auth.signUpSubtitle')}
           </p>
         </div>
 
@@ -332,7 +343,7 @@ export const Auth = () => {
                 : 'text-secondary hover:text-primary'
               }`}
           >
-            Sign In
+            {t('common.signIn')}
           </button>
           <button
             type="button"
@@ -345,7 +356,7 @@ export const Auth = () => {
                 : 'text-secondary hover:text-primary'
               }`}
           >
-            Create Account
+            {t('auth.registerBtn')}
           </button>
         </div>
 
@@ -364,7 +375,7 @@ export const Auth = () => {
             id="google-auth-button"
             onClick={handleGoogleClick}
             disabled={googleLoading}
-            aria-label={isLogin ? 'Continue with Google' : 'Sign up with Google'}
+            aria-label={t('auth.googleSignIn')}
             className="w-full h-12 flex items-center justify-center gap-3.5 px-5 rounded-2xl bg-surface hover:bg-subtle active:scale-[0.99] border-2 border-theme hover:border-indigo-500/50 dark:hover:border-indigo-400/50 text-primary font-semibold text-sm sm:text-base transition-all duration-200 card-shadow hover:shadow-md hover:shadow-indigo-500/10 cursor-pointer disabled:opacity-60 disabled:cursor-not-allowed group relative overflow-hidden focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500"
           >
             {/* Ambient hover glow gradient */}
@@ -381,9 +392,7 @@ export const Auth = () => {
             <span className="font-semibold tracking-tight text-primary">
               {googleLoading
                 ? 'Connecting to Google...'
-                : isLogin
-                  ? 'Continue with Google'
-                  : 'Sign up with Google'}
+                : t('auth.googleSignIn')}
             </span>
           </button>
 
@@ -408,7 +417,7 @@ export const Auth = () => {
           {!isLogin && (
             <div>
               <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Full Name
+                {t('auth.name')}
               </label>
               <div className="relative">
                 <User className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
@@ -427,7 +436,7 @@ export const Auth = () => {
 
           <div>
             <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Email Address
+              {t('auth.email')}
             </label>
             <div className="relative">
               <Mail className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
@@ -445,7 +454,7 @@ export const Auth = () => {
 
           <div>
             <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Password
+              {t('auth.password')}
             </label>
             <div className="relative">
               <Lock className="w-4 h-4 text-muted absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none z-10" />
@@ -539,7 +548,7 @@ export const Auth = () => {
               iconPosition="right"
               className="w-full font-bold shadow-md shadow-indigo-500/20"
             >
-              {isLogin ? 'Sign In to Life OS' : 'Create Account & Start'}
+              {isLogin ? t('auth.loginBtn') : t('auth.registerBtn')}
             </Button>
           </div>
         </form>

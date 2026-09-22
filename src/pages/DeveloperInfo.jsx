@@ -3,6 +3,7 @@ import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
+import { useLanguage } from '../context/LanguageContext';
 import {
   Sparkles,
   ExternalLink,
@@ -79,7 +80,7 @@ export const SOCIAL_LINKS = [
 
   // Official Platforms
   {
-    name: 'Protfolio',
+    name: 'Portfolio',
     handle: 'msabbirhossen.github.io',
     subHandle: 'Personal Showcase',
     category: 'Platforms',
@@ -214,6 +215,7 @@ export const SOCIAL_LINKS = [
 ];
 
 export const DeveloperInfo = ({ isCompact = false }) => {
+  const { t } = useLanguage();
   const [copiedLink, setCopiedLink] = useState(false);
   const [copiedEmail, setCopiedEmail] = useState(false);
   const [filterCategory, setFilterCategory] = useState('All');
@@ -297,8 +299,8 @@ export const DeveloperInfo = ({ isCompact = false }) => {
     <div className="space-y-6 sm:space-y-8 animate-fade-in max-w-6xl mx-auto">
       <PageHeader
         category="Creator & Community"
-        title="Developer & Community Hub"
-        description="Connect with MS Hossen (Part-Time Coder), the architect behind Life OS. Reach out via WhatsApp, Telegram, Email, explore the Portfolio, or share feedback."
+        title={t('developer.title')}
+        description={t('developer.subtitle')}
         action={
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
             <Button
@@ -315,7 +317,7 @@ export const DeveloperInfo = ({ isCompact = false }) => {
               rel="noopener noreferrer"
             >
               <Button variant="secondary" size="md" icon={Globe}>
-                Portfolio
+                {t('developer.portfolio')}
               </Button>
             </a>
             <a
@@ -671,22 +673,15 @@ export const DeveloperInfo = ({ isCompact = false }) => {
                   <UserCheck className="w-4 h-4 text-accent" />
                   <span>Direct Creator Channel via WhatsApp</span>
                 </div>
-                <a
-                  href={getWhatsAppUrl(feedbackText)}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="w-full sm:w-auto"
+                <Button
+                  type="submit"
+                  variant="gradient"
+                  size="md"
+                  icon={Send}
+                  className="shadow-sm shadow-indigo-500/20 w-full sm:w-auto"
                 >
-                  <Button
-                    type="submit"
-                    variant="gradient"
-                    size="md"
-                    icon={Send}
-                    className="shadow-sm shadow-indigo-500/20 w-full"
-                  >
-                    Send Note to Developer
-                  </Button>
-                </a>
+                  Send Note to Developer
+                </Button>
               </div>
             </form>
           )}

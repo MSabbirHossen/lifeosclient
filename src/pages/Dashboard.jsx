@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { StatCard } from '../components/StatCard';
@@ -49,12 +50,15 @@ const SALAH_CYCLE = ['pending', 'onTime', 'jamaah', 'late', 'missed', 'qada'];
 export const Dashboard = ({ selectedDate }) => {
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { t, isRTL } = useLanguage();
   const activeDate = selectedDate || getFormattedDate();
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isReflectionModalOpen, setIsReflectionModalOpen] = useState(false);
+  const [todayFast, setTodayFast] = useState(null);
+  const [fastingSummary, setFastingSummary] = useState(null);
   const [salahMap, setSalahMap] = useState({
     Fajr: 'pending',
     Dhuhr: 'pending',
@@ -68,11 +72,17 @@ export const Dashboard = ({ selectedDate }) => {
     else setRefreshing(true);
 
     try {
-      const res = await api.get(`/dashboard/summary?date=${activeDate}`);
+      const [res, fastRes, fastSummaryRes] = await Promise.all([
+        api.get(`/dashboard/summary?date=${activeDate}`),
+        api.get(`/islamic/fasts?date=${activeDate}`).catch(() => ({ data: [] })),
+        api.get('/islamic/fasts/summary').catch(() => ({ data: null })),
+      ]);
       setData(res.data);
       if (res.data?.summary?.salah?.prayerMap) {
         setSalahMap(res.data.summary.salah.prayerMap);
       }
+      setTodayFast(fastRes.data?.[0] || null);
+      setFastingSummary(fastSummaryRes.data || null);
     } catch (err) {
       console.error('Failed to fetch dashboard summary', err);
     } finally {
@@ -102,48 +112,58 @@ export const Dashboard = ({ selectedDate }) => {
     setSalahMap((prev) => ({ ...prev, [prayerName]: nextStatus }));
 
     try {
-      await api.post('/islamic/salah', {
+      await api.post('/salah/log', {
         date: activeDate,
         prayerName,
         status: nextStatus,
       });
-    } catch (err) {
-      console.error('Failed to update Salah status', err);
       fetchDashboardData(true);
+    } catch (err) {
+      console.error('Failed to update prayer status', err);
+      fetchDashboardData(true);
+    }
+  };
+
+  const handleToggleFastToday = async (newStatus, defaultType = 'sunnah_mon_thu') => {
+    try {
+      if (newStatus === 'none') {
+        await api.post('/islamic/fasts', { date: activeDate, status: 'none' });
+        setTodayFast(null);
+      } else {
+        const type = todayFast?.type || defaultType;
+        const res = await api.post('/islamic/fasts', {
+          date: activeDate,
+          type,
+          status: newStatus,
+          suhoorTime: todayFast?.suhoorTime || '',
+          iftarTime: todayFast?.iftarTime || '',
+          notes: todayFast?.notes || '',
+        });
+        setTodayFast(res.data);
+      }
+      const sumRes = await api.get('/islamic/fasts/summary').catch(() => ({ data: null }));
+      if (sumRes.data) setFastingSummary(sumRes.data);
+    } catch (err) {
+      console.error('Failed to toggle fast status', err);
     }
   };
 
   if (loading) {
     return (
-      <div className="flex flex-col justify-center items-center min-h-[60vh] gap-3">
-        <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-        <span className="text-xs font-semibold text-secondary">Synthesizing Personal Life Cockpit...</span>
+      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
+        <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
+        <span className="text-xs font-bold text-secondary uppercase tracking-widest">{t('common.loading', 'Loading Dashboard...')}</span>
       </div>
     );
   }
 
-  const defaultSummary = {
-    journal: null,
-    prompt: { category: 'Growth', question: 'What is one high-impact decision you made today?' },
-    time: { totalMinutes: 0, byCategory: {}, count: 0 },
-    study: { totalMinutes: 0, sessionsCount: 0 },
-    calories: { consumed: 0, intake: 0, burned: 0, net: 0, remaining: 2000, goal: 2000, protein: 0 },
-    fitness: { caloriesBurned: 0, workoutsCount: 0 },
-    salah: { completedCount: 0, total: 5, logs: [] },
-    finance: { expensesToday: 0, expensesMonth: 0, incomeToday: 0 },
-    habits: { activeCount: 0, completedTodayCount: 0 },
-    goalsCount: 0,
-  };
-
-  const summary = data?.summary || defaultSummary;
-
-  // Calorie calculations
-  const calorieIntake = summary.calories?.intake ?? summary.calories?.consumed ?? 0;
-  const calorieBurned = summary.fitness?.caloriesBurned ?? summary.calories?.burned ?? 0;
-  const netCalories = summary.calories?.net ?? (calorieIntake - calorieBurned);
+  const summary = data?.summary || {};
+  const calorieIntake = summary.calories?.intake ?? summary.calories?.consumed ?? summary.calories?.totalIntake ?? 0;
+  const calorieBurned = summary.fitness?.totalCaloriesBurned ?? summary.fitness?.caloriesBurned ?? summary.calories?.burned ?? 0;
+  const netCalories = summary.calories?.netCalories ?? summary.calories?.net ?? (calorieIntake - calorieBurned);
   const calorieGoal = summary.calories?.goal ?? 2000;
-  const remainingCalories = Math.max(0, calorieGoal - netCalories);
-  const isDeficit = netCalories <= calorieGoal;
+  const remainingCalories = summary.calories?.remainingCalories ?? Math.max(0, calorieGoal - netCalories);
+  const isDeficit = summary.calories?.isDeficit ?? (netCalories <= calorieGoal);
 
   // Time Chart Data
   const timeChartData = Object.entries(summary.time?.byCategory || {}).map(([name, value]) => ({
@@ -157,72 +177,97 @@ export const Dashboard = ({ selectedDate }) => {
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
       {/* Top Cockpit Header */}
       <PageHeader
-        category="Command Center"
-        title="Personal Life Management Cockpit"
-        description={`Live synthesis and metrics for ${formatDisplayDate(activeDate)}`}
+        category={t('categories.overview', 'Command Center')}
+        title={t('dashboard.title', 'Personal Life Management Cockpit')}
+        description={`${t('dashboard.subtitle', 'Live synthesis and metrics for')} ${formatDisplayDate(activeDate)}`}
         action={
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
             <button
               onClick={() => fetchDashboardData(true)}
-              className="p-2 rounded-xl text-secondary hover:text-primary hover:bg-subtle border border-theme transition-all cursor-pointer"
+              className="p-2 rounded-xl text-secondary hover:text-primary hover:bg-subtle border border-theme transition-all cursor-pointer shrink-0"
               title="Refresh Dashboard Data"
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-accent' : ''}`} />
             </button>
             <Button
               variant="secondary"
-              size="md"
+              size="sm"
               icon={CheckSquare}
               onClick={() => navigate('/habits')}
+              className="flex-1 sm:flex-initial justify-center"
             >
-              Habits
+              {t('nav.habits', 'Habits Tracker')}
             </Button>
             <Button
               variant="gradient"
-              size="md"
+              size="sm"
               icon={BookOpen}
               onClick={() => setIsReflectionModalOpen(true)}
+              className="flex-1 sm:flex-initial justify-center"
             >
-              Guided Reflection
+              {t('reflection.guidedReflection', 'Guided Reflection')}
             </Button>
           </div>
         }
       />
 
       {/* 5-Prayer Salah Interactive Pills Strip */}
-      <div className="p-4 rounded-2xl bg-surface border border-theme card-shadow">
-        <div className="flex items-center justify-between mb-3">
-          <div className="flex items-center gap-2">
-            <Compass className="w-4 h-4 text-emerald-500" />
-            <span className="text-xs font-black text-primary uppercase tracking-wider">
-              Today's 5 Daily Prayers (Salah)
+      <div
+        onClick={(e) => {
+          if (!e.target.closest('button')) navigate('/islamic');
+        }}
+        className="p-3.5 sm:p-5 rounded-2xl bg-surface border border-theme card-shadow transition-all duration-200 hover:shadow-md hover:border-theme-strong hover:-translate-y-0.5 cursor-pointer"
+      >
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2 pb-2.5 border-b border-theme/60">
+          <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/islamic')}>
+            <Compass className="w-4 h-4 text-emerald-500 shrink-0" />
+            <span className="text-xs sm:text-sm font-extrabold text-primary uppercase tracking-wider hover:text-accent transition-colors">
+              {t('dashboard.salahTitle', "Today's 5 Daily Prayers (Salah)")}
             </span>
             <Badge variant="success" size="xs">
-              {Object.values(salahMap).filter((s) => s !== 'pending' && s !== 'missed').length} / 5 Done
+              {Object.values(salahMap).filter((s) => s !== 'pending' && s !== 'missed').length} / 5 {t('goals.completed', 'Done')}
             </Badge>
           </div>
-          <button
-            onClick={() => navigate('/qada-matrix')}
-            className="text-xs font-bold text-accent hover:underline flex items-center gap-1 cursor-pointer"
-          >
-            Qada Matrix <ArrowRight className="w-3 h-3" />
-          </button>
+          <div className="flex items-center gap-1.5 sm:gap-2 flex-wrap text-xs">
+            <button
+              onClick={() => navigate('/islamic-fasting')}
+              className="px-2 py-1 rounded-lg bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-500/20 font-bold flex items-center gap-1 transition-colors cursor-pointer text-[11px]"
+            >
+              <Moon className="w-3 h-3" /> {t('nav.islamicFasting', 'Fasting (Sawm)')}
+            </button>
+            <button
+              onClick={() => navigate('/qada-matrix')}
+              className="px-2 py-1 rounded-lg bg-accent/10 text-accent hover:bg-accent/20 font-bold flex items-center gap-1 transition-colors cursor-pointer text-[11px]"
+            >
+              {t('nav.qada', 'Salah & Qada Matrix')}
+            </button>
+            <button
+              onClick={() => navigate('/islamic')}
+              className="px-2 py-1 rounded-lg bg-subtle text-secondary hover:text-primary hover:bg-surface font-bold flex items-center gap-1 transition-colors cursor-pointer text-[11px]"
+            >
+              {t('nav.islamic', 'Islamic & Deen')} <ArrowRight className="w-3 h-3" />
+            </button>
+          </div>
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-2.5">
-          {['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((prayer) => {
+          {['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((prayer, idx) => {
             const status = salahMap[prayer] || 'pending';
             const config = SALAH_STATUS_CONFIG[status] || SALAH_STATUS_CONFIG.pending;
+            const prayerNameTranslated = t(`dashboard.salah${prayer}`, prayer);
+            const isLastOnMobile = idx === 4; // Isha
             return (
               <button
                 key={prayer}
                 type="button"
                 onClick={() => handleCycleSalah(prayer)}
-                className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between transition-all cursor-pointer hover:scale-[1.02] active:scale-95 ${config.class}`}
+                className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between transition-all cursor-pointer hover:scale-[1.02] active:scale-95 ${
+                  isLastOnMobile ? 'col-span-2 sm:col-span-1' : ''
+                } ${config.class}`}
                 title={`Click to cycle status: ${prayer}`}
               >
                 <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-xs sm:text-sm font-extrabold text-primary">{prayer}</span>
+                  <span className="text-xs sm:text-sm font-extrabold text-primary">{prayerNameTranslated}</span>
                 </div>
                 <span className="text-[11px] sm:text-xs font-bold flex items-center gap-1">
                   {config.icon} {config.label}
@@ -236,32 +281,36 @@ export const Dashboard = ({ selectedDate }) => {
       {/* Row 1: Bento Stat Strip */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         <StatCard
-          title="Time Logged"
+          title={t('dashboard.focusMinutes', 'Time Logged')}
           value={`${Math.floor((summary.time?.totalMinutes || 0) / 60)}h ${(summary.time?.totalMinutes || 0) % 60}m`}
           subtitle={`${summary.time?.count || 0} blocks recorded`}
           icon={Clock}
           color="indigo"
+          onClick={() => navigate('/time-tracker')}
         />
         <StatCard
-          title="Net Calorie Balance"
+          title={t('calories.budgetRemaining', 'Net Calorie Balance')}
           value={`${netCalories} kcal`}
           subtitle={`${isDeficit ? 'Caloric Deficit' : 'Caloric Surplus'} (${remainingCalories} rem)`}
           icon={Utensils}
           color={isDeficit ? 'emerald' : 'rose'}
+          onClick={() => navigate('/calories')}
         />
         <StatCard
-          title="Calories Burned"
+          title={t('dashboard.burnedToday', 'Calories Burned')}
           value={`${calorieBurned} kcal`}
           subtitle={`${summary.fitness?.workoutsCount || 0} workout sessions`}
           icon={Dumbbell}
           color="amber"
+          onClick={() => navigate('/fitness')}
         />
         <StatCard
-          title="Habits Completed"
+          title={t('dashboard.habitsCompleted', 'Habits Completed')}
           value={`${summary.habits?.completedTodayCount || 0} / ${summary.habits?.activeCount || 0}`}
-          subtitle="Daily discipline streak"
+          subtitle={t('habits.streak', 'Daily discipline streak')}
           icon={Flame}
           color="purple"
+          onClick={() => navigate('/habits')}
         />
       </div>
 
@@ -272,8 +321,9 @@ export const Dashboard = ({ selectedDate }) => {
           {/* Calorie Intake vs Expenditure Net Balance Engine Card */}
           <Card
             hover
-            title="Daily Calorie & Energy Balance Engine"
-            subtitle="Live synthesis of food intake vs workout expenditure"
+            onClick={() => navigate('/calories')}
+            title={t('dashboard.energyEngineTitle')}
+            subtitle={t('dashboard.liveEnergySynthesis')}
             icon={Activity}
             badge={
               <Badge variant={isDeficit ? 'success' : 'danger'} size="xs">
@@ -282,7 +332,7 @@ export const Dashboard = ({ selectedDate }) => {
             }
             action={
               <Button variant="ghost" size="xs" onClick={() => navigate('/calories')}>
-                Meal Logger <ArrowRight className="w-3 h-3 ml-1" />
+                {t('nav.calories')} <ArrowRight className="w-3 h-3 ml-1" />
               </Button>
             }
           >
@@ -291,7 +341,7 @@ export const Dashboard = ({ selectedDate }) => {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20">
                   <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">
-                    Total Intake
+                    {t('dashboard.caloriesToday')}
                   </span>
                   <span className="text-2xl font-black text-primary mt-1 block">
                     {calorieIntake} <span className="text-xs font-semibold text-secondary">kcal</span>
@@ -300,7 +350,7 @@ export const Dashboard = ({ selectedDate }) => {
 
                 <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
                   <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">
-                    Total Burned
+                    {t('dashboard.burnedToday')}
                   </span>
                   <span className="text-2xl font-black text-primary mt-1 block">
                     {calorieBurned} <span className="text-xs font-semibold text-secondary">kcal</span>
@@ -309,7 +359,7 @@ export const Dashboard = ({ selectedDate }) => {
 
                 <div className={`p-3.5 rounded-2xl border ${isDeficit ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-purple-500/10 border-purple-500/20'}`}>
                   <span className="text-[11px] font-bold uppercase tracking-wider block text-secondary">
-                    Net Balance
+                    {t('calories.energyBalance')}
                   </span>
                   <span className={`text-2xl font-black mt-1 block ${isDeficit ? 'text-emerald-600 dark:text-emerald-400' : 'text-purple-600 dark:text-purple-400'}`}>
                     {netCalories} <span className="text-xs font-semibold text-secondary">/ {calorieGoal} kcal</span>
@@ -320,7 +370,7 @@ export const Dashboard = ({ selectedDate }) => {
               {/* Visual Multi-Segment Bar Meter */}
               <div className="space-y-1.5 pt-1">
                 <div className="flex items-center justify-between text-xs font-bold">
-                  <span className="text-secondary">Intake ({calorieIntake}) - Burned ({calorieBurned})</span>
+                  <span className="text-secondary">{t('dashboard.caloriesToday')} ({calorieIntake}) - {t('dashboard.burnedToday')} ({calorieBurned})</span>
                   <span className={isDeficit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
                     {remainingCalories > 0 ? `${remainingCalories} kcal Remaining` : `${Math.abs(remainingCalories)} kcal Over Target`}
                   </span>
@@ -351,24 +401,25 @@ export const Dashboard = ({ selectedDate }) => {
             {/* Financial Summary */}
             <Card
               hover
-              title="Finance Snapshot"
-              subtitle="Expenses & Cashflow"
+              onClick={() => navigate('/finance')}
+              title={t('dashboard.financeSnapshot')}
+              subtitle={t('dashboard.expensesCashflow')}
               icon={Wallet}
               action={
                 <Button variant="ghost" size="xs" onClick={() => navigate('/finance')}>
-                  Ledger <ArrowRight className="w-3 h-3 ml-1" />
+                  {t('nav.finance')} <ArrowRight className="w-3 h-3 ml-1" />
                 </Button>
               }
             >
               <div className="space-y-3 pt-1">
                 <div className="p-3 rounded-xl bg-subtle border border-theme flex items-center justify-between">
-                  <span className="text-xs font-bold text-secondary">Today's Expenses</span>
+                  <span className="text-xs font-bold text-secondary">{t('finance.todaysExpenses')}</span>
                   <span className="text-lg font-black text-[var(--color-danger)]">
                     {(summary.finance?.expensesToday || 0).toFixed(2)} {currentCurrency}
                   </span>
                 </div>
                 <div className="p-3 rounded-xl bg-subtle border border-theme flex items-center justify-between">
-                  <span className="text-xs font-bold text-secondary">Month to Date</span>
+                  <span className="text-xs font-bold text-secondary">{t('finance.monthToDate')}</span>
                   <span className="text-base font-extrabold text-primary">
                     {(summary.finance?.expensesMonth || 0).toFixed(2)} {currentCurrency}
                   </span>
@@ -380,19 +431,20 @@ export const Dashboard = ({ selectedDate }) => {
           {/* Time Distribution Donut */}
           <Card
             hover
-            title="Today's Time Allocation"
-            subtitle="Logged blocks categorized across deep work, study, deen, & rest"
+            onClick={() => navigate('/time-tracker')}
+            title={t('dashboard.timeAllocation')}
+            subtitle={t('dashboard.timeBlocksSummary')}
             icon={Clock}
             action={
               <Button variant="ghost" size="xs" onClick={() => navigate('/time-tracker')}>
-                Timeline <ArrowRight className="w-3 h-3 ml-1" />
+                {t('nav.focus')} <ArrowRight className="w-3 h-3 ml-1" />
               </Button>
             }
           >
             {timeChartData.length === 0 ? (
               <div className="h-44 flex flex-col items-center justify-center text-xs text-secondary italic bg-subtle/50 rounded-xl border border-dashed border-theme mt-2">
                 <Clock className="w-8 h-8 text-muted mb-2 stroke-1" />
-                No time blocks recorded for this date.
+                {t('time.noLogs')}
               </div>
             ) : (
               <div className="h-56 w-full mt-2">
@@ -434,10 +486,16 @@ export const Dashboard = ({ selectedDate }) => {
           {/* Guided Reflection Card with Shuffle Generator */}
           <Card
             hover
-            title="Daily Guided Reflection"
-            subtitle="Prompt of the Day"
+            onClick={() => navigate('/journal')}
+            title={t('reflection.guidedReflection')}
+            subtitle={t('dashboard.promptOfDay')}
             icon={BookOpen}
-            badge={<Badge variant="primary" size="xs">Journal</Badge>}
+            badge={<Badge variant="primary" size="xs">{t('nav.reflection')}</Badge>}
+            action={
+              <Button variant="ghost" size="xs" onClick={() => navigate('/journal')}>
+                {t('nav.reflection')} <ArrowRight className="w-3 h-3 ml-1" />
+              </Button>
+            }
           >
             <div className="space-y-3.5 mt-1">
               <Badge variant="purple" size="xs">
@@ -459,19 +517,180 @@ export const Dashboard = ({ selectedDate }) => {
                   icon={Plus}
                   onClick={() => setIsReflectionModalOpen(true)}
                 >
-                  Answer Prompt
+                  {t('reflection.saveReflection')}
                 </Button>
               )}
+            </div>
+          </Card>
+
+          {/* Islamic Fasting (Sawm / Siyam) Card */}
+          <Card
+            hover
+            onClick={() => navigate('/islamic-fasting')}
+            title={t('islamic.fastingSawmTitle', 'Islamic Fasting (Sawm)')}
+            subtitle={t('islamic.fastingSawmSubtitle', 'Sunnah & Obligatory Fasts')}
+            icon={Moon}
+            badge={
+              <Badge
+                variant={
+                  todayFast?.status === 'completed'
+                    ? 'success'
+                    : todayFast?.status === 'fasting'
+                    ? 'warning'
+                    : 'neutral'
+                }
+                size="xs"
+              >
+                {todayFast?.status === 'completed'
+                  ? `Completed ✨`
+                  : todayFast?.status === 'fasting'
+                  ? `Fasting Today 🌙`
+                  : `Not Fasting`}
+              </Badge>
+            }
+            action={
+              <Button variant="ghost" size="xs" onClick={() => navigate('/islamic-fasting')}>
+                {t('common.viewAll', 'View All')} <ArrowRight className="w-3 h-3 ml-1" />
+              </Button>
+            }
+          >
+            <div className="space-y-3 pt-1">
+              {/* Today's Status Banner */}
+              <div
+                className={`p-3.5 rounded-xl border flex flex-col gap-2.5 ${
+                  todayFast?.status === 'completed'
+                    ? 'bg-emerald-500/10 border-emerald-500/25'
+                    : todayFast?.status === 'fasting'
+                    ? 'bg-amber-500/10 border-amber-500/25'
+                    : 'bg-subtle/70 border-theme'
+                }`}
+              >
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-bold text-primary flex items-center gap-1.5">
+                    {todayFast?.status === 'completed' ? (
+                      <CheckCircle2 className="w-4 h-4 text-emerald-500" />
+                    ) : todayFast?.status === 'fasting' ? (
+                      <span className="relative flex h-2.5 w-2.5 mr-1">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-amber-500"></span>
+                      </span>
+                    ) : (
+                      <Moon className="w-4 h-4 text-secondary" />
+                    )}
+                    {todayFast?.status === 'completed'
+                      ? t('islamic.fastCompletedToday', 'Fast Completed Today (Alhamdulillah)')
+                      : todayFast?.status === 'fasting'
+                      ? t('islamic.fastingInProgress', 'Fasting in Progress Today')
+                      : t('islamic.notFastingToday', 'Not Marked as Fasting Today')}
+                  </span>
+                  {todayFast?.type && (
+                    <span className="text-[10px] font-extrabold uppercase px-2 py-0.5 rounded-md bg-surface border border-theme text-secondary">
+                      {todayFast.type.replace(/_/g, ' ')}
+                    </span>
+                  )}
+                </div>
+
+                {/* 1-Click Toggle Action Buttons */}
+                <div className="flex items-center gap-2 pt-1">
+                  {!todayFast || todayFast.status === 'none' || todayFast.status === 'broken' ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleFastToday('fasting', 'sunnah_mon_thu');
+                        }}
+                        className="flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 transition-all cursor-pointer text-center"
+                      >
+                        🌙 Fast Today
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleFastToday('completed', 'sunnah_mon_thu');
+                        }}
+                        className="flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/30 transition-all cursor-pointer text-center"
+                      >
+                        ✓ Completed
+                      </button>
+                    </>
+                  ) : todayFast.status === 'fasting' ? (
+                    <>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleFastToday('completed');
+                        }}
+                        className="flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold bg-emerald-600 text-white hover:bg-emerald-700 transition-all cursor-pointer text-center shadow-xs"
+                      >
+                        ✨ Complete Fast (Iftar)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleFastToday('none');
+                        }}
+                        className="py-1.5 px-2.5 rounded-lg text-xs font-medium text-secondary hover:text-primary hover:bg-subtle border border-theme transition-all cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    </>
+                  ) : (
+                    <div className="flex items-center justify-between w-full">
+                      <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold">
+                        {todayFast.suhoorTime && todayFast.iftarTime
+                          ? `Suhoor: ${todayFast.suhoorTime} • Iftar: ${todayFast.iftarTime}`
+                          : 'May Allah accept your fasting and worship'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleToggleFastToday('none');
+                        }}
+                        className="text-[11px] text-secondary hover:text-rose-500 underline cursor-pointer"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Fasting Quick Mini-Stats */}
+              <div className="grid grid-cols-3 gap-2 pt-1 text-center">
+                <div className="p-2 rounded-xl bg-subtle border border-theme">
+                  <span className="text-[10px] text-secondary font-bold block uppercase">{t('islamic.totalFasts', 'Total')}</span>
+                  <span className="text-base font-black text-primary">{fastingSummary?.totalCompleted || 0}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-subtle border border-theme">
+                  <span className="text-[10px] text-secondary font-bold block uppercase">{t('islamic.sunnahFasts', 'Sunnah')}</span>
+                  <span className="text-base font-black text-emerald-600 dark:text-emerald-400">{fastingSummary?.sunnahCount || 0}</span>
+                </div>
+                <div className="p-2 rounded-xl bg-subtle border border-theme">
+                  <span className="text-[10px] text-secondary font-bold block uppercase">{t('islamic.ramadanFasts', 'Ramadan')}</span>
+                  <span className="text-base font-black text-amber-600 dark:text-amber-400">{fastingSummary?.ramadanCount || 0}</span>
+                </div>
+              </div>
             </div>
           </Card>
 
           {/* Spiritual Wisdom & Anchor */}
           <Card
             hover
-            title="Spiritual Anchor"
-            subtitle="Daily Islamic Wisdom"
+            onClick={() => navigate('/islamic')}
+            title={t('dashboard.spiritualAnchor')}
+            subtitle={t('dashboard.dailyIslamicWisdom')}
             icon={Compass}
-            badge={<Badge variant="success" size="xs">Deen</Badge>}
+            badge={<Badge variant="success" size="xs">{t('nav.islamic')}</Badge>}
+            action={
+              <Button variant="ghost" size="xs" onClick={() => navigate('/islamic')}>
+                {t('nav.islamic')} <ArrowRight className="w-3 h-3 ml-1" />
+              </Button>
+            }
           >
             <div className="p-4 bg-emerald-500/5 border border-emerald-500/20 rounded-2xl space-y-2 mt-1">
               <p className="text-xs font-bold text-emerald-600 dark:text-emerald-400 flex items-center gap-1.5 uppercase tracking-wider">
@@ -487,8 +706,17 @@ export const Dashboard = ({ selectedDate }) => {
           </Card>
 
           {/* Quick Actions Card */}
-          <Card hover title="Quick Cockpit Actions" icon={Sparkles}>
+          <Card hover title={t('dashboard.quickActions')} icon={Sparkles}>
             <div className="space-y-2 mt-2">
+              <Button
+                variant="secondary"
+                size="sm"
+                className="w-full justify-start"
+                icon={Moon}
+                onClick={() => navigate('/islamic-fasting')}
+              >
+                {t('nav.islamicFasting', 'Fasting (Sawm)')}
+              </Button>
               <Button
                 variant="secondary"
                 size="sm"
@@ -496,7 +724,7 @@ export const Dashboard = ({ selectedDate }) => {
                 icon={Plus}
                 onClick={() => navigate('/calories')}
               >
-                Log Meal & Water
+                {t('dashboard.logMealWater')}
               </Button>
               <Button
                 variant="secondary"
@@ -505,7 +733,7 @@ export const Dashboard = ({ selectedDate }) => {
                 icon={Dumbbell}
                 onClick={() => navigate('/fitness')}
               >
-                Log Workout
+                {t('dashboard.logWorkout')}
               </Button>
               <Button
                 variant="secondary"
@@ -514,7 +742,7 @@ export const Dashboard = ({ selectedDate }) => {
                 icon={Compass}
                 onClick={() => navigate('/qada-matrix')}
               >
-                Open Qada Matrix
+                {t('dashboard.openQadaMatrix')}
               </Button>
               <Button
                 variant="secondary"
@@ -523,7 +751,7 @@ export const Dashboard = ({ selectedDate }) => {
                 icon={Wallet}
                 onClick={() => navigate('/finance')}
               >
-                Transfer / Expense
+                {t('dashboard.transferExpense')}
               </Button>
             </div>
           </Card>
