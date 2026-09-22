@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card } from './Card';
 import { Button } from './Button';
 import { Badge } from './Badge';
+import { useLanguage } from '../context/LanguageContext';
 import {
   Clock,
   Play,
@@ -27,17 +29,19 @@ import {
   subscribeFastingUpdates,
 } from '../utils/fastingService';
 
-const FASTING_PROTOCOLS = [
-  { id: '16:8', label: '16:8 Standard', fastHours: 16, eatHours: 8, desc: 'Most popular circadian window' },
-  { id: '18:6', label: '18:6 Extended', fastHours: 18, eatHours: 6, desc: 'Deep autophagy & metabolic focus' },
-  { id: '20:4', label: '20:4 Warrior', fastHours: 20, eatHours: 4, desc: 'Advanced intermittent window' },
-  { id: '14:10', label: '14:10 Gentle', fastHours: 14, eatHours: 10, desc: 'Beginner-friendly balance' },
-  { id: '12:12', label: '12:12 Circadian', fastHours: 12, eatHours: 12, desc: 'Natural day/night balance' },
-  { id: '24:0', label: '24:0 OMAD', fastHours: 24, eatHours: 0, desc: 'One meal a day full cycle' },
-  { id: 'custom', label: 'Custom Window', fastHours: 16, eatHours: 8, desc: 'Tailored hours' },
-];
-
 export const FastingTimer = ({ compact = false }) => {
+  const { t } = useLanguage();
+  const navigate = useNavigate();
+
+  const FASTING_PROTOCOLS = [
+    { id: '16:8', label: t('fasting.protocolStandard'), fastHours: 16, eatHours: 8 },
+    { id: '18:6', label: t('fasting.protocolExtended'), fastHours: 18, eatHours: 6 },
+    { id: '20:4', label: t('fasting.protocolWarrior'), fastHours: 20, eatHours: 4 },
+    { id: '12:12', label: t('fasting.protocolCircadian'), fastHours: 12, eatHours: 12 },
+    { id: '24:0', label: t('fasting.protocolOMAD'), fastHours: 24, eatHours: 0 },
+    { id: 'custom', label: t('fasting.protocolCustom'), fastHours: 16, eatHours: 8 },
+  ];
+
   const [selectedProtocolId, setSelectedProtocolId] = useState('16:8');
   const [customHours, setCustomHours] = useState(16);
   const [showSettings, setShowSettings] = useState(false);
@@ -192,8 +196,16 @@ export const FastingTimer = ({ compact = false }) => {
     totalAttempted > 0 ? Math.round((fastingStats.completedCount / totalAttempted) * 100) : 0;
 
   if (compact) {
+    const handleCompactClick = (e) => {
+      if (e.target.closest('button')) return;
+      navigate('/calories');
+    };
+
     return (
-      <div className="p-3 sm:p-4 rounded-2xl bg-subtle border border-theme flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4">
+      <div
+        onClick={handleCompactClick}
+        className="p-3 sm:p-4 rounded-2xl bg-subtle border border-theme flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4 card-hover cursor-pointer"
+      >
         <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
           <div className="relative flex items-center justify-center shrink-0">
             <svg width={size} height={size} className="transform -rotate-90">
@@ -221,7 +233,7 @@ export const FastingTimer = ({ compact = false }) => {
             </svg>
             <div className="absolute flex flex-col items-center justify-center">
               <span className="text-xs font-black text-primary">
-                {fastingState.isActive ? `${progressPercent}%` : 'Off'}
+                {fastingState.isActive ? `${progressPercent}%` : t('fasting.off')}
               </span>
               <span className="text-[9px] font-bold text-secondary">
                 {fastingState.isActive ? `${hoursElapsed}h ${minutesElapsed}m` : selectedProtocolId}
@@ -234,32 +246,32 @@ export const FastingTimer = ({ compact = false }) => {
               <Badge variant={fastingState.isActive ? 'purple' : 'neutral'} size="xs">
                 {fastingState.isActive ? (
                   <span className="flex items-center gap-1">
-                    <Moon className="w-3 h-3 text-purple-400" /> Fasting ({activeTargetHours}h)
+                    <Moon className="w-3 h-3 text-purple-400" /> {t('fasting.fastingPhase')} ({activeTargetHours}h)
                   </span>
                 ) : (
                   <span className="flex items-center gap-1">
-                    <Utensils className="w-3 h-3 text-emerald-400" /> Window ({eatingHours}h)
+                    <Utensils className="w-3 h-3 text-emerald-400" /> {t('fasting.window')} ({eatingHours}h)
                   </span>
                 )}
               </Badge>
               <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                {fastingStats.completedCount} Completed IF
+                {fastingStats.completedCount} {t('fasting.completedIF')}
               </span>
               {fastingStats.partialCount > 0 && (
                 <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
-                  {fastingStats.partialCount} Partial
+                  {fastingStats.partialCount} {t('fasting.partialFast')}
                 </span>
               )}
             </div>
             <p className="text-xs font-bold text-primary truncate">
               {fastingState.isActive
-                ? `${hoursRemaining}h ${minutesRemaining}m to Eating Window`
-                : `${activeTargetHours}h Fast / ${eatingHours}h Eating Window`}
+                ? `${hoursRemaining}h ${minutesRemaining}m ${t('fasting.toEatingWindow')}`
+                : `${activeTargetHours}h ${t('fasting.fastingPhase')} / ${eatingHours}h ${t('fasting.eatingWindow')}`}
             </p>
             <p className="text-[11px] text-secondary mt-0.5 truncate flex items-center gap-1">
-              <span>{fastingState.isActive ? `Started ${new Date(fastingState.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : `Protocol: ${selectedProtocolId}`}</span>
+              <span>{fastingState.isActive ? `${t('fasting.started')} ${new Date(fastingState.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : `${t('fasting.protocolLabel')}: ${selectedProtocolId}`}</span>
               {fastingStats.streak > 0 && (
-                <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">· 🔥 {fastingStats.streak}d streak</span>
+                <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">· 🔥 {fastingStats.streak}{t('streakWidget.daysStreak')}</span>
               )}
             </p>
           </div>
@@ -272,7 +284,7 @@ export const FastingTimer = ({ compact = false }) => {
           icon={fastingState.isActive ? Square : Play}
           onClick={fastingState.isActive ? handleStop : handleStart}
         >
-          {fastingState.isActive ? 'End Fast' : 'Start Fast'}
+          {fastingState.isActive ? t('fasting.endFast') : t('fasting.startFast')}
         </Button>
       </div>
     );
@@ -281,26 +293,26 @@ export const FastingTimer = ({ compact = false }) => {
   return (
     <Card
       hover
-      title="Intermittent Fasting"
-      subtitle="Circadian rhythm & dynamic metabolic fasting windows"
+      title={t('fasting.title')}
+      subtitle={t('fasting.subtitle')}
       icon={Clock}
       badge={
         <div className="flex items-center gap-2">
           {fastingStats.streak > 0 && (
             <Badge variant="amber" size="xs">
               <span className="flex items-center gap-1">
-                <Flame className="w-3 h-3 text-amber-500 fill-amber-500" /> {fastingStats.streak}d Streak
+                <Flame className="w-3 h-3 text-amber-500 fill-amber-500" /> {fastingStats.streak} {t('streakWidget.daysStreak')}
               </span>
             </Badge>
           )}
           <Badge variant={fastingState.isActive ? 'purple' : 'neutral'} size="xs">
-            {fastingState.isActive ? `Active Fast (${activeTargetHours}h)` : 'Resting'}
+            {fastingState.isActive ? `${t('fasting.fastingInProgress')} (${activeTargetHours}h)` : t('common.status')}
           </Badge>
           <button
             type="button"
             onClick={() => setShowSettings(!showSettings)}
             className="p-1 rounded-lg text-secondary hover:text-primary hover:bg-subtle transition-colors cursor-pointer"
-            title="Configure Fasting Protocol & Counts"
+            title={t('fasting.configProtocolCounts')}
           >
             <Settings2 className="w-4 h-4" />
           </button>
@@ -317,10 +329,10 @@ export const FastingTimer = ({ compact = false }) => {
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-[11px] font-bold text-secondary uppercase tracking-wider">
-                Select Protocol
+                {t('fasting.selectProtocol')}
               </span>
               <span className="text-[11px] font-semibold text-primary">
-                {FASTING_PROTOCOLS.find((p) => p.id === selectedProtocolId)?.label || 'Custom'}
+                {FASTING_PROTOCOLS.find((p) => p.id === selectedProtocolId)?.label || t('fasting.protocolCustom')}
               </span>
             </div>
             <div className="w-full flex items-center gap-1.5 overflow-x-auto pb-1 scrollbar-none">
@@ -344,7 +356,7 @@ export const FastingTimer = ({ compact = false }) => {
           {/* Custom Hours Configuration */}
           {selectedProtocolId === 'custom' && (
             <div className="w-full p-2.5 bg-surface rounded-xl border border-theme flex items-center justify-between gap-3 text-xs animate-fade-in">
-              <span className="font-bold text-secondary">Custom Target Hours:</span>
+              <span className="font-bold text-secondary">{t('fasting.customTargetHours')}</span>
               <div className="flex items-center gap-2">
                 <input
                   type="number"
@@ -360,7 +372,7 @@ export const FastingTimer = ({ compact = false }) => {
                   }}
                   className="input-base w-20 py-1 text-center font-bold"
                 />
-                <span className="text-secondary font-medium">hours</span>
+                <span className="text-secondary font-medium">h</span>
               </div>
             </div>
           )}
@@ -397,17 +409,17 @@ export const FastingTimer = ({ compact = false }) => {
                     {String(hoursElapsed).padStart(2, '0')}:{String(minutesElapsed).padStart(2, '0')}:{String(secondsElapsed).padStart(2, '0')}
                   </span>
                   <span className="text-[11px] font-bold text-purple-600 dark:text-purple-400 mt-0.5">
-                    {progressPercent}% Complete
+                    {progressPercent}% {t('fasting.complete')}
                   </span>
                   <span className="text-[10px] text-secondary">
-                    Target: {activeTargetHours}h
+                    {t('fasting.target')}: {activeTargetHours}h
                   </span>
                 </>
               ) : (
                 <>
                   <Utensils className="w-6 h-6 text-muted mb-1 stroke-1" />
-                  <span className="text-sm font-extrabold text-primary">{selectedProtocolId} Protocol</span>
-                  <span className="text-[10px] font-semibold text-secondary">Ready to Fast</span>
+                  <span className="text-sm font-extrabold text-primary">{selectedProtocolId} {t('fasting.protocolLabel')}</span>
+                  <span className="text-[10px] font-semibold text-secondary">{t('fasting.protocolReady')}</span>
                 </>
               )}
             </div>
@@ -417,18 +429,18 @@ export const FastingTimer = ({ compact = false }) => {
           <div className="w-full grid grid-cols-2 gap-2.5 text-center">
             <div className="p-2.5 bg-surface rounded-xl border border-theme">
               <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
-                Current Phase
+                {t('fasting.currentPhase')}
               </span>
               <span className="text-xs font-black text-primary mt-0.5 block truncate">
-                {fastingState.isActive ? `🌙 Fasting (${activeTargetHours}h)` : `☀️ Eating (${eatingHours}h)`}
+                {fastingState.isActive ? `🌙 ${t('fasting.fastingPhase')} (${activeTargetHours}h)` : `☀️ ${t('fasting.eatingPhase')} (${eatingHours}h)`}
               </span>
             </div>
             <div className="p-2.5 bg-surface rounded-xl border border-theme">
               <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
-                {fastingState.isActive ? 'Eating Window In' : 'Fast Target'}
+                {fastingState.isActive ? t('fasting.eatingWindowIn') : t('fasting.fastTarget')}
               </span>
               <span className="text-xs font-black text-purple-600 dark:text-purple-400 mt-0.5 block truncate">
-                {fastingState.isActive ? `${hoursRemaining}h ${minutesRemaining}m` : `${activeTargetHours} Hours`}
+                {fastingState.isActive ? `${hoursRemaining}h ${minutesRemaining}m` : `${activeTargetHours}h`}
               </span>
             </div>
           </div>
@@ -444,14 +456,14 @@ export const FastingTimer = ({ compact = false }) => {
                   icon={Square}
                   onClick={handleStop}
                 >
-                  End Fast
+                  {t('fasting.endFast')}
                 </Button>
                 <Button
                   variant="secondary"
                   size="md"
                   icon={RotateCcw}
                   onClick={handleReset}
-                  title="Reset Timer"
+                  title={t('fasting.resetTimer')}
                 />
               </>
             ) : (
@@ -462,7 +474,7 @@ export const FastingTimer = ({ compact = false }) => {
                 icon={Play}
                 onClick={handleStart}
               >
-                Start {selectedProtocolId} Fast Now
+                {t('fasting.startFastNow')}
               </Button>
             )}
           </div>
@@ -493,16 +505,16 @@ export const FastingTimer = ({ compact = false }) => {
                 <div>
                   <span className="font-extrabold block text-xs">
                     {endedSummary.status === 'completed'
-                      ? '🎉 Completed IF Achieved! (80%+ Target)'
+                      ? t('fasting.completedIFAchieved')
                       : endedSummary.status === 'partial'
-                      ? '⏳ Partial Fast Logged (20%–80% Target)'
-                      : '⚠️ Early Ended (< 20% Target)'}
+                      ? t('fasting.partialFastLogged')
+                      : t('fasting.earlyEndedLogged')}
                   </span>
                   <p className="mt-0.5 text-[11px] opacity-90 leading-tight">
-                    Fasted <span className="font-bold">{endedSummary.actualHours}h</span> ({endedSummary.percentCompleted}% of {activeTargetHours}h target).
-                    {endedSummary.status === 'completed' && ' Count & streak incremented!'}
-                    {endedSummary.status === 'partial' && ' Logged as Partial Fast.'}
-                    {endedSummary.status === 'early_ended' && ' Logged as Early Ended.'}
+                    {t('fasting.fasted')} <span className="font-bold">{endedSummary.actualHours}h</span> ({endedSummary.percentCompleted}% {activeTargetHours}h).
+                    {endedSummary.status === 'completed' && ` ${t('fasting.countStreakIncremented')}`}
+                    {endedSummary.status === 'partial' && ` ${t('fasting.loggedAsPartial')}`}
+                    {endedSummary.status === 'early_ended' && ` ${t('fasting.loggedAsEarlyEnded')}`}
                   </p>
                 </div>
               </div>
@@ -522,7 +534,7 @@ export const FastingTimer = ({ compact = false }) => {
             <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col justify-between">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
-                  Completed IF
+                  {t('fasting.completedIF')}
                 </span>
                 <Trophy className="w-3.5 h-3.5 text-emerald-500" />
               </div>
@@ -530,7 +542,7 @@ export const FastingTimer = ({ compact = false }) => {
                 {fastingStats.completedCount}
               </div>
               <span className="text-[10px] text-emerald-600/90 dark:text-emerald-400/90 font-semibold">
-                80%+ target
+                {t('fasting.target80')}
               </span>
             </div>
 
@@ -538,7 +550,7 @@ export const FastingTimer = ({ compact = false }) => {
             <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col justify-between">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
-                  Partial Fast
+                  {t('fasting.partialFast')}
                 </span>
                 <Clock className="w-3.5 h-3.5 text-amber-500" />
               </div>
@@ -546,7 +558,7 @@ export const FastingTimer = ({ compact = false }) => {
                 {fastingStats.partialCount}
               </div>
               <span className="text-[10px] text-amber-600/90 dark:text-amber-400/90 font-semibold">
-                20% – 80% target
+                {t('fasting.target20to80')}
               </span>
             </div>
 
@@ -554,7 +566,7 @@ export const FastingTimer = ({ compact = false }) => {
             <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 flex flex-col justify-between">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">
-                  Early Ended
+                  {t('fasting.earlyEnded')}
                 </span>
                 <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
               </div>
@@ -562,7 +574,7 @@ export const FastingTimer = ({ compact = false }) => {
                 {fastingStats.earlyEndedCount}
               </div>
               <span className="text-[10px] text-rose-600/90 dark:text-rose-400/90 font-semibold">
-                &lt; 20% target
+                {t('fasting.targetLess20')}
               </span>
             </div>
 
@@ -570,15 +582,15 @@ export const FastingTimer = ({ compact = false }) => {
             <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 flex flex-col justify-between">
               <div className="flex items-center justify-between">
                 <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300">
-                  IF Streak
+                  {t('fasting.ifStreak')}
                 </span>
                 <Flame className="w-3.5 h-3.5 text-purple-500" />
               </div>
               <div className="text-2xl font-black text-primary my-1">
-                {fastingStats.streak} <span className="text-xs font-semibold text-secondary">days</span>
+                {fastingStats.streak} <span className="text-xs font-semibold text-secondary">{t('fasting.days')}</span>
               </div>
               <span className="text-[10px] text-purple-600/90 dark:text-purple-400/90 font-semibold">
-                {fastingStats.totalHoursFasted}h total fasted
+                {fastingStats.totalHoursFasted}h {t('fasting.totalHoursFasted')}
               </span>
             </div>
           </div>
@@ -587,10 +599,10 @@ export const FastingTimer = ({ compact = false }) => {
           <div className="p-3 bg-subtle/70 rounded-xl border border-theme space-y-2">
             <div className="flex items-center justify-between text-xs">
               <span className="font-bold text-secondary flex items-center gap-1.5">
-                <BarChart2 className="w-3.5 h-3.5 text-primary" /> Fasting Adherence
+                <BarChart2 className="w-3.5 h-3.5 text-primary" /> {t('fasting.fastingAdherence')}
               </span>
               <span className="font-extrabold text-primary">
-                {completedRate}% Completed Rate
+                {completedRate}% {t('fasting.completedRate')}
               </span>
             </div>
             
@@ -620,8 +632,8 @@ export const FastingTimer = ({ compact = false }) => {
             </div>
 
             <div className="flex items-center justify-between text-[10px] text-secondary font-medium pt-0.5">
-              <span>Total Sessions: <strong className="text-primary">{totalAttempted}</strong></span>
-              <span>Total Hours: <strong className="text-primary">{fastingStats.totalHoursFasted}h</strong></span>
+              <span>{t('fasting.totalSessions')}: <strong className="text-primary">{totalAttempted}</strong></span>
+              <span>{t('fasting.totalHours')}: <strong className="text-primary">{fastingStats.totalHoursFasted}h</strong></span>
             </div>
           </div>
 
@@ -630,7 +642,7 @@ export const FastingTimer = ({ compact = false }) => {
             <div className="p-3 bg-subtle rounded-xl border border-theme animate-fade-in space-y-2.5 text-xs">
               <div className="flex items-center justify-between pb-1 border-b border-theme">
                 <span className="font-bold text-primary flex items-center gap-1">
-                  <Settings2 className="w-3.5 h-3.5 text-secondary" /> Manual Count Adjustments
+                  <Settings2 className="w-3.5 h-3.5 text-secondary" /> {t('fasting.manualAdjustments')}
                 </span>
                 <button
                   type="button"
@@ -644,7 +656,7 @@ export const FastingTimer = ({ compact = false }) => {
               <div className="space-y-2">
                 {/* Adjust Completed */}
                 <div className="flex items-center justify-between">
-                  <span className="text-secondary font-medium">Completed IF (80%+):</span>
+                  <span className="text-secondary font-medium">{t('fasting.completedIF')} (80%+):</span>
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
@@ -667,7 +679,7 @@ export const FastingTimer = ({ compact = false }) => {
 
                 {/* Adjust Partial */}
                 <div className="flex items-center justify-between">
-                  <span className="text-secondary font-medium">Partial Fast (20%–80%):</span>
+                  <span className="text-secondary font-medium">{t('fasting.partialFast')} (20%–80%):</span>
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
@@ -690,7 +702,7 @@ export const FastingTimer = ({ compact = false }) => {
 
                 {/* Adjust Early Ended */}
                 <div className="flex items-center justify-between">
-                  <span className="text-secondary font-medium">Early Ended (&lt;20%):</span>
+                  <span className="text-secondary font-medium">{t('fasting.earlyEnded')} (&lt;20%):</span>
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
