@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { StatCard } from '../components/StatCard';
@@ -18,6 +19,7 @@ import {
   Layers,
   Sparkles,
   Zap,
+  Play,
 } from 'lucide-react';
 
 const CATEGORIES = ['Work', 'Study', 'Fitness', 'Islamic', 'Social', 'Sleep', 'Other'];
@@ -28,11 +30,12 @@ const CATEGORY_COLORS = {
   Fitness: 'emerald',
   Islamic: 'cyan',
   Social: 'amber',
-  Sleep: 'neutral',
+  Sleep: 'rose',
   Other: 'neutral',
 };
 
 export const TimeTracker = ({ selectedDate }) => {
+  const { t, isRTL } = useLanguage();
   const currentDate = selectedDate || getFormattedDate();
 
   const [logs, setLogs] = useState([]);
@@ -120,6 +123,10 @@ export const TimeTracker = ({ selectedDate }) => {
     setIsModalOpen(true);
   };
 
+  const handleSetStartTimeToNow = () => {
+    setStartTime(getCurrentTimeString());
+  };
+
   const handleSetEndTimeToNow = () => {
     setEndTime(getCurrentTimeString());
   };
@@ -194,12 +201,12 @@ export const TimeTracker = ({ selectedDate }) => {
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
       <PageHeader
-        category="Time Distribution"
-        title="Time Tracker"
-        description={`Track daily focus blocks, tasks, categories, and review distribution for ${formatDisplayDate(currentDate)}`}
+        category={t('categories.time', 'Time Distribution')}
+        title={t('time.title', 'Time Tracker')}
+        description={`${t('time.subtitle', 'Track focused work sessions, manage distraction-free intervals, and analyze daily output.')} (${formatDisplayDate(currentDate)})`}
         action={
           <Button variant="gradient" size="md" icon={Plus} onClick={openCreateModal}>
-            Log Time Block
+            {t('time.startTimer', 'Log Time Block')}
           </Button>
         }
       />
@@ -207,39 +214,39 @@ export const TimeTracker = ({ selectedDate }) => {
       {/* Top Stat Summary Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
         <StatCard
-          title="Total Time Logged"
+          title={t('time.totalFocusTime', 'Total Time Logged')}
           value={`${Math.floor((summary.totalMinutes || 0) / 60)}h ${(summary.totalMinutes || 0) % 60}m`}
           subtitle={`${logs.length} time blocks recorded`}
           icon={Clock}
           color="indigo"
         />
         <StatCard
-          title="Top Category"
+          title={t('time.topCategory', 'Top Category')}
           value={
             Object.entries(summary.byCategory || {}).sort((a, b) => b[1] - a[1])[0]?.[0] || 'None'
           }
-          subtitle="Highest logged focus"
+          subtitle={t('time.highestLoggedFocus', 'Highest logged time focus')}
           icon={Layers}
           color="purple"
         />
         <StatCard
-          title="Productive Hours"
+          title={t('time.productiveHours', 'Productive Hours')}
           value={`${Math.floor(((summary.byCategory?.Work || 0) + (summary.byCategory?.Study || 0)) / 60)}h ${((summary.byCategory?.Work || 0) + (summary.byCategory?.Study || 0)) % 60}m`}
-          subtitle="Work + Study time"
+          subtitle={t('time.workStudyTime', 'Work & study time combined')}
           icon={Sparkles}
           color="emerald"
         />
         <StatCard
-          title="Health & Deen"
+          title={t('time.healthAndDeen', 'Health & Deen Time')}
           value={`${Math.floor(((summary.byCategory?.Fitness || 0) + (summary.byCategory?.Islamic || 0)) / 60)}h ${((summary.byCategory?.Fitness || 0) + (summary.byCategory?.Islamic || 0)) % 60}m`}
-          subtitle="Fitness + Deen time"
+          subtitle={t('time.fitnessDeenTime', 'Fitness & Islamic time combined')}
           icon={Clock}
           color="cyan"
         />
       </div>
 
       {/* Category Breakdown Chips */}
-      <Card title="Category Breakdown" subtitle="Time allocation by category">
+      <Card title={t('time.categoryBreakdown', 'Category Distribution')} subtitle={t('time.timeAllocationCategory', 'Time allocation breakdown across categories')}>
         <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mt-2">
           {CATEGORIES.map((cat) => {
             const mins = summary.byCategory?.[cat] || 0;
@@ -265,7 +272,7 @@ export const TimeTracker = ({ selectedDate }) => {
       {/* Time Logs Timeline */}
       <div className="space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-primary tracking-tight">Logged Time Blocks</h2>
+          <h2 className="text-lg font-bold text-primary tracking-tight">{t('time.todaysLogs', "Today's Time Blocks")}</h2>
           <span className="text-xs font-semibold text-secondary">{logs.length} blocks</span>
         </div>
 
@@ -276,9 +283,9 @@ export const TimeTracker = ({ selectedDate }) => {
         ) : logs.length === 0 ? (
           <EmptyState
             icon={Clock}
-            title="No time logs recorded today"
-            description="Start by logging your first time block (e.g. Deep Work, Study, Workout)."
-            actionText="Log Time Block"
+            title={t('time.noTimeLogsToday', 'No time blocks recorded today')}
+            description={t('time.noTimeLogsDesc', 'Start scheduling or logging your activities to visualize your daily time distribution.')}
+            actionText={t('time.startTimer', 'Log Time Block')}
             onAction={openCreateModal}
           />
         ) : (
@@ -288,18 +295,18 @@ export const TimeTracker = ({ selectedDate }) => {
                 key={log._id}
                 hover
                 bottomAction={
-                  <div className="flex items-center gap-0.5 bg-surface/90 dark:bg-surface/90 backdrop-blur-xs rounded-xl p-0.5 border border-theme/40 shadow-xs">
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => openEditModal(log)}
-                      className="p-1 rounded-lg text-secondary hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
-                      title="Edit Log"
+                      className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-accent hover:border-accent/40 hover:bg-accent/10 shadow-xs transition-all cursor-pointer"
+                      title={t('time.editLog', 'Edit Time Block')}
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => setDeleteId(log._id)}
-                      className="p-1 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                      title="Delete Log"
+                      className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-xs transition-all cursor-pointer"
+                      title={t('time.deleteLog', 'Delete Time Block')}
                     >
                       <Trash2 className="w-3.5 h-3.5" />
                     </button>
@@ -333,7 +340,7 @@ export const TimeTracker = ({ selectedDate }) => {
 
                   {log.isOverlap && (
                     <div className="flex items-center gap-1.5 text-[11px] font-bold text-amber-600 dark:text-amber-400 bg-amber-500/10 px-2 py-1 rounded-lg">
-                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> Overlaps another block
+                      <AlertTriangle className="w-3.5 h-3.5 shrink-0" /> {t('time.overlapsBlock', 'Overlaps with another block')}
                     </div>
                   )}
                 </div>
@@ -347,134 +354,197 @@ export const TimeTracker = ({ selectedDate }) => {
       <Modal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
-        title={editingLog ? 'Edit Time Block' : 'Log Time Block'}
-        subtitle={`Schedule task for ${formatDisplayDate(formDate)}`}
+        title={
+          editingLog
+            ? `${t('common.edit', 'Edit')} ${t('time.title', 'Time Block')}`
+            : t('time.addTimeTracker', 'Add Time & Focus Tracker')
+        }
+        subtitle={`${t('time.scheduleTaskFor', 'Schedule task for')} ${formatDisplayDate(formDate)}`}
+        maxWidth="max-w-4xl"
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="relative">
-            <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Task Title / Activity Name
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Backend API Refactoring, System Design Study"
-              value={title}
-              onChange={(e) => {
-                setTitle(e.target.value);
-                setShowSuggestions(true);
-              }}
-              onFocus={() => setShowSuggestions(true)}
-              className="input-base"
-            />
-            {showSuggestions && filteredSuggestions.length > 0 && (
-              <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-theme rounded-xl card-shadow z-30 max-h-40 overflow-y-auto">
-                {filteredSuggestions.map((sugg, idx) => (
-                  <div
-                    key={idx}
-                    onClick={() => {
-                      setTitle(sugg);
-                      setShowSuggestions(false);
+        <form onSubmit={handleSubmit} className="space-y-3.5">
+          {/* Main 2-Column Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-stretch">
+            {/* Left Column (6 Cols): Task Name, Category & Date */}
+            <div className="md:col-span-6 flex flex-col justify-between space-y-3">
+              {/* Task Details Card */}
+              <div className="p-3 bg-subtle/30 rounded-2xl border border-theme space-y-2.5 flex-1 flex flex-col justify-between">
+                <div className="flex items-center justify-between pb-1.5 border-b border-theme/60">
+                  <span className="text-[11px] font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <Layers className="w-3.5 h-3.5 text-accent" /> {t('time.taskDetails', 'Task & Category')}
+                  </span>
+                  <span className="text-[10px] text-accent font-bold px-1.5 py-0.5 rounded-md bg-accent/10">
+                    Required
+                  </span>
+                </div>
+
+                {/* Task Name */}
+                <div className="relative">
+                  <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
+                    {t('time.taskName', 'Task / Project Name')} *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={t('time.taskPlaceholder', 'e.g. Frontend Architecture, Quran Recitation, Gym Workout...')}
+                    value={title}
+                    onChange={(e) => {
+                      setTitle(e.target.value);
+                      setShowSuggestions(true);
                     }}
-                    className="p-2.5 hover:bg-subtle cursor-pointer text-xs font-semibold text-primary flex items-center gap-2"
-                  >
-                    <Sparkles className="w-3 h-3 text-accent" />
-                    <span>{sugg}</span>
+                    onFocus={() => setShowSuggestions(true)}
+                    className="w-full bg-surface border border-theme rounded-xl px-2.5 py-1.5 text-xs font-semibold text-primary focus:outline-none focus:border-accent"
+                  />
+                  {showSuggestions && filteredSuggestions.length > 0 && (
+                    <div className="absolute left-0 right-0 top-full mt-1 bg-surface border border-theme rounded-xl card-shadow z-30 max-h-40 overflow-y-auto">
+                      {filteredSuggestions.map((sugg, idx) => (
+                        <div
+                          key={idx}
+                          onClick={() => {
+                            setTitle(sugg);
+                            setShowSuggestions(false);
+                          }}
+                          className="p-2 hover:bg-subtle cursor-pointer text-xs font-semibold text-primary flex items-center gap-2 transition-colors"
+                        >
+                          <Sparkles className="w-3 h-3 text-accent" />
+                          <span>{sugg}</span>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+
+                {/* Category Quick Pills */}
+                <div>
+                  <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1.5">
+                    {t('common.category', 'Category')}
+                  </label>
+                  <div className="flex flex-wrap gap-1.5">
+                    {CATEGORIES.map((c) => {
+                      const isSelected = category === c;
+                      return (
+                        <button
+                          key={c}
+                          type="button"
+                          onClick={() => setCategory(c)}
+                          className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
+                            isSelected
+                              ? 'bg-accent text-accent-contrast border-accent shadow-xs'
+                              : 'bg-surface/80 border-theme text-secondary hover:text-primary hover:bg-subtle'
+                          }`}
+                        >
+                          {c}
+                        </button>
+                      );
+                    })}
                   </div>
-                ))}
+                </div>
+
+                {/* Date Input */}
+                <div className="pt-1 border-t border-theme/40">
+                  <DateInput
+                    label={t('common.date', 'Date')}
+                    value={formDate}
+                    onChange={setFormDate}
+                    required
+                  />
+                </div>
               </div>
-            )}
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <DateInput
-              label="Date"
-              value={formDate}
-              onChange={setFormDate}
-              required
-            />
-
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Category
-              </label>
-              <select
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-                className="select-base"
-              >
-                {CATEGORIES.map((c) => (
-                  <option key={c} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Start Time
-              </label>
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => setStartTime(e.target.value)}
-                className="input-base"
-                required
-              />
             </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-secondary uppercase tracking-wider">
-                  End Time
+            {/* Right Column (6 Cols): Timing, Duration HUD & Notes */}
+            <div className="md:col-span-6 flex flex-col justify-between space-y-3">
+              {/* Timing & Duration Card */}
+              <div className="p-3 bg-subtle/30 rounded-2xl border border-theme space-y-2.5">
+                <div className="flex items-center justify-between pb-1.5 border-b border-theme/60">
+                  <span className="text-[11px] font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-indigo-500" /> {t('time.timeAndDuration', 'Timing & Duration')}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] font-bold text-secondary uppercase tracking-wider">
+                        {t('time.startTime', 'Start Time')}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleSetStartTimeToNow}
+                        className="inline-flex items-center gap-0.5 text-[10px] font-bold text-accent hover:underline cursor-pointer"
+                      >
+                        <Play className="w-2.5 h-2.5" /> Now
+                      </button>
+                    </div>
+                    <input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => setStartTime(e.target.value)}
+                      className="w-full bg-surface border border-theme rounded-xl px-2.5 py-1 text-xs font-bold text-primary focus:outline-none focus:border-accent"
+                      required
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] font-bold text-secondary uppercase tracking-wider">
+                        {t('time.endTime', 'End Time')}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleSetEndTimeToNow}
+                        className="inline-flex items-center gap-0.5 text-[10px] font-bold text-accent hover:underline cursor-pointer"
+                      >
+                        <Zap className="w-2.5 h-2.5" /> Set to Now
+                      </button>
+                    </div>
+                    <input
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => setEndTime(e.target.value)}
+                      className="w-full bg-surface border border-theme rounded-xl px-2.5 py-1 text-xs font-bold text-primary focus:outline-none focus:border-accent"
+                      required
+                    />
+                  </div>
+                </div>
+
+                {/* Duration Live Calculation Card */}
+                <div className="p-2.5 rounded-xl bg-surface border border-theme shadow-xs flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <Sparkles className="w-3.5 h-3.5 text-accent shrink-0" />
+                    <span className="text-[10px] font-bold text-secondary uppercase tracking-wider">
+                      {t('time.computedDuration', 'Calculated Duration')}
+                    </span>
+                  </div>
+                  <span className="text-xs font-extrabold text-accent">
+                    {Math.floor(liveDuration / 60)}h {liveDuration % 60}m ({liveDuration} {t('common.minutes', 'mins')})
+                  </span>
+                </div>
+              </div>
+
+              {/* Notes Card */}
+              <div className="p-3 bg-subtle/30 rounded-2xl border border-theme space-y-1.5 flex-1 flex flex-col justify-between">
+                <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider">
+                  {t('common.notes', 'Notes')} ({t('common.optional', 'Optional')})
                 </label>
-                <button
-                  type="button"
-                  onClick={handleSetEndTimeToNow}
-                  className="text-[11px] font-bold text-accent hover:underline flex items-center gap-1 cursor-pointer"
-                >
-                  <Zap className="w-3 h-3" /> Set to Now
-                </button>
+                <textarea
+                  rows={2}
+                  placeholder={t('time.notesPlaceholder', 'e.g. Covered Chapter 3, deep focus session with zero distractions')}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full bg-surface border border-theme rounded-xl p-2.5 text-xs text-primary focus:outline-none focus:border-accent resize-none flex-1"
+                />
               </div>
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => setEndTime(e.target.value)}
-                className="input-base"
-                required
-              />
             </div>
           </div>
 
-          <div className="p-3 bg-subtle rounded-2xl border border-theme flex items-center justify-between">
-            <span className="text-xs font-bold text-secondary">Automatic Computed Duration</span>
-            <span className="text-sm font-extrabold text-accent">
-              {Math.floor(liveDuration / 60)}h {liveDuration % 60}m ({liveDuration} mins)
-            </span>
-          </div>
-
-          <div>
-            <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Notes (Optional)
-            </label>
-            <input
-              type="text"
-              placeholder="Key achievements or notes during this block..."
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="input-base"
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
+          {/* Footer Actions */}
+          <div className="flex justify-end gap-2.5 pt-2.5 border-t border-subtle">
             <Button variant="secondary" onClick={() => setIsModalOpen(false)}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button type="submit" variant="primary" loading={saving}>
-              {editingLog ? 'Update Block' : 'Save Time Block'}
+              {editingLog ? t('common.update', 'Update') : t('common.save', 'Save')}
             </Button>
           </div>
         </form>
@@ -484,19 +554,19 @@ export const TimeTracker = ({ selectedDate }) => {
       <Modal
         isOpen={!!deleteId}
         onClose={() => setDeleteId(null)}
-        title="Confirm Deletion"
-        subtitle="This action cannot be undone."
+        title={t('common.confirmDeleteTitle', 'Confirm Deletion')}
+        subtitle={t('common.confirmDeleteDesc', 'This action cannot be undone.')}
       >
         <div className="space-y-4">
           <p className="text-sm text-secondary">
-            Are you sure you want to delete this time block? It will be permanently removed.
+            {t('time.deleteTimeDesc', 'Are you sure you want to delete this time block? It will be permanently removed from your records.')}
           </p>
           <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
             <Button variant="secondary" onClick={() => setDeleteId(null)}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button variant="danger" onClick={handleDelete}>
-              Delete
+              {t('common.delete', 'Delete')}
             </Button>
           </div>
         </div>

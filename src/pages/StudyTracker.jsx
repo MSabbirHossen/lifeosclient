@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
+import { useLanguage } from '../context/LanguageContext';
 import { PageHeader } from '../components/PageHeader';
 import { Card } from '../components/Card';
 import { Button } from '../components/Button';
@@ -24,9 +25,11 @@ import {
   Play,
   Square,
   Bookmark,
+  Sparkles,
 } from 'lucide-react';
 
 export const StudyTracker = ({ selectedDate }) => {
+  const { t, isRTL } = useLanguage();
   const activeDate = selectedDate || getFormattedDate();
 
   const [sessions, setSessions] = useState([]);
@@ -426,9 +429,9 @@ export const StudyTracker = ({ selectedDate }) => {
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
       <PageHeader
-        category="Learning & Mastery"
-        title="Study & Topic Planning"
-        description={`Log deep focus study sessions, plan backlogs chapter by chapter, and track completion for ${formatDisplayDate(activeDate)}`}
+        category={t('nav.study', 'Learning & Mastery')}
+        title={t('study.title', 'Study & Learning Tracker')}
+        description={`${t('study.subtitle', 'Organize subjects, log study pomodoros, schedule spaced repetition, and master topics.')} (${formatDisplayDate(activeDate)})`}
         action={
           <div className="flex items-center gap-2.5">
             <Button
@@ -437,7 +440,7 @@ export const StudyTracker = ({ selectedDate }) => {
               icon={ListTodo}
               onClick={openCreateTopicModal}
             >
-              Plan Topic / Chapter
+              {t('study.addSubject', 'Plan Topic / Chapter')}
             </Button>
             <Button
               variant="gradient"
@@ -445,7 +448,7 @@ export const StudyTracker = ({ selectedDate }) => {
               icon={Plus}
               onClick={openCreateSessionModal}
             >
-              Log Session
+              {t('study.logSession', 'Log Session')}
             </Button>
           </div>
         }
@@ -532,11 +535,10 @@ export const StudyTracker = ({ selectedDate }) => {
                           <span className="font-extrabold text-primary">
                             {compCh} / {totalCh}
                           </span>
-                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${
-                            remainingCh === 0
-                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
-                              : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
-                          }`}>
+                          <span className={`text-[10px] px-1.5 py-0.5 rounded font-bold ${remainingCh === 0
+                            ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400'
+                            : 'bg-amber-500/15 text-amber-600 dark:text-amber-400'
+                            }`}>
                             {remainingCh === 0 ? 'Completed' : `${remainingCh} left`}
                           </span>
                         </div>
@@ -595,9 +597,8 @@ export const StudyTracker = ({ selectedDate }) => {
                                 <Circle className="w-3.5 h-3.5 text-secondary shrink-0" />
                               )}
                               <span
-                                className={`truncate font-medium ${
-                                  sub.completed ? 'line-through text-secondary' : 'text-primary'
-                                }`}
+                                className={`truncate font-medium ${sub.completed ? 'line-through text-secondary' : 'text-primary'
+                                  }`}
                               >
                                 {sub.title}
                               </span>
@@ -612,31 +613,28 @@ export const StudyTracker = ({ selectedDate }) => {
                     <div className="flex items-center gap-1 bg-subtle p-0.5 rounded-xl border border-theme/40">
                       <button
                         onClick={() => handleUpdateTopicStatus(top._id, 'backlog')}
-                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all duration-150 ${
-                          top.status === 'backlog'
-                            ? 'bg-amber-500 text-white shadow-sm'
-                            : 'bg-surface text-secondary hover:text-primary'
-                        }`}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all duration-150 ${top.status === 'backlog'
+                          ? 'bg-amber-500 text-white shadow-sm'
+                          : 'bg-surface text-secondary hover:text-primary'
+                          }`}
                       >
                         Backlog
                       </button>
                       <button
                         onClick={() => handleUpdateTopicStatus(top._id, 'in_progress')}
-                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all duration-150 ${
-                          top.status === 'in_progress'
-                            ? 'bg-indigo-600 text-white shadow-sm'
-                            : 'bg-surface text-secondary hover:text-primary'
-                        }`}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all duration-150 ${top.status === 'in_progress'
+                          ? 'bg-indigo-600 text-white shadow-sm'
+                          : 'bg-surface text-secondary hover:text-primary'
+                          }`}
                       >
                         In Progress
                       </button>
                       <button
                         onClick={() => handleUpdateTopicStatus(top._id, 'completed')}
-                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all duration-150 ${
-                          top.status === 'completed'
-                            ? 'bg-emerald-500 text-white shadow-sm'
-                            : 'bg-surface text-secondary hover:text-primary'
-                        }`}
+                        className={`px-2 py-0.5 rounded-lg text-[10px] font-bold cursor-pointer transition-all duration-150 ${top.status === 'completed'
+                          ? 'bg-emerald-500 text-white shadow-sm'
+                          : 'bg-surface text-secondary hover:text-primary'
+                          }`}
                       >
                         Done
                       </button>
@@ -692,17 +690,17 @@ export const StudyTracker = ({ selectedDate }) => {
                 key={sess._id}
                 hover
                 bottomAction={
-                  <div className="flex items-center gap-0.5 bg-surface/90 dark:bg-surface/90 backdrop-blur-xs rounded-xl p-0.5 border border-theme/40 shadow-xs">
+                  <div className="flex items-center gap-1.5">
                     <button
                       onClick={() => handleEditSession(sess)}
-                      className="p-1 rounded-lg text-secondary hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-accent hover:border-accent/40 hover:bg-accent/10 shadow-xs transition-all cursor-pointer"
                       title="Edit Session"
                     >
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={() => setDeleteSessionId(sess._id)}
-                      className="p-1 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                      className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-xs transition-all cursor-pointer"
                       title="Delete Session"
                     >
                       <Trash2 className="w-3.5 h-3.5" />
@@ -783,187 +781,232 @@ export const StudyTracker = ({ selectedDate }) => {
       <Modal
         isOpen={isSessionModalOpen}
         onClose={() => setIsSessionModalOpen(false)}
-        title="Log Study Session"
-        subtitle={`Record focus session for ${formatDisplayDate(sessionDate || activeDate)}`}
+        title={editingSessionId ? t('study.updateSession', 'Update Study Session') : t('study.logSession', 'Log Study Session')}
+        subtitle={`${t('study.logSessionSubtitle', 'Record learning duration, subject milestones, and focus metrics')} • ${formatDisplayDate(sessionDate || activeDate)}`}
+        maxWidth="max-w-4xl"
       >
-        <form onSubmit={handleCreateSession} className="space-y-4">
-          <DateInput
-            label="Session Date"
-            value={sessionDate}
-            onChange={setSessionDate}
-            required
-          />
+        <form onSubmit={handleCreateSession} className="space-y-3.5">
+          {/* Main 2-Column Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-stretch">
+            {/* Left Column (6 Cols): Session Context & Time */}
+            <div className="md:col-span-6 flex flex-col justify-between space-y-3">
+              {/* Context Card */}
+              <div className="p-3 bg-subtle/30 rounded-2xl border border-theme space-y-2.5">
+                <div className="flex items-center justify-between pb-1.5 border-b border-theme/60">
+                  <span className="text-[11px] font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-accent" /> {t('study.sessionContext', 'Session Context')}
+                  </span>
+                  <span className="text-[10px] text-accent font-bold px-1.5 py-0.5 rounded-md bg-accent/10">
+                    Required
+                  </span>
+                </div>
 
-          <div>
-            <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Subject / Topic
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. System Design, Algorithms, Physics"
-              value={subject}
-              onChange={(e) => setSubject(e.target.value)}
-              className="input-base"
-              list="subject-suggestions"
-            />
-            <datalist id="subject-suggestions">
-              {subjects.map((sub, idx) => (
-                <option key={idx} value={sub} />
-              ))}
-            </datalist>
-          </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <DateInput
+                    label={t('study.sessionDate', 'Session Date')}
+                    value={sessionDate}
+                    onChange={setSessionDate}
+                    required
+                  />
 
-          {/* Attach to Planned Topic Dropdown */}
-          {topics.length > 0 && (
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Attach to Planned Topic (Optional)
-              </label>
-              <select
-                value={selectedTopicId}
-                onChange={(e) => handleTopicSelectionInSession(e.target.value)}
-                className="select-base"
-              >
-                <option value="">None (Independent Study)</option>
-                {topics.map((t) => (
-                  <option key={t._id} value={t._id}>
-                    [{t.subject}] {t.title} ({t.completedChapters || 0}/{t.totalChapters || 1} ch)
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
+                  <div>
+                    <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
+                      {t('study.subjectTopic', 'Subject Name')} *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      placeholder={t('study.subjectPlaceholder', 'e.g. Algorithms, Physics')}
+                      value={subject}
+                      onChange={(e) => setSubject(e.target.value)}
+                      className="w-full bg-surface border border-theme rounded-xl px-2.5 py-1.5 text-xs font-semibold text-primary focus:outline-none focus:border-accent"
+                      list="subject-suggestions"
+                    />
+                    <datalist id="subject-suggestions">
+                      {subjects.map((sub, idx) => (
+                        <option key={idx} value={sub} />
+                      ))}
+                    </datalist>
+                  </div>
+                </div>
 
-          {/* Start Time & End Time with Start Now / End Now Buttons */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-secondary uppercase tracking-wider">
-                  Start Time
-                </label>
-                <button
-                  type="button"
-                  onClick={handleSetStartNow}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-accent hover:text-accent-hover transition-colors"
-                >
-                  <Play className="w-3 h-3" /> Start Now
-                </button>
+                {/* Attach to Planned Topic Dropdown */}
+                {topics.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
+                      {t('study.attachTopic', 'Attach to Planned Topic')}
+                    </label>
+                    <select
+                      value={selectedTopicId}
+                      onChange={(e) => handleTopicSelectionInSession(e.target.value)}
+                      className="w-full bg-surface border border-theme rounded-xl px-2.5 py-1.5 text-xs text-primary focus:outline-none focus:border-accent"
+                    >
+                      <option value="">{t('study.noneIndependent', 'None (Independent Session)')}</option>
+                      {topics.map((tItem) => (
+                        <option key={tItem._id} value={tItem._id}>
+                          [{tItem.subject}] {tItem.title} ({tItem.completedChapters || 0}/{tItem.totalChapters || 1} ch)
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
               </div>
-              <input
-                type="time"
-                value={startTime}
-                onChange={(e) => handleStartTimeChange(e.target.value)}
-                className="input-base"
-              />
-            </div>
 
-            <div>
-              <div className="flex items-center justify-between mb-1.5">
-                <label className="text-xs font-bold text-secondary uppercase tracking-wider">
-                  End Time
-                </label>
-                <button
-                  type="button"
-                  onClick={handleSetEndNow}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-emerald-600 dark:text-emerald-400 hover:opacity-80 transition-colors"
-                >
-                  <Square className="w-3 h-3" /> End Now
-                </button>
+              {/* Time & Duration Card */}
+              <div className="p-3 bg-subtle/30 rounded-2xl border border-theme space-y-2.5 flex-1 flex flex-col justify-between">
+                <div className="flex items-center justify-between pb-1.5 border-b border-theme/60">
+                  <span className="text-[11px] font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <Clock className="w-3.5 h-3.5 text-indigo-500" /> {t('study.timeSchedule', 'Timing & Duration')}
+                  </span>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2">
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] font-bold text-secondary uppercase tracking-wider">
+                        {t('study.startTime', 'Start')}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleSetStartNow}
+                        className="inline-flex items-center gap-0.5 text-[10px] font-bold text-accent hover:underline cursor-pointer"
+                      >
+                        <Play className="w-2.5 h-2.5" /> Now
+                      </button>
+                    </div>
+                    <input
+                      type="time"
+                      value={startTime}
+                      onChange={(e) => handleStartTimeChange(e.target.value)}
+                      className="w-full bg-surface border border-theme rounded-xl px-2 py-1 text-xs font-bold text-primary focus:outline-none focus:border-accent"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex items-center justify-between mb-1">
+                      <label className="text-[10px] font-bold text-secondary uppercase tracking-wider">
+                        {t('study.endTime', 'End')}
+                      </label>
+                      <button
+                        type="button"
+                        onClick={handleSetEndNow}
+                        className="inline-flex items-center gap-0.5 text-[10px] font-bold text-emerald-500 hover:underline cursor-pointer"
+                      >
+                        <Square className="w-2.5 h-2.5" /> Now
+                      </button>
+                    </div>
+                    <input
+                      type="time"
+                      value={endTime}
+                      onChange={(e) => handleEndTimeChange(e.target.value)}
+                      className="w-full bg-surface border border-theme rounded-xl px-2 py-1 text-xs font-bold text-primary focus:outline-none focus:border-accent"
+                    />
+                  </div>
+                </div>
+
+                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-theme/40 items-center">
+                  <div>
+                    <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
+                      {t('study.durationMinutes', 'Duration (min)')} *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={durationMinutes}
+                      onChange={(e) => setDurationMinutes(e.target.value)}
+                      placeholder="e.g. 45"
+                      className="w-full bg-surface border border-theme rounded-xl px-2.5 py-1 text-xs font-bold text-primary focus:outline-none focus:border-accent"
+                    />
+                  </div>
+
+                  <div>
+                    <div className="flex justify-between items-center mb-1">
+                      <label className="text-[10px] font-bold text-secondary uppercase tracking-wider">
+                        {t('study.progress', 'Progress')}
+                      </label>
+                      <span className="text-[10px] font-extrabold text-accent">{progressPercent}%</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="0"
+                      max="100"
+                      value={progressPercent}
+                      onChange={(e) => setProgressPercent(e.target.value)}
+                      className="w-full accent-accent cursor-pointer"
+                    />
+                  </div>
+                </div>
               </div>
-              <input
-                type="time"
-                value={endTime}
-                onChange={(e) => handleEndTimeChange(e.target.value)}
-                className="input-base"
-              />
+            </div>
+
+            {/* Right Column (6 Cols): Resource, Goal & Takeaways */}
+            <div className="md:col-span-6 flex flex-col justify-between space-y-3">
+              {/* Resource & Goal Alignment Card */}
+              <div className="p-3 bg-subtle/30 rounded-2xl border border-theme space-y-2.5">
+                <div className="flex items-center justify-between pb-1.5 border-b border-theme/60">
+                  <span className="text-[11px] font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <ExternalLink className="w-3.5 h-3.5 text-teal-500" /> {t('study.resourcesGoals', 'Resource & Goal Linkage')}
+                  </span>
+                </div>
+
+                <div>
+                  <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
+                    {t('study.resourceLink', 'Resource / URL / Textbook')}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={t('study.resourcePlaceholder', 'e.g. Coursera Course, Ch 4 Notes')}
+                    value={resource}
+                    onChange={(e) => setResource(e.target.value)}
+                    className="w-full bg-surface border border-theme rounded-xl px-2.5 py-1.5 text-xs text-primary focus:outline-none focus:border-accent"
+                  />
+                </div>
+
+                {goals.length > 0 && (
+                  <div>
+                    <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
+                      {t('study.linkToGoal', 'Link to Goal')}
+                    </label>
+                    <select
+                      value={selectedGoalId}
+                      onChange={(e) => setSelectedGoalId(e.target.value)}
+                      className="w-full bg-surface border border-theme rounded-xl px-2.5 py-1.5 text-xs text-primary focus:outline-none focus:border-accent"
+                    >
+                      <option value="">{t('study.noneIndependent', 'None (Independent)')}</option>
+                      {goals.map((g) => (
+                        <option key={g._id} value={g._id}>
+                          {g.title}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
+              {/* Takeaways Card */}
+              <div className="p-3 bg-subtle/30 rounded-2xl border border-theme space-y-1.5 flex-1 flex flex-col justify-between">
+                <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider">
+                  {t('study.takeaways', 'Key Takeaways & Summary')} ({t('common.optional', 'Optional')})
+                </label>
+                <textarea
+                  rows={3}
+                  placeholder={t('study.takeawaysPlaceholder', 'e.g. Mastered dynamic programming memoization, completed 3 practice problems...')}
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  className="w-full bg-surface border border-theme rounded-xl p-2.5 text-xs text-primary focus:outline-none focus:border-accent resize-none flex-1"
+                />
+              </div>
             </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Resource Link / Material URL
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. https://coursera.org/learn/react, docs.nestjs.com"
-              value={resource}
-              onChange={(e) => setResource(e.target.value)}
-              className="input-base"
-            />
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Duration (Minutes)
-              </label>
-              <input
-                type="number"
-                min="1"
-                required
-                value={durationMinutes}
-                onChange={(e) => setDurationMinutes(e.target.value)}
-                placeholder="e.g. 45"
-                className="input-base"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Progress ({progressPercent}%)
-              </label>
-              <input
-                type="range"
-                min="0"
-                max="100"
-                value={progressPercent}
-                onChange={(e) => setProgressPercent(e.target.value)}
-                className="w-full accent-indigo-600 mt-2 cursor-pointer"
-              />
-            </div>
-          </div>
-
-          {/* Goal Linkage Dropdown */}
-          {goals.length > 0 && (
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Link to Goal (Optional)
-              </label>
-              <select
-                value={selectedGoalId}
-                onChange={(e) => setSelectedGoalId(e.target.value)}
-                className="select-base"
-              >
-                <option value="">None (Independent Study)</option>
-                {goals.map((g) => (
-                  <option key={g._id} value={g._id}>
-                    {g.title}
-                  </option>
-                ))}
-              </select>
-            </div>
-          )}
-
-          <div>
-            <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Notes & Key Takeaways (Optional)
-            </label>
-            <textarea
-              rows={2}
-              placeholder="What core ideas did you learn?"
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              className="textarea-base"
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
+          {/* Footer Actions */}
+          <div className="flex justify-end gap-2.5 pt-2.5 border-t border-subtle">
             <Button variant="secondary" onClick={() => setIsSessionModalOpen(false)}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button type="submit" variant="primary" loading={savingSession}>
-              {editingSessionId ? 'Update Session' : 'Save Session'}
+              {editingSessionId ? t('study.updateSession', 'Update Session') : t('study.saveSession', 'Save Session')}
             </Button>
           </div>
         </form>
@@ -973,161 +1016,241 @@ export const StudyTracker = ({ selectedDate }) => {
       <Modal
         isOpen={isTopicModalOpen}
         onClose={() => setIsTopicModalOpen(false)}
-        title={editingTopicId ? 'Edit Chapter / Topic Plan' : 'Plan Chapter / Topic Backlog'}
-        subtitle={editingTopicId ? 'Update chapter counts, subtopics, and status' : 'Organize syllabus, configure chapters, and eliminate study backlogs'}
+        title={editingTopicId ? t('study.editTopicPlan', 'Edit Topic Plan') : t('study.planTopicBacklog', 'Plan Chapter / Topic Backlog')}
+        subtitle={editingTopicId ? t('study.editTopicSubtitle', 'Update topic syllabus, chapter milestones, and backlog details') : t('study.planTopicSubtitle', 'Organize syllabus, configure chapters, and eliminate study backlogs')}
+        maxWidth="max-w-5xl"
       >
-        <form onSubmit={handleCreateTopic} className="space-y-4">
-          <div>
-            <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Subject Name
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. Distributed Systems, Calculus"
-              value={topicSubject}
-              onChange={(e) => setTopicSubject(e.target.value)}
-              className="input-base"
-              list="topic-subject-suggestions"
-            />
-            <datalist id="topic-subject-suggestions">
-              {subjects.map((sub, idx) => (
-                <option key={idx} value={sub} />
-              ))}
-            </datalist>
-          </div>
+        <form onSubmit={handleCreateTopic} className="space-y-3.5">
+          {/* Main 2-Column Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-3.5 items-stretch">
+            {/* Left Column (5 Cols): Subject, Title, Chapters & Status */}
+            <div className="md:col-span-5 flex flex-col justify-between space-y-3">
+              {/* Subject & Topic Identity Card */}
+              <div className="p-3 bg-subtle/30 rounded-2xl border border-theme space-y-2.5">
+                <div className="flex items-center justify-between pb-1.5 border-b border-theme/60">
+                  <span className="text-[11px] font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <BookOpen className="w-3.5 h-3.5 text-accent" /> {t('study.topicDetails', 'Topic Details')}
+                  </span>
+                  <span className="text-[10px] text-accent font-bold px-1.5 py-0.5 rounded-md bg-accent/10">
+                    Required
+                  </span>
+                </div>
 
-          <div>
-            <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Topic / Syllabus Title
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="e.g. System Design: Scalability, Consensus & Caching"
-              value={topicTitle}
-              onChange={(e) => setTopicTitle(e.target.value)}
-              className="input-base"
-            />
-          </div>
+                {/* Subject Name */}
+                <div>
+                  <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
+                    {t('study.subjectName', 'Subject Name')} *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={t('study.subjectPlaceholder', 'e.g. System Design, Algorithms, Physics')}
+                    value={topicSubject}
+                    onChange={(e) => setTopicSubject(e.target.value)}
+                    className="w-full bg-surface border border-theme rounded-xl px-2.5 py-1.5 text-xs font-semibold text-primary focus:outline-none focus:border-accent"
+                    list="topic-subject-suggestions"
+                  />
+                  <datalist id="topic-subject-suggestions">
+                    {subjects.map((sub, idx) => (
+                      <option key={idx} value={sub} />
+                    ))}
+                  </datalist>
+                </div>
 
-          {/* Chapter Count Inputs */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Total Chapters Count
-              </label>
-              <input
-                type="number"
-                min="1"
-                required
-                value={totalChapters}
-                onChange={(e) => setTotalChapters(e.target.value)}
-                placeholder="e.g. 10"
-                className="input-base"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Already Completed Chapters
-              </label>
-              <input
-                type="number"
-                min="0"
-                max={totalChapters ? Number(totalChapters) : undefined}
-                value={completedChapters}
-                onChange={(e) => setCompletedChapters(e.target.value)}
-                placeholder="e.g. 0"
-                className="input-base"
-              />
-            </div>
-          </div>
-
-          {/* Sub-topics Input Builder */}
-          <div>
-            <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Sub-topics / Sections Checklist (Optional)
-            </label>
-            <div className="flex gap-2">
-              <input
-                type="text"
-                placeholder="e.g. 1. Master-Worker Architecture"
-                value={newSubtopicInput}
-                onChange={(e) => setNewSubtopicInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
-                    e.preventDefault();
-                    handleAddSubtopicToDraft();
-                  }
-                }}
-                className="input-base flex-1"
-              />
-              <Button type="button" variant="secondary" size="sm" onClick={handleAddSubtopicToDraft}>
-                Add Sub-topic
-              </Button>
-            </div>
-
-            {subtopicsList.length > 0 && (
-              <div className="mt-2 space-y-1.5 max-h-32 overflow-y-auto p-2 bg-subtle rounded-xl border border-theme">
-                {subtopicsList.map((st, idx) => (
-                  <div key={idx} className="flex items-center justify-between text-xs py-1 px-2 bg-surface rounded-lg">
-                    <span className="text-primary font-medium truncate">{st.title}</span>
-                    <button
-                      type="button"
-                      onClick={() => handleRemoveSubtopicFromDraft(idx)}
-                      className="text-secondary hover:text-rose-500 font-bold ml-2 cursor-pointer"
-                    >
-                      ×
-                    </button>
-                  </div>
-                ))}
+                {/* Topic / Syllabus Title */}
+                <div>
+                  <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
+                    {t('study.topicTitle', 'Topic / Syllabus Title')} *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder={t('study.topicPlaceholder', 'e.g. Scalability, Consensus & Caching')}
+                    value={topicTitle}
+                    onChange={(e) => setTopicTitle(e.target.value)}
+                    className="w-full bg-surface border border-theme rounded-xl px-2.5 py-1.5 text-xs font-semibold text-primary focus:outline-none focus:border-accent"
+                  />
+                </div>
               </div>
-            )}
-          </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                Initial Status
-              </label>
-              <select
-                value={topicStatus}
-                onChange={(e) => setTopicStatus(e.target.value)}
-                className="select-base"
-              >
-                <option value="backlog">Backlog</option>
-                <option value="in_progress">In Progress</option>
-                <option value="completed">Completed</option>
-              </select>
+              {/* Chapter Metrics & Milestones Card */}
+              <div className="p-3 bg-subtle/30 rounded-2xl border border-theme space-y-2.5 flex-1 flex flex-col justify-between">
+                <div className="flex items-center justify-between pb-1.5 border-b border-theme/60">
+                  <span className="text-[11px] font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <GraduationCap className="w-3.5 h-3.5 text-indigo-500" /> {t('study.chaptersProgress', 'Chapter Metrics')}
+                  </span>
+                  <span className="text-[10px] text-secondary font-semibold">
+                    {completedChapters || 0} / {totalChapters || 0} Chapters ({totalChapters && Number(totalChapters) > 0 ? Math.min(100, Math.round(((Number(completedChapters) || 0) / Number(totalChapters)) * 100)) : 0}%)
+                  </span>
+                </div>
+
+                {/* Total & Completed Chapters Row */}
+                <div className="grid grid-cols-2 gap-2">
+                  <div className="p-2 rounded-xl bg-surface border border-theme shadow-xs">
+                    <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
+                      {t('study.totalChapters', 'Total Chapters')} *
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      required
+                      value={totalChapters}
+                      onChange={(e) => setTotalChapters(e.target.value)}
+                      placeholder="e.g. 10"
+                      className="w-full bg-subtle/60 border border-theme rounded-lg px-2 py-1 text-xs font-bold text-primary focus:outline-none focus:border-accent"
+                    />
+                  </div>
+
+                  <div className="p-2 rounded-xl bg-surface border border-theme shadow-xs">
+                    <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
+                      {t('study.completedChapters', 'Completed')}
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      max={totalChapters ? Number(totalChapters) : undefined}
+                      value={completedChapters}
+                      onChange={(e) => setCompletedChapters(e.target.value)}
+                      placeholder="e.g. 0"
+                      className="w-full bg-subtle/60 border border-theme rounded-lg px-2 py-1 text-xs font-bold text-primary focus:outline-none focus:border-accent"
+                    />
+                  </div>
+                </div>
+
+                {/* Progress bar visual */}
+                <div className="space-y-1">
+                  <div className="h-1.5 w-full bg-subtle rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-gradient-to-r from-accent to-indigo-500 rounded-full transition-all duration-300"
+                      style={{
+                        width: `${totalChapters && Number(totalChapters) > 0 ? Math.min(100, Math.round(((Number(completedChapters) || 0) / Number(totalChapters)) * 100)) : 0}%`,
+                      }}
+                    />
+                  </div>
+                </div>
+
+                {/* Status & Target Date Row */}
+                <div className="grid grid-cols-2 gap-2 pt-1 border-t border-theme/40 items-end">
+                  <div>
+                    <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
+                      {t('study.initialStatus', 'Initial Status')}
+                    </label>
+                    <select
+                      value={topicStatus}
+                      onChange={(e) => setTopicStatus(e.target.value)}
+                      className="w-full bg-surface border border-theme rounded-xl px-2 py-1.5 text-xs font-bold text-primary focus:outline-none focus:border-accent"
+                    >
+                      <option value="backlog">{t('study.backlog', 'Backlog')}</option>
+                      <option value="in_progress">{t('study.inProgress', 'In Progress')}</option>
+                      <option value="completed">{t('study.completed', 'Completed')}</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <DateInput
+                      label={t('study.targetDate', 'Target Date')}
+                      value={topicTargetDate}
+                      onChange={setTopicTargetDate}
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <DateInput
-              label="Target Date"
-              value={topicTargetDate}
-              onChange={setTopicTargetDate}
-            />
+            {/* Right Column (7 Cols): Sub-topics Checklist & Notes */}
+            <div className="md:col-span-7 flex flex-col justify-between space-y-3">
+              {/* Subtopics Checklist Builder Card */}
+              <div className="p-3 bg-subtle/30 rounded-2xl border border-theme space-y-2.5 flex-1 flex flex-col justify-between">
+                <div className="flex items-center justify-between pb-1.5 border-b border-theme/60">
+                  <span className="text-[11px] font-extrabold text-primary uppercase tracking-wider flex items-center gap-1.5">
+                    <ListTodo className="w-3.5 h-3.5 text-accent" /> {t('study.subtopicsChecklist', 'Sub-topics / Sections Checklist')}
+                  </span>
+                  <span className="text-[10px] text-secondary font-semibold">
+                    {subtopicsList.length} items
+                  </span>
+                </div>
+
+                {/* Input Builder Bar */}
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    placeholder={t('study.subtopicPlaceholder', 'e.g. 1. Master-Worker Architecture')}
+                    value={newSubtopicInput}
+                    onChange={(e) => setNewSubtopicInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') {
+                        e.preventDefault();
+                        handleAddSubtopicToDraft();
+                      }
+                    }}
+                    className="flex-1 bg-surface border border-theme rounded-xl px-2.5 py-1.5 text-xs text-primary focus:outline-none focus:border-accent"
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    onClick={handleAddSubtopicToDraft}
+                    className="shrink-0 text-xs py-1 px-3"
+                  >
+                    <Plus className="w-3.5 h-3.5 mr-1" /> {t('study.addSubtopic', 'Add')}
+                  </Button>
+                </div>
+
+                {/* Subtopics Checklist Container */}
+                <div className="min-h-[110px] max-h-[140px] overflow-y-auto p-2 bg-surface/60 rounded-xl border border-theme/80 space-y-1.5">
+                  {subtopicsList.length > 0 ? (
+                    subtopicsList.map((st, idx) => (
+                      <div
+                        key={idx}
+                        className="flex items-center justify-between text-xs py-1 px-2.5 bg-subtle/80 hover:bg-subtle rounded-lg border border-theme/60 group transition-all"
+                      >
+                        <div className="flex items-center gap-2 truncate">
+                          <span className="text-[10px] font-bold text-accent">#{idx + 1}</span>
+                          <span className="text-primary font-medium truncate">{st.title}</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => handleRemoveSubtopicFromDraft(idx)}
+                          className="text-tertiary hover:text-rose-500 font-bold ml-2 p-0.5 rounded cursor-pointer transition-colors"
+                          title="Remove"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                        </button>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-center p-3 text-tertiary">
+                      <ListTodo className="w-5 h-5 mb-1 opacity-40 text-accent" />
+                      <p className="text-[11px] font-medium text-secondary">No sub-topics added yet</p>
+                      <p className="text-[10px] text-tertiary">Type above & press Enter to breakdown your chapter milestones</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Notes Card */}
+              <div className="p-2.5 bg-subtle/30 rounded-2xl border border-theme">
+                <label className="block text-[10px] font-bold text-secondary uppercase tracking-wider mb-1">
+                  {t('common.notes', 'Notes')} ({t('common.optional', 'Optional')})
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. Focus on video exercises, practice past questions and summary notes"
+                  value={topicNotes}
+                  onChange={(e) => setTopicNotes(e.target.value)}
+                  className="w-full bg-surface border border-theme rounded-xl px-2.5 py-1.5 text-xs text-primary focus:outline-none focus:border-accent"
+                />
+              </div>
+            </div>
           </div>
 
-          <div>
-            <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-              Notes (Optional)
-            </label>
-            <input
-              type="text"
-              placeholder="e.g. Focus on video exercises and summary notes"
-              value={topicNotes}
-              onChange={(e) => setTopicNotes(e.target.value)}
-              className="input-base"
-            />
-          </div>
-
-          <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
+          {/* Footer Actions */}
+          <div className="flex justify-end gap-2.5 pt-2.5 border-t border-subtle">
             <Button variant="secondary" onClick={() => setIsTopicModalOpen(false)}>
-              Cancel
+              {t('common.cancel', 'Cancel')}
             </Button>
             <Button type="submit" variant="primary" loading={savingTopic}>
-              {editingTopicId ? 'Update Topic Plan' : 'Save Topic'}
+              {editingTopicId ? t('study.updateTopic', 'Update Topic') : t('study.saveTopic', 'Save Topic')}
             </Button>
           </div>
         </form>
@@ -1137,19 +1260,19 @@ export const StudyTracker = ({ selectedDate }) => {
       <Modal
         isOpen={!!deleteSessionId}
         onClose={() => setDeleteSessionId(null)}
-        title="Confirm Deletion"
-        subtitle="This action cannot be undone."
+        title={t('common.confirmDeleteTitle')}
+        subtitle={t('common.confirmDeleteDesc')}
       >
         <div className="space-y-4">
           <p className="text-sm text-secondary">
-            Are you sure you want to delete this study session? It will be permanently removed.
+            {t('study.deleteSessionDesc')}
           </p>
           <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
             <Button variant="secondary" onClick={() => setDeleteSessionId(null)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button variant="danger" onClick={handleDeleteSession}>
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         </div>
@@ -1159,19 +1282,19 @@ export const StudyTracker = ({ selectedDate }) => {
       <Modal
         isOpen={!!deleteTopicId}
         onClose={() => setDeleteTopicId(null)}
-        title="Confirm Deletion"
-        subtitle="This action cannot be undone."
+        title={t('common.confirmDeleteTitle')}
+        subtitle={t('common.confirmDeleteDesc')}
       >
         <div className="space-y-4">
           <p className="text-sm text-secondary">
-            Are you sure you want to delete this planned chapter topic?
+            {t('study.deleteTopicDesc')}
           </p>
           <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
             <Button variant="secondary" onClick={() => setDeleteTopicId(null)}>
-              Cancel
+              {t('common.cancel')}
             </Button>
             <Button variant="danger" onClick={handleDeleteTopic}>
-              Delete
+              {t('common.delete')}
             </Button>
           </div>
         </div>
