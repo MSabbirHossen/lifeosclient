@@ -1,5 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { useLanguage } from '../context/LanguageContext';
 import {
   LayoutDashboard,
   BookOpen,
@@ -9,6 +10,7 @@ import {
   Utensils,
   Wallet,
   Compass,
+  Moon,
   CheckSquare,
   Target,
   FileText,
@@ -20,59 +22,66 @@ import {
   Code2,
 } from 'lucide-react';
 
-const navigationGroups = [
-  {
-    title: 'Overview',
-    items: [
-      { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    ],
-  },
-  {
-    title: 'Track',
-    items: [
-      { name: 'Journal', path: '/journal', icon: BookOpen },
-      { name: 'Time Tracker', path: '/time-tracker', icon: Clock },
-      { name: 'Study Tracker', path: '/study', icon: GraduationCap },
-      { name: 'Fitness', path: '/fitness', icon: Dumbbell },
-      { name: 'Calories', path: '/calories', icon: Utensils },
-    ],
-  },
-  {
-    title: 'Life',
-    items: [
-      { name: 'Finance', path: '/finance', icon: Wallet },
-      { name: 'Islamic & Deen', path: '/islamic', icon: Compass },
-      { name: 'Qada Matrix', path: '/qada-matrix', icon: Sparkles },
-      { name: 'Habits', path: '/habits', icon: CheckSquare },
-      { name: 'Goals', path: '/goals', icon: Target },
-    ],
-  },
-  {
-    title: 'System',
-    items: [
-      { name: 'Reports', path: '/reports', icon: FileText },
-      { name: 'Settings', path: '/settings', icon: Settings },
-      { name: 'Developer', path: '/developer', icon: Code2 },
-    ],
-  },
-];
-
 export const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobileOpen }) => {
+  const { t, isRTL } = useLanguage();
+
+  const navigationGroups = [
+    {
+      title: t('categories.overview', 'Overview'),
+      items: [
+        { name: t('nav.dashboard', 'Dashboard'), path: '/dashboard', icon: LayoutDashboard },
+      ],
+    },
+    {
+      title: t('categories.habits', 'Track'),
+      items: [
+        { name: t('nav.reflection', 'Journal'), path: '/journal', icon: BookOpen },
+        { name: t('nav.focus', 'Time Tracker'), path: '/time-tracker', icon: Clock },
+        { name: 'Study Tracker', path: '/study', icon: GraduationCap },
+        { name: t('nav.fitness', 'Fitness'), path: '/fitness', icon: Dumbbell },
+        { name: t('nav.calories', 'Calories'), path: '/calories', icon: Utensils },
+      ],
+    },
+    {
+      title: t('categories.spiritual', 'Life'),
+      items: [
+        { name: 'Finance', path: '/finance', icon: Wallet },
+        { name: t('nav.adhkar', 'Islamic & Deen'), path: '/islamic', icon: Compass },
+        { name: t('nav.islamicFasting', 'Fasting (Sawm)'), path: '/islamic-fasting', icon: Moon },
+        { name: t('nav.qada', 'Qada Matrix'), path: '/qada-matrix', icon: Sparkles },
+        { name: t('nav.habits', 'Habits'), path: '/habits', icon: CheckSquare },
+        { name: 'Goals', path: '/goals', icon: Target },
+      ],
+    },
+    {
+      title: t('categories.analytics', 'System'),
+      items: [
+        { name: t('nav.reports', 'Reports'), path: '/reports', icon: FileText },
+        { name: t('nav.settings', 'Settings'), path: '/settings', icon: Settings },
+        { name: 'Developer', path: '/developer', icon: Code2 },
+      ],
+    },
+  ];
+
   return (
     <>
       {/* Mobile Backdrop */}
       {isMobileOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs lg:hidden transition-opacity"
+          className="fixed inset-0 z-40 bg-black/60 lg:hidden transition-opacity"
           onClick={() => setIsMobileOpen(false)}
         />
       )}
 
       <aside
-        className={`fixed top-0 bottom-0 left-0 z-40 bg-surface border-r border-theme transition-all duration-300 flex flex-col ${
+        className={`fixed top-0 bottom-0 left-0 rtl:left-auto rtl:right-0 z-40 bg-surface border-r rtl:border-r-0 rtl:border-l border-theme transition-all duration-300 flex flex-col ${
           isCollapsed ? 'w-64 lg:w-20' : 'w-64'
         } ${
-          isMobileOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
+          isMobileOpen
+            ? 'translate-x-0'
+            : isRTL
+            ? 'translate-x-full lg:translate-x-0'
+            : '-translate-x-full lg:translate-x-0'
         }`}
       >
         {/* Brand Logo Header */}
@@ -82,9 +91,9 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
               <Sparkles className="w-5 h-5" />
             </div>
             <div className={`flex flex-col ${isCollapsed ? 'flex lg:hidden' : 'flex'}`}>
-              <span className="font-extrabold text-base text-primary tracking-tight">Life OS</span>
+              <span className="font-extrabold text-base text-primary tracking-tight">{t('common.appName', 'Life OS')}</span>
               <span className="text-[10px] text-secondary font-semibold uppercase tracking-wider">
-                Personal Dashboard
+                {t('common.tagline', 'Personal Dashboard')}
               </span>
             </div>
           </div>
@@ -95,7 +104,11 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
             className="hidden lg:flex p-1.5 rounded-xl text-secondary hover:text-primary hover:bg-subtle transition-colors cursor-pointer border border-transparent hover:border-theme"
             aria-label={isCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
           >
-            {isCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {isCollapsed ? (
+              isRTL ? <ChevronLeft className="w-4 h-4" /> : <ChevronRight className="w-4 h-4" />
+            ) : (
+              isRTL ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />
+            )}
           </button>
 
           {/* Mobile Close Button */}
@@ -163,7 +176,9 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
                 </span>
               </div>
             </div>
-            <span className="text-[10px] font-bold text-accent group-hover:underline">View &rarr;</span>
+            <span className="text-[10px] font-bold text-accent group-hover:underline">
+              {isRTL ? '←' : '→'}
+            </span>
           </NavLink>
 
           <div className="flex items-center justify-between text-[11px] font-medium text-secondary px-1">

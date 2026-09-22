@@ -10,6 +10,7 @@ export const StatCard = ({
   trend,
   color = 'indigo',
   className = '',
+  onClick,
 }) => {
   const colorMap = {
     indigo: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
@@ -20,26 +21,35 @@ export const StatCard = ({
     cyan: 'bg-cyan-500/10 text-cyan-600 dark:text-cyan-400 border-cyan-500/20',
   };
 
+  const glowMap = {
+    indigo: 'from-indigo-500/10 to-transparent',
+    emerald: 'from-emerald-500/10 to-transparent',
+    amber: 'from-amber-500/10 to-transparent',
+    rose: 'from-rose-500/10 to-transparent',
+    purple: 'from-purple-500/10 to-transparent',
+    cyan: 'from-cyan-500/10 to-transparent',
+  };
+
   const selectedColor = colorMap[color] || colorMap.indigo;
 
   return (
-    <Card hover className={`relative overflow-hidden ${className}`}>
+    <Card hover onClick={onClick} className={`bg-surface border border-theme ${className}`}>
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
-          <span className="text-xs font-semibold text-secondary uppercase tracking-wider block truncate">
+          <span className="text-xs font-bold text-secondary uppercase tracking-wider block truncate">
             {title}
           </span>
           <div className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight mt-1 truncate">
             {value}
           </div>
           <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-            {subtitle && <span className="text-xs text-secondary">{subtitle}</span>}
+            {subtitle && <span className="text-xs text-secondary font-medium">{subtitle}</span>}
             {trend && (
               <span
-                className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px] font-bold ${
+                className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[11px] font-bold border ${
                   trend.positive
-                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400'
-                    : 'bg-rose-500/10 text-rose-600 dark:text-rose-400'
+                    ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
+                    : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
                 }`}
               >
                 {trend.positive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
@@ -51,7 +61,7 @@ export const StatCard = ({
 
         {Icon && (
           <div
-            className={`w-12 h-12 rounded-2xl flex items-center justify-center border shrink-0 transition-transform duration-200 group-hover:scale-110 ${selectedColor}`}
+            className={`w-12 h-12 rounded-2xl flex items-center justify-center border shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-xs ${selectedColor}`}
           >
             <Icon className="w-6 h-6" />
           </div>

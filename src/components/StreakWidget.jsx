@@ -3,8 +3,10 @@ import { Flame, Clock, ShieldCheck, AlertTriangle } from 'lucide-react';
 import api from '../utils/api';
 import { getFormattedDate } from '../utils/dateHelpers';
 import { subscribeStreakUpdates } from '../utils/streakEvents';
+import { useLanguage } from '../context/LanguageContext';
 
 export const StreakWidget = ({ compact = false, className = '' }) => {
+  const { t, isRTL } = useLanguage();
   const [streakData, setStreakData] = useState({
     currentStreak: 0,
     isSecuredToday: false,
@@ -24,7 +26,7 @@ export const StreakWidget = ({ compact = false, className = '' }) => {
   const fetchStreak = async () => {
     try {
       const today = getFormattedDate();
-      const res = await api.get(`/dashboard?date=${today}`);
+      const res = await api.get(`/dashboard/summary?date=${today}`);
       const s = res.data?.summary?.streak;
       if (s) {
         setStreakData({
@@ -78,7 +80,7 @@ export const StreakWidget = ({ compact = false, className = '' }) => {
     return (
       <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-subtle/50 border border-theme text-xs text-secondary animate-pulse ${className}`}>
         <Flame className="w-3.5 h-3.5 opacity-40" />
-        <span>Loading streak...</span>
+        <span>{t('streakWidget.loading')}</span>
       </div>
     );
   }
@@ -109,7 +111,7 @@ export const StreakWidget = ({ compact = false, className = '' }) => {
                 : 'text-secondary'
             }`}
           />
-          <span className="tracking-tight">{compact ? `${currentStreak}d` : `${currentStreak}d Streak`}</span>
+          <span className="tracking-tight">{compact ? `${currentStreak}d` : `${currentStreak} ${t('streakWidget.daysStreak')}`}</span>
         </div>
 
         {!compact && (
@@ -130,7 +132,7 @@ export const StreakWidget = ({ compact = false, className = '' }) => {
                   ? 'bg-amber-500 shadow-sm shadow-amber-500/50'
                   : 'bg-muted'
               }`}
-              title={isSecuredToday ? 'Secured for today' : 'At risk before midnight'}
+              title={isSecuredToday ? t('streakWidget.streakSecured') : t('streakWidget.streakAtRisk')}
             />
           </>
         )}
@@ -138,7 +140,7 @@ export const StreakWidget = ({ compact = false, className = '' }) => {
 
       {/* Hover / Click Detail Popover */}
       {showTooltip && (
-        <div className="absolute top-full right-0 mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] p-3.5 bg-surface border border-theme rounded-2xl card-shadow z-50 animate-in fade-in zoom-in-95 duration-150 text-xs">
+        <div className={`absolute top-full ${isRTL ? 'left-0' : 'right-0'} mt-2 w-72 sm:w-80 max-w-[calc(100vw-2rem)] p-3.5 bg-surface border border-theme rounded-2xl card-shadow z-50 animate-in fade-in zoom-in-95 duration-150 text-xs`}>
           <div className="flex items-center gap-2 mb-2 pb-2 border-b border-subtle">
             {isSecuredToday ? (
               <ShieldCheck className="w-4 h-4 text-emerald-500" />
@@ -146,19 +148,19 @@ export const StreakWidget = ({ compact = false, className = '' }) => {
               <AlertTriangle className="w-4 h-4 text-amber-500" />
             )}
             <span className="font-bold text-primary">
-              {isSecuredToday ? 'Streak Secured for Today!' : 'Streak at Risk!'}
+              {isSecuredToday ? t('streakWidget.streakSecured') : t('streakWidget.streakAtRisk')}
             </span>
           </div>
 
           <p className="text-[11px] text-secondary leading-relaxed mb-2.5">
             {isSecuredToday
-              ? `Great job! You've logged your daily activities. Your ${currentStreak}-day streak is safe. Next cycle starts at midnight in:`
-              : `You haven't completed a habit or activity today yet. Complete any task before midnight to preserve your ${currentStreak}-day streak:`}
+              ? `${t('streakWidget.securedMsg')} (${currentStreak} ${t('common.days')})`
+              : `${t('streakWidget.atRiskMsg')} (${currentStreak} ${t('common.days')})`}
           </p>
 
           <div className="flex items-center justify-between p-2 rounded-xl bg-subtle border border-theme font-mono font-bold text-primary text-xs">
             <span className="text-[10px] uppercase tracking-wider text-secondary font-sans font-bold">
-              {isSecuredToday ? 'Reset In' : 'Expires In'}
+              {isSecuredToday ? t('streakWidget.resetIn') : t('streakWidget.expiresIn')}
             </span>
             <span className={isSecuredToday ? 'text-emerald-500' : 'text-amber-500'}>
               {countdownFormatted}
