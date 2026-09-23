@@ -7,9 +7,13 @@ import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { FastingTimer } from '../components/FastingTimer';
 import { GuidedReflectionModal } from '../components/GuidedReflectionModal';
+import { LoadingScreen } from '../components/LoadingScreen';
+import { Logo } from '../components/Logo';
 import { useAuth } from '../context/AuthContext';
-import api from '../utils/api';
+import api, { getLocalCache, setLocalCache } from '../utils/api';
+import { showSuccessToast, notifyError } from '../utils/alerts';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
+import { notifyStreakUpdate } from '../utils/streakEvents';
 import {
   Clock,
   Utensils,
@@ -34,15 +38,15 @@ import {
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
 
-const CHART_COLORS = ['#6366F1', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#06B6D4'];
+const CHART_COLORS = ['#007EA7', '#00A8E8', '#003459', '#10B981', '#F59E0B', '#32CCFF'];
 
 const SALAH_STATUS_CONFIG = {
-  onTime: { label: 'On Time', icon: '🟢', class: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30' },
-  jamaah: { label: "Jama'ah", icon: '🕌', class: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30' },
-  late: { label: 'Late', icon: '🟡', class: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30' },
-  missed: { label: 'Missed', icon: '🔴', class: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30' },
-  qada: { label: 'Qada', icon: '🟣', class: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30' },
-  pending: { label: 'Pending', icon: '⚪', class: 'bg-subtle text-secondary border-theme' },
+  onTime: { label: 'On Time', icon: '🟢', class: 'bg-emerald-500/15 text-emerald-800 dark:text-emerald-300 border-emerald-500/40 font-bold' },
+  jamaah: { label: "Jama'ah", icon: '🕌', class: 'bg-[#007EA7]/15 text-[#003459] dark:text-[#76DDFF] border-[#007EA7]/40 font-bold' },
+  late: { label: 'Late', icon: '🟡', class: 'bg-amber-500/15 text-amber-900 dark:text-amber-300 border-amber-500/40 font-bold' },
+  missed: { label: 'Missed', icon: '🔴', class: 'bg-rose-500/15 text-rose-800 dark:text-rose-300 border-rose-500/40 font-bold' },
+  qada: { label: 'Qada', icon: '🟣', class: 'bg-purple-500/15 text-purple-900 dark:text-purple-300 border-purple-500/40 font-bold' },
+  pending: { label: 'Pending', icon: '⚪', class: 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 border-slate-300 dark:border-zinc-700 font-bold' },
 };
 
 const SALAH_CYCLE = ['pending', 'onTime', 'jamaah', 'late', 'missed', 'qada'];
@@ -53,23 +57,45 @@ export const Dashboard = ({ selectedDate }) => {
   const { t, isRTL } = useLanguage();
   const activeDate = selectedDate || getFormattedDate();
 
-  const [data, setData] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData] = useState(() => {
+    const cached = getLocalCache(`/dashboard/summary?date=${activeDate}`);
+    return cached?.data || null;
+  });
+  const [todayFast, setTodayFast] = useState(() => {
+    const cached = getLocalCache(`/islamic/fasts?date=${activeDate}`);
+    return cached?.data?.[0] || null;
+  });
+  const [fastingSummary, setFastingSummary] = useState(() => {
+    const cached = getLocalCache('/islamic/fasts/summary');
+    return cached?.data || null;
+  });
+  const [salahMap, setSalahMap] = useState(() => {
+    const cached = getLocalCache(`/dashboard/summary?date=${activeDate}`);
+    if (cached?.data?.summary?.salah?.prayerMap) {
+      return cached.data.summary.salah.prayerMap;
+    }
+    return {
+      Fajr: 'pending',
+      Dhuhr: 'pending',
+      Asr: 'pending',
+      Maghrib: 'pending',
+      Isha: 'pending',
+    };
+  });
+  const [loading, setLoading] = useState(() => {
+    const cached = getLocalCache(`/dashboard/summary?date=${activeDate}`);
+    return !cached;
+  });
   const [refreshing, setRefreshing] = useState(false);
   const [isReflectionModalOpen, setIsReflectionModalOpen] = useState(false);
-  const [todayFast, setTodayFast] = useState(null);
-  const [fastingSummary, setFastingSummary] = useState(null);
-  const [salahMap, setSalahMap] = useState({
-    Fajr: 'pending',
-    Dhuhr: 'pending',
-    Asr: 'pending',
-    Maghrib: 'pending',
-    Isha: 'pending',
-  });
 
   const fetchDashboardData = useCallback(async (isSilent = false) => {
-    if (!isSilent) setLoading(true);
-    else setRefreshing(true);
+    const cached = getLocalCache(`/dashboard/summary?date=${activeDate}`);
+    if (!cached && !isSilent) {
+      setLoading(true);
+    } else {
+      setRefreshing(true);
+    }
 
     try {
       const [res, fastRes, fastSummaryRes] = await Promise.all([
@@ -77,6 +103,10 @@ export const Dashboard = ({ selectedDate }) => {
         api.get(`/islamic/fasts?date=${activeDate}`).catch(() => ({ data: [] })),
         api.get('/islamic/fasts/summary').catch(() => ({ data: null })),
       ]);
+      setLocalCache(`/dashboard/summary?date=${activeDate}`, res.data);
+      if (fastRes.data) setLocalCache(`/islamic/fasts?date=${activeDate}`, fastRes.data);
+      if (fastSummaryRes.data) setLocalCache('/islamic/fasts/summary', fastSummaryRes.data);
+
       setData(res.data);
       if (res.data?.summary?.salah?.prayerMap) {
         setSalahMap(res.data.summary.salah.prayerMap);
@@ -112,23 +142,31 @@ export const Dashboard = ({ selectedDate }) => {
     setSalahMap((prev) => ({ ...prev, [prayerName]: nextStatus }));
 
     try {
-      await api.post('/salah/log', {
+      await api.post('/islamic/salah', {
         date: activeDate,
         prayerName,
+        salah: prayerName,
         status: nextStatus,
       });
+      notifyStreakUpdate();
+      showSuccessToast(
+        `${prayerName} set to ${SALAH_STATUS_CONFIG[nextStatus]?.label || nextStatus}`,
+        'Prayer Log'
+      );
       fetchDashboardData(true);
     } catch (err) {
       console.error('Failed to update prayer status', err);
+      notifyError(err, 'Failed to update prayer status');
       fetchDashboardData(true);
     }
   };
 
-  const handleToggleFastToday = async (newStatus, defaultType = 'sunnah_mon_thu') => {
+  const handleToggleFastToday = async (newStatus, defaultType = 'nafl') => {
     try {
       if (newStatus === 'none') {
         await api.post('/islamic/fasts', { date: activeDate, status: 'none' });
         setTodayFast(null);
+        showSuccessToast('Fasting status cleared for today', 'Fasting Log');
       } else {
         const type = todayFast?.type || defaultType;
         const res = await api.post('/islamic/fasts', {
@@ -140,21 +178,21 @@ export const Dashboard = ({ selectedDate }) => {
           notes: todayFast?.notes || '',
         });
         setTodayFast(res.data);
+        showSuccessToast(
+          newStatus === 'completed' ? 'Fast logged as Completed! MashaAllah' : `Fast status set to ${newStatus}`,
+          'Fasting Log'
+        );
       }
       const sumRes = await api.get('/islamic/fasts/summary').catch(() => ({ data: null }));
       if (sumRes.data) setFastingSummary(sumRes.data);
     } catch (err) {
       console.error('Failed to toggle fast status', err);
+      notifyError(err, 'Failed to toggle fast status');
     }
   };
 
   if (loading) {
-    return (
-      <div className="flex flex-col items-center justify-center min-h-[60vh] gap-3">
-        <div className="w-10 h-10 border-4 border-accent border-t-transparent rounded-full animate-spin" />
-        <span className="text-xs font-bold text-secondary uppercase tracking-widest">{t('common.loading', 'Loading Dashboard...')}</span>
-      </div>
-    );
+    return <LoadingScreen fullScreen={false} message={t('common.loading', 'Loading Dashboard...')} />;
   }
 
   const summary = data?.summary || {};
@@ -183,11 +221,15 @@ export const Dashboard = ({ selectedDate }) => {
         action={
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
             <button
-              onClick={() => fetchDashboardData(true)}
-              className="p-2 rounded-xl text-secondary hover:text-primary hover:bg-subtle border border-theme transition-all cursor-pointer shrink-0"
+              onClick={() => fetchDashboardData(false)}
+              className="p-2 rounded-xl text-secondary hover:text-primary hover:bg-subtle border border-theme transition-all cursor-pointer shrink-0 flex items-center justify-center min-w-[36px] min-h-[36px]"
               title="Refresh Dashboard Data"
             >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-accent' : ''}`} />
+              {refreshing ? (
+                <Logo size="xs" loading={true} />
+              ) : (
+                <RefreshCw className="w-4 h-4" />
+              )}
             </button>
             <Button
               variant="secondary"
@@ -339,8 +381,8 @@ export const Dashboard = ({ selectedDate }) => {
             <div className="space-y-4 pt-1">
               {/* Dual-Bar Metrics Meter */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/20">
-                  <span className="text-[11px] font-bold text-amber-600 dark:text-amber-400 uppercase tracking-wider block">
+                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25">
+                  <span className="text-[11px] font-extrabold text-amber-950 dark:text-amber-300 uppercase tracking-wider block">
                     {t('dashboard.caloriesToday')}
                   </span>
                   <span className="text-2xl font-black text-primary mt-1 block">
@@ -348,8 +390,8 @@ export const Dashboard = ({ selectedDate }) => {
                   </span>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/20">
-                  <span className="text-[11px] font-bold text-rose-600 dark:text-rose-400 uppercase tracking-wider block">
+                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25">
+                  <span className="text-[11px] font-extrabold text-rose-950 dark:text-rose-300 uppercase tracking-wider block">
                     {t('dashboard.burnedToday')}
                   </span>
                   <span className="text-2xl font-black text-primary mt-1 block">
@@ -357,11 +399,11 @@ export const Dashboard = ({ selectedDate }) => {
                   </span>
                 </div>
 
-                <div className={`p-3.5 rounded-2xl border ${isDeficit ? 'bg-emerald-500/10 border-emerald-500/20' : 'bg-purple-500/10 border-purple-500/20'}`}>
-                  <span className="text-[11px] font-bold uppercase tracking-wider block text-secondary">
+                <div className={`p-3.5 rounded-2xl border ${isDeficit ? 'bg-emerald-500/10 border-emerald-500/25' : 'bg-purple-500/10 border-purple-500/25'}`}>
+                  <span className="text-[11px] font-extrabold uppercase tracking-wider block text-secondary">
                     {t('calories.energyBalance')}
                   </span>
-                  <span className={`text-2xl font-black mt-1 block ${isDeficit ? 'text-emerald-600 dark:text-emerald-400' : 'text-purple-600 dark:text-purple-400'}`}>
+                  <span className={`text-2xl font-black mt-1 block ${isDeficit ? 'text-emerald-900 dark:text-emerald-300' : 'text-purple-950 dark:text-purple-300'}`}>
                     {netCalories} <span className="text-xs font-semibold text-secondary">/ {calorieGoal} kcal</span>
                   </span>
                 </div>
@@ -371,7 +413,7 @@ export const Dashboard = ({ selectedDate }) => {
               <div className="space-y-1.5 pt-1">
                 <div className="flex items-center justify-between text-xs font-bold">
                   <span className="text-secondary">{t('dashboard.caloriesToday')} ({calorieIntake}) - {t('dashboard.burnedToday')} ({calorieBurned})</span>
-                  <span className={isDeficit ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}>
+                  <span className={isDeficit ? 'text-emerald-800 dark:text-emerald-300 font-bold' : 'text-rose-800 dark:text-rose-300 font-bold'}>
                     {remainingCalories > 0 ? `${remainingCalories} kcal Remaining` : `${Math.abs(remainingCalories)} kcal Over Target`}
                   </span>
                 </div>
@@ -413,13 +455,13 @@ export const Dashboard = ({ selectedDate }) => {
             >
               <div className="space-y-3 pt-1">
                 <div className="p-3 rounded-xl bg-subtle border border-theme flex items-center justify-between">
-                  <span className="text-xs font-bold text-secondary">{t('finance.todaysExpenses')}</span>
+                  <span className="text-xs font-bold text-secondary">{t('finance.todaysExpenses', "Today's Expenses")}</span>
                   <span className="text-lg font-black text-[var(--color-danger)]">
                     {(summary.finance?.expensesToday || 0).toFixed(2)} {currentCurrency}
                   </span>
                 </div>
                 <div className="p-3 rounded-xl bg-subtle border border-theme flex items-center justify-between">
-                  <span className="text-xs font-bold text-secondary">{t('finance.monthToDate')}</span>
+                  <span className="text-xs font-bold text-secondary">{t('finance.monthToDate', 'Month to Date')}</span>
                   <span className="text-base font-extrabold text-primary">
                     {(summary.finance?.expensesMonth || 0).toFixed(2)} {currentCurrency}
                   </span>
@@ -432,19 +474,19 @@ export const Dashboard = ({ selectedDate }) => {
           <Card
             hover
             onClick={() => navigate('/time-tracker')}
-            title={t('dashboard.timeAllocation')}
-            subtitle={t('dashboard.timeBlocksSummary')}
+            title={t('dashboard.timeAllocation', "Today's Time Allocation")}
+            subtitle={t('dashboard.timeBlocksSummary', 'Logged blocks categorized across deep work, study, deen, & rest')}
             icon={Clock}
             action={
               <Button variant="ghost" size="xs" onClick={() => navigate('/time-tracker')}>
-                {t('nav.focus')} <ArrowRight className="w-3 h-3 ml-1" />
+                {t('nav.focus', 'Focus')} <ArrowRight className="w-3 h-3 ml-1" />
               </Button>
             }
           >
             {timeChartData.length === 0 ? (
               <div className="h-44 flex flex-col items-center justify-center text-xs text-secondary italic bg-subtle/50 rounded-xl border border-dashed border-theme mt-2">
                 <Clock className="w-8 h-8 text-muted mb-2 stroke-1" />
-                {t('time.noLogs')}
+                {t('time.noLogs', 'No time logs recorded for today')}
               </div>
             ) : (
               <div className="h-56 w-full mt-2">
@@ -598,7 +640,7 @@ export const Dashboard = ({ selectedDate }) => {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleToggleFastToday('fasting', 'sunnah_mon_thu');
+                          handleToggleFastToday('fasting', 'nafl');
                         }}
                         className="flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 transition-all cursor-pointer text-center"
                       >
@@ -608,7 +650,7 @@ export const Dashboard = ({ selectedDate }) => {
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          handleToggleFastToday('completed', 'sunnah_mon_thu');
+                          handleToggleFastToday('completed', 'nafl');
                         }}
                         className="flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold bg-emerald-500/20 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-500/30 border border-emerald-500/30 transition-all cursor-pointer text-center"
                       >
