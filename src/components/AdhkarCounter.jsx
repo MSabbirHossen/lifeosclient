@@ -95,16 +95,16 @@ export const AdhkarCounter = () => {
                 onClick={() => handleSelectDhikr(d)}
                 className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center justify-between gap-1.5 ${
                   isSelected
-                    ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/40 shadow-xs shadow-emerald-500/10 ring-1 ring-emerald-500/30 font-extrabold'
-                    : 'bg-subtle text-secondary border-theme hover:text-primary hover:bg-surface hover:border-theme-strong'
+                    ? 'bg-emerald-500/15 text-emerald-950 dark:text-emerald-300 border-emerald-500/40 shadow-xs ring-1 ring-emerald-500/30 font-black'
+                    : 'bg-subtle text-primary border-theme hover:bg-surface hover:border-theme-strong font-bold'
                 }`}
               >
                 <span className="truncate">{d.text}</span>
                 <span
                   className={`text-[10px] px-1.5 py-0.5 rounded-md shrink-0 font-bold ${
                     isSelected
-                      ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-300'
-                      : 'bg-surface border border-theme text-secondary'
+                      ? 'bg-emerald-500/25 text-emerald-950 dark:text-emerald-300'
+                      : 'bg-surface border border-theme text-secondary font-bold'
                   }`}
                 >
                   {d.target}
@@ -147,7 +147,7 @@ export const AdhkarCounter = () => {
                 cx="80"
                 cy="80"
                 r={radius}
-                className="text-emerald-500 dark:text-emerald-400 stroke-current transition-all duration-200 ease-out"
+                className="text-emerald-600 dark:text-emerald-400 stroke-current transition-all duration-200 ease-out"
                 strokeWidth="9"
                 strokeLinecap="round"
                 strokeDasharray={circumference}
@@ -160,8 +160,8 @@ export const AdhkarCounter = () => {
             <div className="absolute inset-2.5 rounded-full bg-surface/95 border border-theme/50 flex flex-col items-center justify-center shadow-inner group-hover:border-emerald-500/30 transition-all">
               {justCompletedLap ? (
                 <div className="flex flex-col items-center animate-bounce">
-                  <Award className="w-6 h-6 text-emerald-500 mb-0.5" />
-                  <span className="text-xs font-black text-emerald-500 uppercase tracking-wider">
+                  <Award className="w-6 h-6 text-emerald-600 mb-0.5" />
+                  <span className="text-xs font-black text-emerald-900 dark:text-emerald-300 uppercase tracking-wider">
                     Set Done! 🎉
                   </span>
                 </div>
@@ -171,11 +171,11 @@ export const AdhkarCounter = () => {
                     {count}
                   </span>
                   <div className="flex items-center gap-1 mt-0.5">
-                    <span className="text-[11px] font-extrabold text-emerald-600 dark:text-emerald-400 tracking-wider">
+                    <span className="text-xs font-black text-emerald-900 dark:text-emerald-300 tracking-wider">
                       / {selectedDhikr.target}
                     </span>
                   </div>
-                  <span className="text-[9px] font-semibold text-secondary/80 mt-0.5 uppercase tracking-wider">
+                  <span className="text-[10px] font-bold text-secondary mt-0.5 uppercase tracking-wider">
                     {t('adhkar.tapToCount', 'Tap anywhere')}
                   </span>
                 </>
@@ -197,7 +197,7 @@ export const AdhkarCounter = () => {
             <button
               type="button"
               onClick={handleIncrement}
-              className="px-3.5 py-1 rounded-lg text-xs font-extrabold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all cursor-pointer shadow-xs"
+              className="px-3.5 py-1 rounded-lg text-xs font-black bg-emerald-500/15 text-emerald-950 dark:text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25 transition-all cursor-pointer shadow-xs"
             >
               +1 Tap
             </button>

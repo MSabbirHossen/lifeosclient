@@ -26,10 +26,10 @@ export const DateInput = ({
 
   return (
     <div className={`space-y-1.5 ${className}`}>
-      <div className="h-6 flex items-center justify-between">
+      <div className="flex items-center justify-between gap-1.5 min-w-0">
         <label
           htmlFor={id}
-          className="block text-xs font-bold text-secondary uppercase tracking-wider truncate"
+          className="block text-[11px] sm:text-xs font-bold text-secondary uppercase tracking-wider truncate"
         >
           {displayLabel} {required && <span className="text-rose-500">*</span>}
         </label>

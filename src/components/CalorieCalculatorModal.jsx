@@ -26,6 +26,7 @@ import {
   saveMacroSettings,
 } from '../utils/calorieCalculator';
 import api from '../utils/api';
+import { notifyUpdated, notifyError, showSuccessToast } from '../utils/alerts';
 
 export const CalorieCalculatorModal = ({
   isOpen,
@@ -93,6 +94,7 @@ export const CalorieCalculatorModal = ({
       saveMacroSettings(newSettings);
 
       setAppliedSuccess(true);
+      notifyUpdated('Caloric & macro targets');
       if (onApplied) {
         onApplied({
           budgetKcal: budgetResult.budgetKcal,
@@ -108,6 +110,7 @@ export const CalorieCalculatorModal = ({
       }, 900);
     } catch (err) {
       console.error('Failed to update calorie goal on backend', err);
+      notifyError(err, 'Failed to update calorie goal on backend');
       // Fallback: still save locally
       saveMacroSettings({
         presetId: macroPreset,

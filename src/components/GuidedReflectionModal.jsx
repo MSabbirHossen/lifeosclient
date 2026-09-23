@@ -4,6 +4,7 @@ import { Button } from './Button';
 import { Badge } from './Badge';
 import { Sparkles, Shuffle, Smile, Zap, Heart, CheckCircle2, Save, BookOpen } from 'lucide-react';
 import api from '../utils/api';
+import { notifyCreated, notifyError } from '../utils/alerts';
 import { useLanguage } from '../context/LanguageContext';
 
 const GUIDED_QUESTIONS = [
@@ -108,17 +109,19 @@ export const GuidedReflectionModal = ({ isOpen, onClose, selectedDate, onSaveSuc
         gratitude,
         nextDayNotes,
       });
+      notifyCreated('Growth reflection');
       if (onSaveSuccess) onSaveSuccess();
       onClose();
     } catch (err) {
       console.error('Failed to save reflection', err);
+      notifyError(err, 'Failed to save reflection');
     } finally {
       setSaving(false);
     }
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={t('reflection.guidedReflection')} maxWidth="2xl">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('reflection.guidedReflection', 'Guided Self-Reflection')} maxWidth="2xl">
       <form onSubmit={handleSubmit} className="space-y-5 pb-1">
         {/* Random Prompt Box */}
         <div className="p-4 sm:p-5 rounded-2xl bg-gradient-to-br from-indigo-500/10 via-purple-500/5 to-indigo-500/5 border border-indigo-500/25 shadow-xs relative transition-all">

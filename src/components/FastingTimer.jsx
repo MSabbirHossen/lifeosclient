@@ -254,13 +254,13 @@ export const FastingTimer = ({ compact = false }) => {
                   </span>
                 )}
               </Badge>
-              <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+              <Badge variant="success" size="xs">
                 {fastingStats.completedCount} {t('fasting.completedIF')}
-              </span>
+              </Badge>
               {fastingStats.partialCount > 0 && (
-                <span className="text-[10px] font-bold px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                <Badge variant="warning" size="xs">
                   {fastingStats.partialCount} {t('fasting.partialFast')}
-                </span>
+                </Badge>
               )}
             </div>
             <p className="text-xs font-bold text-primary truncate">
@@ -343,8 +343,8 @@ export const FastingTimer = ({ compact = false }) => {
                   onClick={() => handleProtocolChange(prot.id)}
                   className={`px-3 py-1 rounded-xl text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                     selectedProtocolId === prot.id
-                      ? 'bg-purple-600 text-white shadow-sm shadow-purple-600/25'
-                      : 'bg-subtle hover:bg-surface text-secondary hover:text-primary border border-theme/60'
+                      ? 'bg-[#007EA7] text-white shadow-sm shadow-[#007EA7]/30'
+                      : 'bg-subtle hover:bg-surface text-secondary hover:text-primary border border-theme'
                   }`}
                 >
                   {prot.id}
@@ -531,65 +531,65 @@ export const FastingTimer = ({ compact = false }) => {
           {/* 4-Stat 2x2 Grid */}
           <div className="grid grid-cols-2 gap-2.5 sm:gap-3">
             {/* 1. Completed IF (80%+ target) */}
-            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/20 flex flex-col justify-between">
+            <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-300">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-emerald-900 dark:text-emerald-300">
                   {t('fasting.completedIF')}
                 </span>
-                <Trophy className="w-3.5 h-3.5 text-emerald-500" />
+                <Trophy className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               </div>
               <div className="text-2xl font-black text-primary my-1">
                 {fastingStats.completedCount}
               </div>
-              <span className="text-[10px] text-emerald-600/90 dark:text-emerald-400/90 font-semibold">
+              <span className="text-[10px] text-emerald-800 dark:text-emerald-300 font-bold">
                 {t('fasting.target80')}
               </span>
             </div>
 
             {/* 2. Partial Fast (20% – 80% target) */}
-            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/20 flex flex-col justify-between">
+            <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/25 flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-700 dark:text-amber-300">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-amber-950 dark:text-amber-300">
                   {t('fasting.partialFast')}
                 </span>
-                <Clock className="w-3.5 h-3.5 text-amber-500" />
+                <Clock className="w-3.5 h-3.5 text-amber-600 dark:text-amber-400" />
               </div>
               <div className="text-2xl font-black text-primary my-1">
                 {fastingStats.partialCount}
               </div>
-              <span className="text-[10px] text-amber-600/90 dark:text-amber-400/90 font-semibold">
+              <span className="text-[10px] text-amber-900 dark:text-amber-300 font-bold">
                 {t('fasting.target20to80')}
               </span>
             </div>
 
             {/* 3. Early Ended (< 20% target) */}
-            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/20 flex flex-col justify-between">
+            <div className="p-3 rounded-xl bg-rose-500/10 border border-rose-500/25 flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-rose-700 dark:text-rose-300">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-rose-950 dark:text-rose-300">
                   {t('fasting.earlyEnded')}
                 </span>
-                <AlertTriangle className="w-3.5 h-3.5 text-rose-500" />
+                <AlertTriangle className="w-3.5 h-3.5 text-rose-600 dark:text-rose-400" />
               </div>
               <div className="text-2xl font-black text-primary my-1">
                 {fastingStats.earlyEndedCount}
               </div>
-              <span className="text-[10px] text-rose-600/90 dark:text-rose-400/90 font-semibold">
+              <span className="text-[10px] text-rose-900 dark:text-rose-300 font-bold">
                 {t('fasting.targetLess20')}
               </span>
             </div>
 
             {/* 4. IF Streak */}
-            <div className="p-3 rounded-xl bg-purple-500/10 border border-purple-500/20 flex flex-col justify-between">
+            <div className="p-3 rounded-xl bg-[#007EA7]/10 border border-[#007EA7]/25 flex flex-col justify-between">
               <div className="flex items-center justify-between">
-                <span className="text-[10px] font-bold uppercase tracking-wider text-purple-700 dark:text-purple-300">
+                <span className="text-[10px] font-extrabold uppercase tracking-wider text-[#003459] dark:text-[#76DDFF]">
                   {t('fasting.ifStreak')}
                 </span>
-                <Flame className="w-3.5 h-3.5 text-purple-500" />
+                <Flame className="w-3.5 h-3.5 text-[#007EA7] dark:text-[#76DDFF]" />
               </div>
               <div className="text-2xl font-black text-primary my-1">
                 {fastingStats.streak} <span className="text-xs font-semibold text-secondary">{t('fasting.days')}</span>
               </div>
-              <span className="text-[10px] text-purple-600/90 dark:text-purple-400/90 font-semibold">
+              <span className="text-[10px] text-[#007EA7] dark:text-[#76DDFF] font-bold">
                 {fastingStats.totalHoursFasted}h {t('fasting.totalHoursFasted')}
               </span>
             </div>

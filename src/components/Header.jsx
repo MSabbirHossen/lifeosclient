@@ -82,18 +82,20 @@ export const Header = ({ onOpenMobileMenu, selectedDate, setSelectedDate }) => {
           <button
             onClick={isRTL ? handleNextDay : handlePrevDay}
             className="p-1 rounded-lg text-secondary hover:text-primary hover:bg-surface transition-colors cursor-pointer shrink-0"
-            title={t('common.actions', 'Previous Day')}
+            title={t('common.prevDay', 'Previous Day')}
+            aria-label={t('common.prevDay', 'Previous Day')}
           >
             {isRTL ? <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           </button>
 
-          <div className="flex items-center gap-1 sm:gap-2 px-1 sm:px-1.5 py-0.5 min-w-0">
+          <div className="flex items-center gap-1 sm:gap-2 px-0.5 sm:px-1.5 py-0.5 min-w-0">
             <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-accent shrink-0 hidden xs:inline" />
             <input
               type="date"
               value={currentDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent text-primary focus:outline-none cursor-pointer text-xs font-bold w-[108px] sm:w-[125px] p-0"
+              className="bg-transparent text-primary focus:outline-none cursor-pointer text-[11px] sm:text-xs font-bold w-[92px] sm:w-[125px] p-0"
+              aria-label="Select Date"
             />
             <span className="hidden md:inline text-secondary font-medium text-xs border-l rtl:border-l-0 rtl:border-r border-theme pl-2 rtl:pl-0 rtl:pr-2 whitespace-nowrap">
               {formatDisplayDate(currentDate)}
@@ -103,7 +105,8 @@ export const Header = ({ onOpenMobileMenu, selectedDate, setSelectedDate }) => {
           <button
             onClick={isRTL ? handlePrevDay : handleNextDay}
             className="p-1 rounded-lg text-secondary hover:text-primary hover:bg-surface transition-colors cursor-pointer shrink-0"
-            title={t('common.actions', 'Next Day')}
+            title={t('common.nextDay', 'Next Day')}
+            aria-label={t('common.nextDay', 'Next Day')}
           >
             {isRTL ? <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           </button>
@@ -127,7 +130,7 @@ export const Header = ({ onOpenMobileMenu, selectedDate, setSelectedDate }) => {
       )}
 
       {/* Right: Language Selector, Theme Switcher & Profile Dropdown */}
-      <div className="flex items-center gap-2 sm:gap-2.5">
+      <div className="flex items-center gap-1 sm:gap-2.5 shrink-0">
         {/* Mobile Streak Icon Pill */}
         {user && (
           <div className="sm:hidden">
@@ -150,7 +153,7 @@ export const Header = ({ onOpenMobileMenu, selectedDate, setSelectedDate }) => {
 
           {showLangMenu && (
             <div
-              className={`absolute top-full mt-2 w-48 bg-surface border border-theme rounded-2xl card-shadow p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 ${
+              className={`absolute top-full mt-2 w-48 max-w-[calc(100vw-1.5rem)] bg-surface border border-theme rounded-2xl card-shadow p-1.5 z-50 animate-in fade-in zoom-in-95 duration-100 ${
                 isRTL ? 'left-0' : 'right-0'
               }`}
             >
@@ -194,14 +197,14 @@ export const Header = ({ onOpenMobileMenu, selectedDate, setSelectedDate }) => {
         {/* Theme Toggle Button */}
         <button
           onClick={toggleTheme}
-          className="p-2 rounded-xl text-secondary hover:text-primary hover:bg-subtle transition-all duration-200 cursor-pointer border border-transparent hover:border-theme"
+          className="p-1.5 sm:p-2 rounded-xl text-secondary hover:text-primary hover:bg-subtle transition-all duration-200 cursor-pointer border border-transparent hover:border-theme"
           title={`Theme: ${theme} (Click to toggle)`}
           aria-label="Toggle Theme"
         >
           {theme === 'system' ? (
             <Monitor className="w-4 h-4" />
           ) : effectiveTheme === 'dark' ? (
-            <Moon className="w-4 h-4 text-indigo-400" />
+            <Moon className="w-4 h-4 text-[#00A8E8]" />
           ) : (
             <Sun className="w-4 h-4 text-amber-500" />
           )}
@@ -214,7 +217,7 @@ export const Header = ({ onOpenMobileMenu, selectedDate, setSelectedDate }) => {
               onClick={() => setShowProfileMenu(!showProfileMenu)}
               className="flex items-center gap-2.5 p-1 rounded-xl hover:bg-subtle border border-transparent hover:border-theme transition-all cursor-pointer"
             >
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 text-white flex items-center justify-center text-xs font-bold shadow-sm">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl bg-gradient-to-tr from-[#003459] to-[#007EA7] text-white flex items-center justify-center text-xs font-bold shadow-sm">
                 {user.name ? user.name.charAt(0).toUpperCase() : 'U'}
               </div>
               <span className="hidden md:inline text-xs font-semibold text-primary pr-1 rtl:pr-0 rtl:pl-1">
@@ -224,7 +227,7 @@ export const Header = ({ onOpenMobileMenu, selectedDate, setSelectedDate }) => {
 
             {showProfileMenu && (
               <div
-                className={`absolute top-full mt-2 w-52 bg-surface border border-theme rounded-2xl card-shadow py-2 z-50 animate-in fade-in zoom-in-95 duration-100 ${
+                className={`absolute top-full mt-2 w-52 max-w-[calc(100vw-1.5rem)] bg-surface border border-theme rounded-2xl card-shadow py-2 z-50 animate-in fade-in zoom-in-95 duration-100 ${
                   isRTL ? 'left-0' : 'right-0'
                 }`}
               >

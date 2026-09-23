@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Flame, Clock, ShieldCheck, AlertTriangle } from 'lucide-react';
+import { Logo } from './Logo';
 import api from '../utils/api';
 import { getFormattedDate } from '../utils/dateHelpers';
 import { subscribeStreakUpdates } from '../utils/streakEvents';
@@ -78,9 +79,9 @@ export const StreakWidget = ({ compact = false, className = '' }) => {
 
   if (loading) {
     return (
-      <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-subtle/50 border border-theme text-xs text-secondary animate-pulse ${className}`}>
-        <Flame className="w-3.5 h-3.5 opacity-40" />
-        <span>{t('streakWidget.loading')}</span>
+      <div className={`flex items-center gap-2 px-3 py-1.5 rounded-xl bg-subtle/50 border border-theme text-xs text-secondary ${className}`}>
+        <Logo size="xs" loading={true} />
+        <span>{t('streakWidget.loading', 'Loading streak...')}</span>
       </div>
     );
   }

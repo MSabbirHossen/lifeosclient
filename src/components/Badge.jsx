@@ -9,48 +9,54 @@ export const Badge = ({
   icon: Icon,
 }) => {
   const variants = {
-    neutral: 'bg-neutral-100 dark:bg-neutral-800 text-secondary border-neutral-200 dark:border-neutral-700',
-    primary: 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/50',
-    indigo: 'bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-800/50',
-    success: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50',
-    emerald: 'bg-emerald-50 dark:bg-emerald-950/50 text-emerald-600 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800/50',
-    teal: 'bg-teal-50 dark:bg-teal-950/50 text-teal-600 dark:text-teal-400 border-teal-200 dark:border-teal-800/50',
-    warning: 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50',
-    amber: 'bg-amber-50 dark:bg-amber-950/50 text-amber-600 dark:text-amber-400 border-amber-200 dark:border-amber-800/50',
-    orange: 'bg-orange-50 dark:bg-orange-950/50 text-orange-600 dark:text-orange-400 border-orange-200 dark:border-orange-800/50',
-    danger: 'bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800/50',
-    rose: 'bg-rose-50 dark:bg-rose-950/50 text-rose-600 dark:text-rose-400 border-rose-200 dark:border-rose-800/50',
-    purple: 'bg-purple-50 dark:bg-purple-950/50 text-purple-600 dark:text-purple-400 border-purple-200 dark:border-purple-800/50',
-    cyan: 'bg-cyan-50 dark:bg-cyan-950/50 text-cyan-600 dark:text-cyan-400 border-cyan-200 dark:border-cyan-800/50',
-    blue: 'bg-blue-50 dark:bg-blue-950/50 text-blue-600 dark:text-blue-400 border-blue-200 dark:border-blue-800/50',
+    neutral: 'bg-slate-100 dark:bg-zinc-800 text-slate-900 dark:text-zinc-200 border-slate-300 dark:border-zinc-700',
+    primary: 'bg-[#007EA7]/15 dark:bg-[#007EA7]/25 text-[#003459] dark:text-[#76DDFF] border-[#007EA7]/40 dark:border-[#007EA7]/50',
+    cerulean: 'bg-[#007EA7]/15 dark:bg-[#007EA7]/25 text-[#003459] dark:text-[#76DDFF] border-[#007EA7]/40 dark:border-[#007EA7]/50',
+    sky: 'bg-[#00A8E8]/15 dark:bg-[#00A8E8]/25 text-[#003459] dark:text-[#8FDFFF] border-[#00A8E8]/40 dark:border-[#00A8E8]/50',
+    info: 'bg-[#007EA7]/15 dark:bg-[#007EA7]/25 text-[#003459] dark:text-[#76DDFF] border-[#007EA7]/40 dark:border-[#007EA7]/50',
+    indigo: 'bg-[#007EA7]/15 dark:bg-[#007EA7]/25 text-[#003459] dark:text-[#76DDFF] border-[#007EA7]/40 dark:border-[#007EA7]/50',
+    success: 'bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-950 dark:text-emerald-300 border-emerald-500/40 dark:border-emerald-500/50',
+    emerald: 'bg-emerald-500/15 dark:bg-emerald-500/20 text-emerald-950 dark:text-emerald-300 border-emerald-500/40 dark:border-emerald-500/50',
+    teal: 'bg-teal-500/15 dark:bg-teal-500/20 text-teal-950 dark:text-teal-300 border-teal-500/40 dark:border-teal-500/50',
+    warning: 'bg-amber-500/15 dark:bg-amber-500/20 text-amber-950 dark:text-amber-300 border-amber-500/40 dark:border-amber-500/50',
+    amber: 'bg-amber-500/15 dark:bg-amber-500/20 text-amber-950 dark:text-amber-300 border-amber-500/40 dark:border-amber-500/50',
+    orange: 'bg-orange-500/15 dark:bg-orange-500/20 text-orange-950 dark:text-orange-300 border-orange-500/40 dark:border-orange-500/50',
+    danger: 'bg-rose-500/15 dark:bg-rose-500/20 text-rose-950 dark:text-rose-300 border-rose-500/40 dark:border-rose-500/50',
+    rose: 'bg-rose-500/15 dark:bg-rose-500/20 text-rose-950 dark:text-rose-300 border-rose-500/40 dark:border-rose-500/50',
+    purple: 'bg-purple-500/15 dark:bg-purple-500/20 text-purple-950 dark:text-purple-300 border-purple-500/40 dark:border-purple-500/50',
+    cyan: 'bg-[#00A8E8]/15 dark:bg-[#00A8E8]/25 text-[#003459] dark:text-[#8FDFFF] border-[#00A8E8]/40 dark:border-[#00A8E8]/50',
+    blue: 'bg-[#003459]/15 dark:bg-[#003459]/30 text-[#001E34] dark:text-[#8FDFFF] border-[#003459]/35 dark:border-[#003459]/50',
   };
 
   const dotColors = {
-    neutral: 'bg-neutral-400',
-    primary: 'bg-indigo-500',
-    indigo: 'bg-indigo-500',
-    success: 'bg-emerald-500',
-    emerald: 'bg-emerald-500',
-    teal: 'bg-teal-500',
-    warning: 'bg-amber-500',
-    amber: 'bg-amber-500',
-    orange: 'bg-orange-500',
-    danger: 'bg-rose-500',
-    rose: 'bg-rose-500',
-    purple: 'bg-purple-500',
-    cyan: 'bg-cyan-500',
-    blue: 'bg-blue-500',
+    neutral: 'bg-slate-500',
+    primary: 'bg-[#007EA7]',
+    cerulean: 'bg-[#007EA7]',
+    sky: 'bg-[#00A8E8]',
+    info: 'bg-[#007EA7]',
+    indigo: 'bg-[#007EA7]',
+    success: 'bg-emerald-600',
+    emerald: 'bg-emerald-600',
+    teal: 'bg-teal-600',
+    warning: 'bg-amber-600',
+    amber: 'bg-amber-600',
+    orange: 'bg-orange-600',
+    danger: 'bg-rose-600',
+    rose: 'bg-rose-600',
+    purple: 'bg-purple-600',
+    cyan: 'bg-[#00A8E8]',
+    blue: 'bg-[#003459]',
   };
 
   const sizes = {
-    xs: 'px-2 py-0.5 text-[10px] gap-1',
-    sm: 'px-2.5 py-0.5 text-xs gap-1.5',
-    md: 'px-3 py-1 text-xs gap-1.5 font-semibold',
+    xs: 'px-2 py-0.5 text-[10px] gap-1 font-bold',
+    sm: 'px-2.5 py-0.5 text-xs gap-1.5 font-bold',
+    md: 'px-3 py-1 text-xs gap-1.5 font-bold',
   };
 
   return (
     <span
-      className={`inline-flex items-center font-medium rounded-full border ${variants[variant] || variants.neutral} ${sizes[size] || sizes.md} ${className}`}
+      className={`inline-flex items-center font-bold tracking-tight rounded-full border ${variants[variant] || variants.neutral} ${sizes[size] || sizes.md} ${className}`}
     >
       {dot && (
         <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotColors[variant] || dotColors.neutral}`} />

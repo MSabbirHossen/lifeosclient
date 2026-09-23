@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2 } from 'lucide-react';
+import { Logo } from './Logo';
 
 export const Button = ({
   children,
@@ -14,7 +14,7 @@ export const Button = ({
   iconPosition = 'left',
 }) => {
   const baseStyles =
-    'relative inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-150 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-indigo-500 disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none active:scale-[0.98]';
+    'relative inline-flex items-center justify-center font-semibold rounded-xl transition-all duration-150 cursor-pointer select-none focus:outline-none focus-visible:ring-2 focus-visible:ring-offset-2 focus-visible:ring-[#007EA7] disabled:opacity-50 disabled:cursor-not-allowed disabled:pointer-events-none active:scale-[0.98]';
 
   const variants = {
     primary:
@@ -30,7 +30,7 @@ export const Button = ({
     success:
       'bg-[var(--color-success)] text-white hover:opacity-95 shadow-sm hover:shadow-emerald-500/20 border border-transparent',
     gradient:
-      'bg-gradient-to-r from-indigo-600 to-purple-600 text-white hover:from-indigo-500 hover:to-purple-500 shadow-sm hover:shadow-indigo-500/25 border border-transparent',
+      'bg-gradient-to-r from-[#003459] via-[#007EA7] to-[#00A8E8] text-white hover:opacity-95 shadow-sm hover:shadow-[#007EA7]/25 border border-transparent',
   };
 
   const sizes = {
@@ -48,7 +48,7 @@ export const Button = ({
       className={`${baseStyles} ${variants[variant] || variants.primary} ${sizes[size] || sizes.md} ${className}`}
     >
       {loading ? (
-        <Loader2 className="w-4 h-4 animate-spin shrink-0" />
+        <Logo size={size === 'xs' ? 'xs' : 'sm'} loading={true} />
       ) : (
         Icon && iconPosition === 'left' && <Icon className="w-4 h-4 shrink-0" />
       )}

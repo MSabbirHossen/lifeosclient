@@ -1,6 +1,7 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { Logo } from './Logo';
 import {
   LayoutDashboard,
   BookOpen,
@@ -27,38 +28,43 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
 
   const navigationGroups = [
     {
-      title: t('categories.overview', 'Overview'),
+      title: t('categories.overview', 'Executive Dashboard'),
       items: [
         { name: t('nav.dashboard', 'Dashboard'), path: '/dashboard', icon: LayoutDashboard },
       ],
     },
     {
-      title: t('categories.habits', 'Track'),
+      title: t('categories.habits', 'Consistency & Routines'),
       items: [
-        { name: t('nav.reflection', 'Journal'), path: '/journal', icon: BookOpen },
-        { name: t('nav.focus', 'Time Tracker'), path: '/time-tracker', icon: Clock },
-        { name: 'Study Tracker', path: '/study', icon: GraduationCap },
-        { name: t('nav.fitness', 'Fitness'), path: '/fitness', icon: Dumbbell },
-        { name: t('nav.calories', 'Calories'), path: '/calories', icon: Utensils },
+        { name: t('nav.habits', 'Habits Tracker'), path: '/habits', icon: CheckSquare },
+        { name: t('nav.goals', 'Goals & Milestones'), path: '/goals', icon: Target },
+        { name: t('nav.focus', 'Focus & Time'), path: '/time-tracker', icon: Clock },
+        { name: t('nav.study', 'Study Tracker'), path: '/study', icon: GraduationCap },
+        { name: t('nav.reflection', 'Reflection & Journal'), path: '/journal', icon: BookOpen },
       ],
     },
     {
-      title: t('categories.spiritual', 'Life'),
+      title: t('categories.health', 'Health & Lifestyle'),
       items: [
-        { name: 'Finance', path: '/finance', icon: Wallet },
-        { name: t('nav.adhkar', 'Islamic & Deen'), path: '/islamic', icon: Compass },
+        { name: t('nav.fitness', 'Fitness & Gym'), path: '/fitness', icon: Dumbbell },
+        { name: t('nav.calories', 'Nutrition & Macros'), path: '/calories', icon: Utensils },
+        { name: t('nav.finance', 'Finance & Wealth'), path: '/finance', icon: Wallet },
+      ],
+    },
+    {
+      title: t('categories.spiritual', 'Spiritual Discipline'),
+      items: [
+        { name: t('nav.islamic', 'Islamic & Deen Hub'), path: '/islamic', icon: Compass },
         { name: t('nav.islamicFasting', 'Fasting (Sawm)'), path: '/islamic-fasting', icon: Moon },
-        { name: t('nav.qada', 'Qada Matrix'), path: '/qada-matrix', icon: Sparkles },
-        { name: t('nav.habits', 'Habits'), path: '/habits', icon: CheckSquare },
-        { name: 'Goals', path: '/goals', icon: Target },
+        { name: t('nav.qada', 'Salah & Qada Matrix'), path: '/qada-matrix', icon: Sparkles },
       ],
     },
     {
-      title: t('categories.analytics', 'System'),
+      title: t('categories.analytics', 'Analytics & System'),
       items: [
-        { name: t('nav.reports', 'Reports'), path: '/reports', icon: FileText },
+        { name: t('nav.reports', 'Analytics & Reports'), path: '/reports', icon: FileText },
         { name: t('nav.settings', 'Settings'), path: '/settings', icon: Settings },
-        { name: 'Developer', path: '/developer', icon: Code2 },
+        { name: t('nav.developer', 'Developer Info'), path: '/developer', icon: Code2 },
       ],
     },
   ];
@@ -75,7 +81,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
 
       <aside
         className={`fixed top-0 bottom-0 left-0 rtl:left-auto rtl:right-0 z-40 bg-surface border-r rtl:border-r-0 rtl:border-l border-theme transition-all duration-300 flex flex-col ${
-          isCollapsed ? 'w-64 lg:w-20' : 'w-64'
+          isCollapsed ? 'w-64 max-w-[85vw] lg:w-20' : 'w-64 max-w-[85vw]'
         } ${
           isMobileOpen
             ? 'translate-x-0'
@@ -87,9 +93,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
         {/* Brand Logo Header */}
         <div className="h-16 flex items-center justify-between px-4 border-b border-theme shrink-0">
           <div className="flex items-center gap-3 overflow-hidden">
-            <div className="w-10 h-10 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white shrink-0 shadow-sm shadow-indigo-500/25">
-              <Sparkles className="w-5 h-5" />
-            </div>
+            <Logo size="sm" variant="glow" />
             <div className={`flex flex-col ${isCollapsed ? 'flex lg:hidden' : 'flex'}`}>
               <span className="font-extrabold text-base text-primary tracking-tight">{t('common.appName', 'Life OS')}</span>
               <span className="text-[10px] text-secondary font-semibold uppercase tracking-wider">
@@ -139,7 +143,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
                       className={({ isActive }) =>
                         `flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-bold transition-all duration-150 ${
                           isActive
-                            ? 'bg-accent text-white shadow-sm shadow-indigo-500/20'
+                            ? 'bg-accent text-white shadow-sm shadow-[#007EA7]/25'
                             : 'text-secondary hover:text-primary hover:bg-subtle'
                         } ${isCollapsed ? 'lg:justify-center lg:px-0' : ''}`
                       }
@@ -164,7 +168,7 @@ export const Sidebar = ({ isCollapsed, setIsCollapsed, isMobileOpen, setIsMobile
             title="Connect with Developer (MS Hossen)"
           >
             <div className="flex items-center gap-2 min-w-0">
-              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-indigo-500 to-purple-600 flex items-center justify-center text-white text-[10px] font-black shrink-0 shadow-xs">
+              <div className="w-6 h-6 rounded-lg bg-gradient-to-tr from-[#003459] to-[#007EA7] flex items-center justify-center text-white text-[10px] font-black shrink-0 shadow-xs">
                 MS
               </div>
               <div className="flex flex-col min-w-0">
