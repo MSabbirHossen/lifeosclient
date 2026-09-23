@@ -6,7 +6,9 @@ import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
+import { LoadingScreen } from '../components/LoadingScreen';
 import api from '../utils/api';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, confirmDelete } from '../utils/alerts';
 import { DateInput } from '../components/DateInput';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import { GuidedReflectionModal } from '../components/GuidedReflectionModal';
@@ -160,24 +162,34 @@ export const Journal = ({ selectedDate }) => {
     try {
       if (editingEntry) {
         await api.put(`/journal/${editingEntry._id}`, payload);
+        notifyUpdated('Journal entry');
       } else {
         await api.post('/journal', payload);
+        notifyCreated('Journal entry');
       }
       setIsModalOpen(false);
       fetchEntries();
     } catch (err) {
       console.error('Failed to save journal entry', err);
+      notifyError(err, 'Failed to save journal entry');
     }
   };
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
+  const handleDelete = async (entryId) => {
+    const targetId = entryId || deleteId;
+    if (!targetId) return;
+
+    const isConfirmed = await confirmDelete('Journal Entry');
+    if (!isConfirmed) return;
+
     try {
-      await api.delete(`/journal/${deleteId}`);
+      await api.delete(`/journal/${targetId}`);
+      notifyDeleted('Journal entry');
       setDeleteId(null);
       fetchEntries();
     } catch (err) {
       console.error('Failed to delete entry', err);
+      notifyError(err, 'Failed to delete entry');
     }
   };
 
@@ -195,7 +207,7 @@ export const Journal = ({ selectedDate }) => {
               icon={Sparkles}
               onClick={() => setIsGuidedModalOpen(true)}
             >
-              {t('reflection.guidedReflection', 'Guided Growth Popup')}
+              {t('reflection.guidedReflection', 'Guided Self-Reflection')}
             </Button>
             <Button variant="gradient" size="md" icon={Plus} onClick={openCreateModal}>
               {t('reflection.newEntry', 'New Journal Entry')}
@@ -247,9 +259,7 @@ export const Journal = ({ selectedDate }) => {
         </div>
 
         {loading ? (
-          <div className="p-12 flex justify-center">
-            <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-          </div>
+          <LoadingScreen fullScreen={false} message="Loading journal entries..." size="md" />
         ) : entries.length === 0 ? (
           <EmptyState
             icon={BookOpen}
@@ -274,7 +284,7 @@ export const Journal = ({ selectedDate }) => {
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => setDeleteId(entry._id)}
+                      onClick={() => handleDelete(entry._id)}
                       className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-xs transition-all cursor-pointer"
                       title={t('common.delete')}
                     >

@@ -6,7 +6,9 @@ import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
+import { LoadingScreen } from '../components/LoadingScreen';
 import api from '../utils/api';
+import { notifyCreated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
 import { DateInput } from '../components/DateInput';
 import { formatDisplayDate } from '../utils/dateHelpers';
 import { useLanguage } from '../context/LanguageContext';
@@ -31,7 +33,6 @@ export const Reports = () => {
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [deleteId, setDeleteId] = useState(null);
 
   // Form State
   const [type, setType] = useState('weekly');
@@ -70,6 +71,7 @@ export const Reports = () => {
         howToImprove: howToImprove.trim(),
         actionItems: actionItems.trim(),
       });
+      notifyCreated(`${type === 'monthly' ? 'Monthly' : 'Weekly'} Review`);
       setIsModalOpen(false);
       setWhatWentWell('');
       setWhatDidntGoWell('');
@@ -78,6 +80,7 @@ export const Reports = () => {
       fetchReviews();
     } catch (err) {
       console.error('Failed to save review', err);
+      notifyError(err, 'Failed to save review');
     }
   };
 
@@ -92,30 +95,36 @@ export const Reports = () => {
       document.body.appendChild(downloadAnchor);
       downloadAnchor.click();
       downloadAnchor.remove();
+      showSuccessToast('JSON Backup downloaded successfully!', 'Export Completed');
     } catch (err) {
       console.error('Failed to export data', err);
+      notifyError(err, 'Failed to export backup data');
     } finally {
       setExportLoading(false);
     }
   };
 
-  const handleDeleteReview = async () => {
-    if (!deleteId) return;
+  const handleDeleteReview = async (reviewId) => {
+    if (!reviewId) return;
+    const confirmed = await confirmDelete('Review');
+    if (!confirmed) return;
+
     try {
-      await api.delete(`/reports/reviews/${deleteId}`);
-      setDeleteId(null);
+      await api.delete(`/reports/reviews/${reviewId}`);
+      notifyDeleted('Review');
       fetchReviews();
     } catch (err) {
       console.error('Failed to delete review', err);
+      notifyError(err, 'Failed to delete review');
     }
   };
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
       <PageHeader
-        category={t('categories.analytics')}
-        title={t('reports.title')}
-        description={t('reports.subtitle')}
+        category={t('categories.analytics', 'Analytics & Insights')}
+        title={t('reports.title', 'Analytics & Reports')}
+        description={t('reports.subtitle', 'Comprehensive analytical synthesis of habits, nutrition, workouts, and focus hours.')}
         action={
           <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
             <Button
@@ -167,9 +176,7 @@ export const Reports = () => {
         </div>
 
         {loading ? (
-          <div className="p-12 flex justify-center">
-            <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-          </div>
+          <LoadingScreen fullScreen={false} message="Loading reports & retrospectives..." size="md" />
         ) : reviews.length === 0 ? (
           <EmptyState
             icon={FileText}
@@ -187,7 +194,7 @@ export const Reports = () => {
                 bottomAction={
                   <div className="flex items-center gap-1.5">
                     <button
-                      onClick={() => setDeleteId(rev._id)}
+                      onClick={() => handleDeleteReview(rev._id)}
                       className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-xs transition-all cursor-pointer"
                       title={t('common.delete')}
                     >
@@ -365,28 +372,6 @@ export const Reports = () => {
             </Button>
           </div>
         </form>
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={!!deleteId}
-        onClose={() => setDeleteId(null)}
-        title={t('common.confirmDeleteTitle')}
-        subtitle={t('common.confirmDeleteDesc')}
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-secondary">
-            {t('reports.deleteReviewDesc')}
-          </p>
-          <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
-            <Button variant="secondary" onClick={() => setDeleteId(null)}>
-              {t('common.cancel')}
-            </Button>
-            <Button variant="danger" onClick={handleDeleteReview}>
-              {t('common.delete')}
-            </Button>
-          </div>
-        </div>
       </Modal>
     </div>
   );
