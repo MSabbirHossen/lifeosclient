@@ -7,7 +7,9 @@ import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
+import { LoadingScreen } from '../components/LoadingScreen';
 import api from '../utils/api';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, confirmDelete } from '../utils/alerts';
 import { DateInput } from '../components/DateInput';
 import {
   Target,
@@ -118,8 +120,10 @@ export const GoalsTracker = () => {
 
       if (editingGoalId) {
         await api.put(`/goals/${editingGoalId}`, payload);
+        notifyUpdated('Goal');
       } else {
         await api.post('/goals', payload);
+        notifyCreated('Goal');
       }
 
       setIsModalOpen(false);
@@ -133,6 +137,7 @@ export const GoalsTracker = () => {
       fetchData();
     } catch (err) {
       console.error('Failed to save goal', err);
+      notifyError(err, 'Failed to save goal');
     }
   };
 
@@ -142,14 +147,21 @@ export const GoalsTracker = () => {
     );
   };
 
-  const handleDeleteGoal = async () => {
-    if (!deleteId) return;
+  const handleDeleteGoal = async (goalId) => {
+    const targetId = goalId || deleteId;
+    if (!targetId) return;
+
+    const isConfirmed = await confirmDelete('Goal');
+    if (!isConfirmed) return;
+
     try {
-      await api.delete(`/goals/${deleteId}`);
+      await api.delete(`/goals/${targetId}`);
+      notifyDeleted('Goal');
       setDeleteId(null);
       fetchData();
     } catch (err) {
       console.error('Failed to delete goal', err);
+      notifyError(err, 'Failed to delete goal');
     }
   };
 
@@ -243,9 +255,7 @@ export const GoalsTracker = () => {
         </div>
 
         {loading ? (
-          <div className="p-12 flex justify-center">
-            <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-          </div>
+          <LoadingScreen fullScreen={false} message="Loading goals & milestones..." size="md" />
         ) : filteredGoals.length === 0 ? (
           <EmptyState
             icon={Target}
@@ -270,7 +280,7 @@ export const GoalsTracker = () => {
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => setDeleteId(goal._id)}
+                      onClick={() => handleDeleteGoal(goal._id)}
                       className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-xs transition-all cursor-pointer"
                       title={t('common.delete')}
                     >

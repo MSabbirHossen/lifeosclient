@@ -7,7 +7,9 @@ import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
-import api from '../utils/api';
+import { LoadingScreen } from '../components/LoadingScreen';
+import api, { getLocalCache, setLocalCache } from '../utils/api';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import { notifyStreakUpdate } from '../utils/streakEvents';
 import {
@@ -55,9 +57,9 @@ export const HabitsTracker = ({ selectedDate }) => {
   const { t, isRTL } = useLanguage();
   const activeDate = selectedDate || getFormattedDate();
 
-  const [habits, setHabits] = useState([]);
-  const [heatmap, setHeatmap] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [habits, setHabits] = useState(() => getLocalCache(`/habits?date=${activeDate}`)?.data || []);
+  const [heatmap, setHeatmap] = useState(() => getLocalCache(`/habits/heatmap?weeks=53`)?.data?.heatmap || []);
+  const [loading, setLoading] = useState(() => !getLocalCache(`/habits?date=${activeDate}`));
   const [hoveredDay, setHoveredDay] = useState(null);
   const [selectedTimeframe, setSelectedTimeframe] = useState('past_year');
   const [serverLifetimeStats, setServerLifetimeStats] = useState(null);
@@ -76,7 +78,9 @@ export const HabitsTracker = ({ selectedDate }) => {
   const [saving, setSaving] = useState(false);
 
   const fetchData = useCallback(async (showLoading = true) => {
-    if (showLoading) setLoading(true);
+    const hasCache = getLocalCache(`/habits?date=${activeDate}`);
+    if (showLoading && !hasCache) setLoading(true);
+
     try {
       const heatmapParams =
         selectedTimeframe === 'past_year'
@@ -97,6 +101,9 @@ export const HabitsTracker = ({ selectedDate }) => {
         ? heatmapRes.data
         : [];
 
+      setLocalCache(`/habits?date=${activeDate}`, habitsList);
+      setLocalCache(`/habits/heatmap${heatmapParams}`, heatmapRes.data);
+
       setHabits(habitsList);
       setHeatmap(heatmapList);
       if (heatmapRes.data?.lifetimeStats) {
@@ -105,7 +112,7 @@ export const HabitsTracker = ({ selectedDate }) => {
     } catch (err) {
       console.error('Failed to fetch habits data', err);
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
     }
   }, [activeDate, selectedTimeframe]);
 
@@ -116,6 +123,7 @@ export const HabitsTracker = ({ selectedDate }) => {
   // Instant 0ms Optimistic Habit Toggle
   const handleToggleHabit = async (habitId, currentStatus) => {
     const isNowDone = !currentStatus;
+    const targetHabit = habits.find((h) => h._id === habitId);
 
     // Optimistically update local state immediately
     setHabits((prev) =>
@@ -151,9 +159,14 @@ export const HabitsTracker = ({ selectedDate }) => {
     try {
       await api.post(`/habits/${habitId}/toggle`, { date: activeDate });
       notifyStreakUpdate();
+      showSuccessToast(
+        isNowDone ? 'Habit completed!' : 'Habit marked incomplete',
+        targetHabit?.name || 'Habit'
+      );
       fetchData(false);
     } catch (err) {
       console.error('Failed to toggle habit', err);
+      notifyError(err, 'Failed to toggle habit');
       fetchData(false);
     }
   };
@@ -206,6 +219,7 @@ export const HabitsTracker = ({ selectedDate }) => {
             prev.map((h) => (h._id === editingHabitId ? { ...h, ...res.data } : h))
           );
         }
+        notifyUpdated('Habit');
       } else {
         const res = await api.post('/habits', payload);
         setIsModalOpen(false);
@@ -214,28 +228,37 @@ export const HabitsTracker = ({ selectedDate }) => {
         if (res.data) {
           setHabits((prev) => [...prev, { ...res.data, completedToday: false, streak: 0 }]);
         }
+        notifyCreated('Habit');
       }
       fetchData(false);
     } catch (err) {
       console.error('Failed to save habit', err);
-      setCreateError(err.response?.data?.message || err.message || 'Failed to save habit');
+      const errMsg = err.response?.data?.message || err.message || 'Failed to save habit';
+      setCreateError(errMsg);
+      notifyError(err, errMsg);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDeleteHabit = async () => {
-    if (!deleteId) return;
-    const targetId = deleteId;
+  const handleDeleteHabit = async (habitId) => {
+    const targetId = habitId || deleteId;
+    if (!targetId) return;
+
+    const isConfirmed = await confirmDelete('Habit');
+    if (!isConfirmed) return;
+
     setDeleteId(null);
     // Optimistically remove from list
     setHabits((prev) => prev.filter((h) => h._id !== targetId));
 
     try {
       await api.delete(`/habits/${targetId}`);
+      notifyDeleted('Habit');
       fetchData(false);
     } catch (err) {
       console.error('Failed to delete habit', err);
+      notifyError(err, 'Failed to delete habit');
       fetchData(false);
     }
   };
@@ -465,9 +488,7 @@ export const HabitsTracker = ({ selectedDate }) => {
         </div>
 
         {loading ? (
-          <div className="p-12 flex justify-center">
-            <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-          </div>
+          <LoadingScreen fullScreen={false} message="Loading habits & streaks..." size="md" />
         ) : safeHabits.length === 0 ? (
           <EmptyState
             icon={CheckSquare}
@@ -501,7 +522,7 @@ export const HabitsTracker = ({ selectedDate }) => {
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => setDeleteId(habit._id)}
+                        onClick={() => handleDeleteHabit(habit._id)}
                         className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-xs transition-all cursor-pointer"
                         title="Delete Habit"
                       >
@@ -675,8 +696,8 @@ export const HabitsTracker = ({ selectedDate }) => {
           </div>
 
           {/* Full GitHub-Style Heatmap Grid Container */}
-          <div className="p-3.5 sm:p-5 rounded-2xl bg-subtle/30 border border-theme/60 w-full">
-            <div className="overflow-x-auto custom-scrollbar pb-2">
+          <div className="p-3 sm:p-5 rounded-2xl bg-subtle/30 border border-theme/60 w-full">
+            <div className="overflow-x-auto touch-scroll-x custom-scrollbar pb-2">
               <div className="min-w-fit">
                 {/* Month Labels Header */}
                 <div className="flex text-[10px] font-semibold text-secondary mb-1.5 pl-6 sm:pl-7">
