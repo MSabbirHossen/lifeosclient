@@ -6,7 +6,9 @@ import { StatCard } from '../components/StatCard';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { Badge } from '../components/Badge';
-import api from '../utils/api';
+import { LoadingScreen } from '../components/LoadingScreen';
+import api, { getLocalCache, setLocalCache } from '../utils/api';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
 import { DateInput } from '../components/DateInput';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import { notifyStreakUpdate } from '../utils/streakEvents';
@@ -36,14 +38,14 @@ export const IslamicTracker = ({ selectedDate }) => {
   const { t, isRTL } = useLanguage();
   const activeDate = selectedDate || getFormattedDate();
 
-  const [salahLogs, setSalahLogs] = useState([]);
-  const [qadaLogs, setQadaLogs] = useState([]);
-  const [vows, setVows] = useState([]);
-  const [hadiths, setHadiths] = useState([]);
-  const [quranLogs, setQuranLogs] = useState([]);
-  const [adhkarLog, setAdhkarLog] = useState({ morningCompleted: false, eveningCompleted: false });
-  const [todayFast, setTodayFast] = useState(null);
-  const [fastSummary, setFastSummary] = useState({
+  const [salahLogs, setSalahLogs] = useState(() => getLocalCache(`/islamic/salah?date=${activeDate}`)?.data || []);
+  const [qadaLogs, setQadaLogs] = useState(() => getLocalCache('/islamic/qada')?.data || []);
+  const [vows, setVows] = useState(() => getLocalCache('/islamic/vows')?.data || []);
+  const [hadiths, setHadiths] = useState(() => getLocalCache('/islamic/hadith')?.data || []);
+  const [quranLogs, setQuranLogs] = useState(() => getLocalCache(`/islamic/quran?date=${activeDate}`)?.data || []);
+  const [adhkarLog, setAdhkarLog] = useState(() => getLocalCache(`/islamic/adhkar?date=${activeDate}`)?.data || { morningCompleted: false, eveningCompleted: false });
+  const [todayFast, setTodayFast] = useState(() => getLocalCache(`/islamic/fasts?date=${activeDate}`)?.data?.[0] || null);
+  const [fastSummary, setFastSummary] = useState(() => getLocalCache('/islamic/fasts/summary')?.data || {
     totalCompleted: 0,
     ramadanCount: 0,
     sunnahCount: 0,
@@ -51,7 +53,7 @@ export const IslamicTracker = ({ selectedDate }) => {
     nazrCount: 0,
     breakdown: {},
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !getLocalCache(`/islamic/salah?date=${activeDate}`));
 
   // Modals State
   const [isVowModalOpen, setIsVowModalOpen] = useState(false);
@@ -72,12 +74,10 @@ export const IslamicTracker = ({ selectedDate }) => {
   const [quranPages, setQuranPages] = useState('');
   const [quranAyats, setQuranAyats] = useState('');
 
-  const [deleteHadithId, setDeleteHadithId] = useState(null);
-  const [deleteVowId, setDeleteVowId] = useState(null);
-  const [deleteQuranId, setDeleteQuranId] = useState(null);
-
   const fetchData = useCallback(async (showLoading = true) => {
-    if (showLoading) setLoading(true);
+    const hasCache = getLocalCache(`/islamic/salah?date=${activeDate}`);
+    if (showLoading && !hasCache) setLoading(true);
+
     try {
       const [
         salahRes,
@@ -98,6 +98,16 @@ export const IslamicTracker = ({ selectedDate }) => {
         api.get(`/islamic/fasts?date=${activeDate}`).catch(() => ({ data: [] })),
         api.get('/islamic/fasts/summary').catch(() => ({ data: null })),
       ]);
+
+      setLocalCache(`/islamic/salah?date=${activeDate}`, salahRes.data || []);
+      setLocalCache('/islamic/qada', qadaRes.data || []);
+      setLocalCache('/islamic/vows', vowsRes.data || []);
+      setLocalCache('/islamic/hadith', hadithRes.data || []);
+      setLocalCache(`/islamic/quran?date=${activeDate}`, quranRes.data || []);
+      setLocalCache(`/islamic/adhkar?date=${activeDate}`, adhkarRes.data || { morningCompleted: false, eveningCompleted: false });
+      if (fastRes.data) setLocalCache(`/islamic/fasts?date=${activeDate}`, fastRes.data);
+      if (fastSummaryRes.data) setLocalCache('/islamic/fasts/summary', fastSummaryRes.data);
+
       setSalahLogs(salahRes.data || []);
       setQadaLogs(qadaRes.data || []);
       setVows(vowsRes.data || []);
@@ -118,7 +128,7 @@ export const IslamicTracker = ({ selectedDate }) => {
     } catch (err) {
       console.error('Failed to fetch Islamic dashboard data', err);
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
     }
   }, [activeDate]);
 
@@ -194,10 +204,12 @@ export const IslamicTracker = ({ selectedDate }) => {
             prev.map((h) => (h._id === editingHadithId ? res.data : h))
           );
         }
+        notifyUpdated('Hadith bookmark');
       } else {
         const res = await api.post('/islamic/hadith', payload);
         setIsHadithModalOpen(false);
         if (res.data) setHadiths((prev) => [res.data, ...prev]);
+        notifyCreated('Hadith bookmark');
       }
       setHadithText('');
       setHadithNarrator('');
@@ -207,20 +219,24 @@ export const IslamicTracker = ({ selectedDate }) => {
       fetchData(false);
     } catch (err) {
       console.error('Failed to save Hadith', err);
+      notifyError(err, 'Failed to save Hadith');
     }
   };
 
-  const handleDeleteHadith = async () => {
-    if (!deleteHadithId) return;
-    const targetId = deleteHadithId;
-    setDeleteHadithId(null);
-    setHadiths((prev) => prev.filter((h) => h._id !== targetId));
+  const handleDeleteHadith = async (hadithId) => {
+    if (!hadithId) return;
+    const confirmed = await confirmDelete('Hadith bookmark');
+    if (!confirmed) return;
+
+    setHadiths((prev) => prev.filter((h) => h._id !== hadithId));
 
     try {
-      await api.delete(`/islamic/hadith/${targetId}`);
+      await api.delete(`/islamic/hadith/${hadithId}`);
+      notifyDeleted('Hadith bookmark');
       fetchData(false);
     } catch (err) {
       console.error('Failed to delete Hadith', err);
+      notifyError(err, 'Failed to delete Hadith');
       fetchData(false);
     }
   };
@@ -259,9 +275,14 @@ export const IslamicTracker = ({ selectedDate }) => {
         status: newCompleted ? 'Completed' : 'Pending',
         isCompleted: newCompleted,
       });
+      showSuccessToast(
+        newCompleted ? 'Vow fulfilled! Al-Hamdulillah' : 'Vow marked pending',
+        'Vow Status'
+      );
       fetchData(false);
     } catch (err) {
       console.error('Failed to toggle vow', err);
+      notifyError(err, 'Failed to toggle vow');
       fetchData(false);
     }
   };
@@ -286,10 +307,12 @@ export const IslamicTracker = ({ selectedDate }) => {
             prev.map((v) => (v._id === editingVowId ? res.data : v))
           );
         }
+        notifyUpdated('Vow');
       } else {
         const res = await api.post('/islamic/vows', payload);
         setIsVowModalOpen(false);
         if (res.data) setVows((prev) => [res.data, ...prev]);
+        notifyCreated('Vow');
       }
       setVowDescription('');
       setVowTargetDate('');
@@ -297,20 +320,24 @@ export const IslamicTracker = ({ selectedDate }) => {
       fetchData(false);
     } catch (err) {
       console.error('Failed to create vow', err);
+      notifyError(err, 'Failed to save vow');
     }
   };
 
-  const handleDeleteVow = async () => {
-    if (!deleteVowId) return;
-    const targetId = deleteVowId;
-    setDeleteVowId(null);
-    setVows((prev) => prev.filter((v) => v._id !== targetId));
+  const handleDeleteVow = async (vowId) => {
+    if (!vowId) return;
+    const confirmed = await confirmDelete('Vow');
+    if (!confirmed) return;
+
+    setVows((prev) => prev.filter((v) => v._id !== vowId));
 
     try {
-      await api.delete(`/islamic/vows/${targetId}`);
+      await api.delete(`/islamic/vows/${vowId}`);
+      notifyDeleted('Vow');
       fetchData(false);
     } catch (err) {
       console.error('Failed to delete vow', err);
+      notifyError(err, 'Failed to delete vow');
       fetchData(false);
     }
   };
@@ -351,10 +378,12 @@ export const IslamicTracker = ({ selectedDate }) => {
             prev.map((q) => (q._id === editingQuranId ? res.data : q))
           );
         }
+        notifyUpdated('Quran reading');
       } else {
         const res = await api.post('/islamic/quran', payload);
         setIsQuranModalOpen(false);
         if (res.data) setQuranLogs((prev) => [res.data, ...prev]);
+        notifyCreated('Quran reading');
       }
       setQuranSurah('');
       setQuranPages('');
@@ -363,20 +392,24 @@ export const IslamicTracker = ({ selectedDate }) => {
       fetchData(false);
     } catch (err) {
       console.error('Failed to log Quran', err);
+      notifyError(err, 'Failed to save Quran reading');
     }
   };
 
-  const handleDeleteQuran = async () => {
-    if (!deleteQuranId) return;
-    const targetId = deleteQuranId;
-    setDeleteQuranId(null);
-    setQuranLogs((prev) => prev.filter((q) => q._id !== targetId));
+  const handleDeleteQuran = async (quranId) => {
+    if (!quranId) return;
+    const confirmed = await confirmDelete('Quran reading');
+    if (!confirmed) return;
+
+    setQuranLogs((prev) => prev.filter((q) => q._id !== quranId));
 
     try {
-      await api.delete(`/islamic/quran/${targetId}`);
+      await api.delete(`/islamic/quran/${quranId}`);
+      notifyDeleted('Quran reading');
       fetchData(false);
     } catch (err) {
       console.error('Failed to delete Quran log', err);
+      notifyError(err, 'Failed to delete Quran reading');
       fetchData(false);
     }
   };
@@ -392,6 +425,10 @@ export const IslamicTracker = ({ selectedDate }) => {
 
   const totalQuranPagesToday = quranLogs.reduce((sum, q) => sum + (Number(q.pagesRead) || 0), 0);
   const totalQuranAyatsToday = quranLogs.reduce((sum, q) => sum + (Number(q.ayatsRead) || 0), 0);
+
+  if (loading) {
+    return <LoadingScreen fullScreen={false} message="Loading Islamic & Deen Hub..." />;
+  }
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in">
@@ -708,7 +745,7 @@ export const IslamicTracker = ({ selectedDate }) => {
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => setDeleteQuranId(q._id)}
+                        onClick={() => handleDeleteQuran(q._id)}
                         className="p-1 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                         title="Delete Quran Log"
                       >
@@ -797,7 +834,7 @@ export const IslamicTracker = ({ selectedDate }) => {
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => setDeleteHadithId(h._id)}
+                      onClick={() => handleDeleteHadith(h._id)}
                       className="p-1 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                       title={t('common.delete', 'Delete')}
                     >
@@ -885,7 +922,7 @@ export const IslamicTracker = ({ selectedDate }) => {
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => setDeleteVowId(v._id)}
+                      onClick={() => handleDeleteVow(v._id)}
                       className="p-1 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                       title={t('common.delete', 'Delete')}
                     >
@@ -1083,72 +1120,6 @@ export const IslamicTracker = ({ selectedDate }) => {
             </Button>
           </div>
         </form>
-      </Modal>
-
-      {/* Delete Quran Modal */}
-      <Modal
-        isOpen={!!deleteQuranId}
-        onClose={() => setDeleteQuranId(null)}
-        title={t('common.confirmDeleteTitle', 'Confirm Deletion')}
-        subtitle={t('common.confirmDeleteDesc', 'Are you sure you want to delete this item? This action cannot be undone.')}
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-secondary">
-            {t('islamic.deleteQuranDesc', 'Are you sure you want to delete this Quran recitation log?')}
-          </p>
-          <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
-            <Button variant="secondary" onClick={() => setDeleteQuranId(null)}>
-              {t('common.cancel', 'Cancel')}
-            </Button>
-            <Button variant="danger" onClick={handleDeleteQuran}>
-              {t('common.delete', 'Delete')}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Delete Hadith Modal */}
-      <Modal
-        isOpen={!!deleteHadithId}
-        onClose={() => setDeleteHadithId(null)}
-        title={t('common.confirmDeleteTitle', 'Confirm Deletion')}
-        subtitle={t('common.confirmDeleteDesc', 'Are you sure you want to delete this item? This action cannot be undone.')}
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-secondary">
-            {t('islamic.deleteHadithDesc', 'Are you sure you want to delete this Hadith reflection entry?')}
-          </p>
-          <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
-            <Button variant="secondary" onClick={() => setDeleteHadithId(null)}>
-              {t('common.cancel', 'Cancel')}
-            </Button>
-            <Button variant="danger" onClick={handleDeleteHadith}>
-              {t('common.delete', 'Delete')}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Delete Vow Modal */}
-      <Modal
-        isOpen={!!deleteVowId}
-        onClose={() => setDeleteVowId(null)}
-        title={t('common.confirmDeleteTitle', 'Confirm Deletion')}
-        subtitle={t('common.confirmDeleteDesc', 'Are you sure you want to delete this item? This action cannot be undone.')}
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-secondary">
-            {t('islamic.deleteVowDesc', 'Are you sure you want to delete this spiritual vow?')}
-          </p>
-          <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
-            <Button variant="secondary" onClick={() => setDeleteVowId(null)}>
-              {t('common.cancel', 'Cancel')}
-            </Button>
-            <Button variant="danger" onClick={handleDeleteVow}>
-              {t('common.delete', 'Delete')}
-            </Button>
-          </div>
-        </div>
       </Modal>
     </div>
   );

@@ -6,6 +6,7 @@ import { StatCard } from '../components/StatCard';
 import { Button } from '../components/Button';
 import { Badge } from '../components/Badge';
 import { Modal } from '../components/Modal';
+import { LoadingScreen } from '../components/LoadingScreen';
 import {
   Compass,
   Plus,
@@ -26,6 +27,7 @@ import {
   Moon,
 } from 'lucide-react';
 import api from '../utils/api';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
 import { DateInput } from '../components/DateInput';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import { notifyStreakUpdate } from '../utils/streakEvents';
@@ -147,6 +149,9 @@ export const QadaMatrix = ({ selectedDate }) => {
         prayerName,
         incrementCompleted: increment,
       });
+      if (increment > 0) {
+        showSuccessToast(`+1 ${prayerName} Qada completed! Al-Hamdulillah`, 'Qada Progress');
+      }
     } catch (err) {
       console.error('Failed to update Qada step', err);
       fetchQadaData(); // Revert on failure
@@ -236,9 +241,11 @@ export const QadaMatrix = ({ selectedDate }) => {
         });
       }
       setEditPrayer(null);
+      notifyUpdated('Qada baseline');
       fetchQadaData();
     } catch (err) {
       console.error('Failed to save Qada baseline', err);
+      notifyError(err, 'Failed to save Qada baseline');
     } finally {
       setSavingEdit(false);
     }
@@ -257,9 +264,11 @@ export const QadaMatrix = ({ selectedDate }) => {
         totalOwed: netDays,
       });
       setIsCalculatorOpen(false);
+      notifyUpdated('Lifetime Qada baseline');
       fetchQadaData();
     } catch (err) {
       console.error('Failed to apply Qada calculator', err);
+      notifyError(err, 'Failed to apply Qada calculator');
     } finally {
       setSavingCalc(false);
     }
@@ -292,11 +301,13 @@ export const QadaMatrix = ({ selectedDate }) => {
         if (res.data) {
           setVows((prev) => prev.map((v) => (v._id === editingVowId ? res.data : v)));
         }
+        notifyUpdated('Vow');
       } else {
         const res = await api.post('/islamic/vows', payload);
         if (res.data) {
           setVows((prev) => [res.data, ...prev]);
         }
+        notifyCreated('Vow');
       }
       setVowDescription('');
       setVowTargetDate('');
@@ -306,6 +317,7 @@ export const QadaMatrix = ({ selectedDate }) => {
       fetchQadaData();
     } catch (err) {
       console.error('Failed to save spiritual vow', err);
+      notifyError(err, 'Failed to save vow');
     } finally {
       setSavingVow(false);
     }
@@ -319,18 +331,29 @@ export const QadaMatrix = ({ selectedDate }) => {
     );
     try {
       await api.put(`/islamic/vows/${vowId}`, { isCompleted });
+      showSuccessToast(
+        isCompleted ? 'Vow fulfilled! Al-Hamdulillah' : 'Vow marked active',
+        'Vow Status'
+      );
     } catch (err) {
       console.error('Failed to toggle vow', err);
+      notifyError(err, 'Failed to toggle vow');
       fetchQadaData();
     }
   };
 
   const handleDeleteVow = async (vowId) => {
+    if (!vowId) return;
+    const confirmed = await confirmDelete('Vow');
+    if (!confirmed) return;
+
     setVows((prev) => prev.filter((v) => v._id !== vowId));
     try {
       await api.delete(`/islamic/vows/${vowId}`);
+      notifyDeleted('Vow');
     } catch (err) {
       console.error('Failed to delete vow', err);
+      notifyError(err, 'Failed to delete vow');
       fetchQadaData();
     }
   };
@@ -342,12 +365,7 @@ export const QadaMatrix = ({ selectedDate }) => {
   const overallProgressPercent = totalOwedAll > 0 ? Math.round((totalCompletedAll / totalOwedAll) * 100) : 100;
 
   if (loading) {
-    return (
-      <div className="flex flex-col justify-center items-center min-h-[60vh] gap-3">
-        <div className="w-10 h-10 border-4 border-emerald-500 border-t-transparent rounded-full animate-spin"></div>
-        <span className="text-xs font-semibold text-secondary">Loading Qada Matrix...</span>
-      </div>
-    );
+    return <LoadingScreen fullScreen={false} message="Loading Qada Matrix..." />;
   }
 
   return (
@@ -555,8 +573,19 @@ export const QadaMatrix = ({ selectedDate }) => {
                     {prayer === 'Witr' && (
                       <Badge variant="purple" size="xs">Wajib</Badge>
                     )}
-                    <Badge variant={isCompleted ? 'success' : percent > 50 ? 'info' : 'warning'} size="xs">
-                      {isCompleted ? 'Completed' : `${percent}% Done`}
+                    <Badge
+                      variant={
+                        record.totalOwed === 0
+                          ? 'neutral'
+                          : isCompleted
+                          ? 'success'
+                          : percent > 50
+                          ? 'info'
+                          : 'warning'
+                      }
+                      size="xs"
+                    >
+                      {record.totalOwed === 0 ? '0 Owed' : isCompleted ? 'Completed' : `${percent}% Done`}
                     </Badge>
                   </div>
                 }
@@ -575,30 +604,30 @@ export const QadaMatrix = ({ selectedDate }) => {
                 className="overflow-hidden"
               >
                 {/* 3 Metric Badges: Owed, Made Up, Remaining */}
-                <div className="grid grid-cols-3 gap-2 my-1 text-center">
-                  <div className="bg-subtle/60 border border-theme rounded-xl p-2.5 flex flex-col justify-center">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-secondary">
+                <div className="grid grid-cols-3 gap-1.5 sm:gap-2 my-1 text-center">
+                  <div className="bg-subtle border border-theme rounded-xl p-1.5 sm:p-2.5 flex flex-col justify-center min-w-0">
+                    <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-secondary truncate">
                       Owed
                     </span>
-                    <span className="text-sm sm:text-base font-extrabold text-primary mt-0.5">
+                    <span className="text-xs sm:text-base font-black text-primary mt-0.5 truncate">
                       {record.totalOwed.toLocaleString()}
                     </span>
                   </div>
 
-                  <div className="bg-emerald-500/10 border border-emerald-500/20 rounded-xl p-2.5 flex flex-col justify-center">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+                  <div className="bg-emerald-500/15 border border-emerald-500/35 rounded-xl p-1.5 sm:p-2.5 flex flex-col justify-center min-w-0">
+                    <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-emerald-950 dark:text-emerald-300 truncate">
                       Made Up
                     </span>
-                    <span className="text-sm sm:text-base font-extrabold text-emerald-600 dark:text-emerald-400 mt-0.5">
+                    <span className="text-xs sm:text-base font-black text-emerald-950 dark:text-emerald-300 mt-0.5 truncate">
                       {record.totalCompleted.toLocaleString()}
                     </span>
                   </div>
 
-                  <div className="bg-rose-500/10 border border-rose-500/20 rounded-xl p-2.5 flex flex-col justify-center">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-rose-500">
+                  <div className="bg-rose-500/15 border border-rose-500/35 rounded-xl p-1.5 sm:p-2.5 flex flex-col justify-center min-w-0">
+                    <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-rose-950 dark:text-rose-300 truncate">
                       Remaining
                     </span>
-                    <span className="text-sm sm:text-base font-extrabold text-rose-600 dark:text-rose-400 mt-0.5">
+                    <span className="text-xs sm:text-base font-black text-rose-950 dark:text-rose-300 mt-0.5 truncate">
                       {remaining.toLocaleString()}
                     </span>
                   </div>
@@ -607,12 +636,12 @@ export const QadaMatrix = ({ selectedDate }) => {
                 {/* Progress bar */}
                 <div className="mt-3.5 space-y-1.5">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-[11px] font-medium text-secondary">Progress</span>
+                    <span className="text-[11px] font-semibold text-secondary">Progress</span>
                     <span className="text-[11px] font-bold text-primary">{percent}%</span>
                   </div>
                   <div className="h-2 bg-subtle rounded-full overflow-hidden border border-theme">
                     <div
-                      className="h-full bg-gradient-to-r from-emerald-500 to-teal-400 rounded-full transition-all duration-300"
+                      className="h-full bg-gradient-to-r from-emerald-600 to-teal-500 rounded-full transition-all duration-300"
                       style={{ width: `${percent}%` }}
                     />
                   </div>
@@ -620,13 +649,13 @@ export const QadaMatrix = ({ selectedDate }) => {
 
                 {/* Quick Make-Up Actions with right padding to clear bottomAction */}
                 <div className="mt-4 pt-3 border-t border-subtle flex items-center justify-between gap-2 pr-12">
-                  <span className="text-xs font-semibold text-secondary">Quick Log</span>
+                  <span className="text-xs font-bold text-secondary">Quick Log</span>
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => handleStep(prayer, -1)}
                       disabled={record.totalCompleted <= 0}
-                      className="p-2 rounded-xl bg-subtle text-secondary hover:text-rose-500 hover:bg-rose-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                      className="p-2 rounded-xl bg-subtle text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                       title="Step back 1 completed prayer"
                     >
                       <Minus className="w-3.5 h-3.5" />
@@ -634,7 +663,7 @@ export const QadaMatrix = ({ selectedDate }) => {
                     <button
                       type="button"
                       onClick={() => handleStep(prayer, 1)}
-                      className="px-3.5 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-emerald-500/25 transition-all text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-sm active:scale-95"
+                      className="px-3.5 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-950 dark:text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25 transition-all text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
                       title={`Add 1 completed ${prayer}`}
                     >
                       <Plus className="w-3.5 h-3.5 stroke-[3]" />

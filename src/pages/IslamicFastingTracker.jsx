@@ -5,7 +5,9 @@ import { Card } from '../components/Card';
 import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { Badge } from '../components/Badge';
+import { LoadingScreen } from '../components/LoadingScreen';
 import api from '../utils/api';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
 import { DateInput } from '../components/DateInput';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import { notifyStreakUpdate } from '../utils/streakEvents';
@@ -42,11 +44,11 @@ const FAST_CATEGORIES = [
     desc: 'Obligatory month of fasting',
     virtue: 'Pillar of Islam · Immense Reward',
     colorClasses: {
-      active: 'border-emerald-500/80 bg-emerald-500/15 text-emerald-400 ring-1 ring-emerald-500/40 shadow-sm shadow-emerald-500/10',
-      iconBox: 'bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30',
+      active: 'border-emerald-500/80 bg-emerald-500/15 text-emerald-950 dark:text-emerald-300 ring-1 ring-emerald-500/40 shadow-sm shadow-emerald-500/10',
+      iconBox: 'bg-emerald-500/15 text-emerald-700 dark:text-emerald-400 border border-emerald-500/30',
       hover: 'hover:border-emerald-500/50 hover:bg-emerald-500/5 hover:shadow-emerald-500/10',
-      badge: 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30',
-      pill: 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20',
+      badge: 'bg-emerald-500/15 text-emerald-950 dark:text-emerald-300 border-emerald-500/40 font-bold',
+      pill: 'bg-emerald-500/15 text-emerald-950 dark:text-emerald-300 border-emerald-500/35 font-bold',
       borderGlow: 'hover:shadow-[0_0_20px_rgba(16,185,129,0.15)]',
       gradient: 'from-emerald-500/20 via-emerald-500/5 to-transparent',
     },
@@ -61,11 +63,11 @@ const FAST_CATEGORIES = [
     desc: 'Weekly prophetic Sunnah practice',
     virtue: 'Deeds presented to Allah (Tirmidhi)',
     colorClasses: {
-      active: 'border-amber-500/80 bg-amber-500/15 text-amber-400 ring-1 ring-amber-500/40 shadow-sm shadow-amber-500/10',
-      iconBox: 'bg-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30',
+      active: 'border-amber-500/80 bg-amber-500/15 text-amber-950 dark:text-amber-300 ring-1 ring-amber-500/40 shadow-sm shadow-amber-500/10',
+      iconBox: 'bg-amber-500/15 text-amber-700 dark:text-amber-400 border border-amber-500/30',
       hover: 'hover:border-amber-500/50 hover:bg-amber-500/5 hover:shadow-amber-500/10',
-      badge: 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30',
-      pill: 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/20',
+      badge: 'bg-amber-500/15 text-amber-950 dark:text-amber-300 border-amber-500/40 font-bold',
+      pill: 'bg-amber-500/15 text-amber-950 dark:text-amber-300 border-amber-500/35 font-bold',
       borderGlow: 'hover:shadow-[0_0_20px_rgba(245,158,11,0.15)]',
       gradient: 'from-amber-500/20 via-amber-500/5 to-transparent',
     },
@@ -80,13 +82,13 @@ const FAST_CATEGORIES = [
     desc: 'Three white days of lunar month',
     virtue: 'Equal to fasting the entire year',
     colorClasses: {
-      active: 'border-indigo-500/80 bg-indigo-500/15 text-indigo-400 ring-1 ring-indigo-500/40 shadow-sm shadow-indigo-500/10',
-      iconBox: 'bg-indigo-500/15 text-indigo-500 dark:text-indigo-400 border border-indigo-500/30',
-      hover: 'hover:border-indigo-500/50 hover:bg-indigo-500/5 hover:shadow-indigo-500/10',
-      badge: 'bg-indigo-500/15 text-indigo-600 dark:text-indigo-400 border-indigo-500/30',
-      pill: 'bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border-indigo-500/20',
-      borderGlow: 'hover:shadow-[0_0_20px_rgba(99,102,241,0.15)]',
-      gradient: 'from-indigo-500/20 via-indigo-500/5 to-transparent',
+      active: 'border-[#007EA7]/80 bg-[#007EA7]/15 text-[#003459] dark:text-[#76DDFF] ring-1 ring-[#007EA7]/40 shadow-sm shadow-[#007EA7]/10',
+      iconBox: 'bg-[#007EA7]/15 text-[#007EA7] dark:text-[#76DDFF] border border-[#007EA7]/30',
+      hover: 'hover:border-[#007EA7]/50 hover:bg-[#007EA7]/5 hover:shadow-[#007EA7]/10',
+      badge: 'bg-[#007EA7]/15 text-[#003459] dark:text-[#76DDFF] border-[#007EA7]/40 font-bold',
+      pill: 'bg-[#007EA7]/15 text-[#003459] dark:text-[#76DDFF] border-[#007EA7]/35 font-bold',
+      borderGlow: 'hover:shadow-[0_0_20px_rgba(0,126,167,0.15)]',
+      gradient: 'from-[#007EA7]/20 via-[#007EA7]/5 to-transparent',
     },
   },
   {
@@ -99,11 +101,11 @@ const FAST_CATEGORIES = [
     desc: 'Virtuous fasts following Ramadan',
     virtue: 'Reward of a full year (Muslim)',
     colorClasses: {
-      active: 'border-sky-500/80 bg-sky-500/15 text-sky-400 ring-1 ring-sky-500/40 shadow-sm shadow-sky-500/10',
-      iconBox: 'bg-sky-500/15 text-sky-500 dark:text-sky-400 border border-sky-500/30',
+      active: 'border-sky-500/80 bg-sky-500/15 text-[#003459] dark:text-sky-300 ring-1 ring-sky-500/40 shadow-sm shadow-sky-500/10',
+      iconBox: 'bg-sky-500/15 text-[#007EA7] dark:text-sky-400 border border-sky-500/30',
       hover: 'hover:border-sky-500/50 hover:bg-sky-500/5 hover:shadow-sky-500/10',
-      badge: 'bg-sky-500/15 text-sky-600 dark:text-sky-400 border-sky-500/30',
-      pill: 'bg-sky-500/10 text-sky-600 dark:text-sky-400 border-sky-500/20',
+      badge: 'bg-sky-500/15 text-[#003459] dark:text-sky-300 border-sky-500/40 font-bold',
+      pill: 'bg-sky-500/15 text-[#003459] dark:text-sky-300 border-sky-500/35 font-bold',
       borderGlow: 'hover:shadow-[0_0_20px_rgba(14,165,233,0.15)]',
       gradient: 'from-sky-500/20 via-sky-500/5 to-transparent',
     },
@@ -118,11 +120,11 @@ const FAST_CATEGORIES = [
     desc: '9th & 10th of Muharram',
     virtue: 'Expiates previous year sins',
     colorClasses: {
-      active: 'border-purple-500/80 bg-purple-500/15 text-purple-400 ring-1 ring-purple-500/40 shadow-sm shadow-purple-500/10',
-      iconBox: 'bg-purple-500/15 text-purple-500 dark:text-purple-400 border border-purple-500/30',
+      active: 'border-purple-500/80 bg-purple-500/15 text-purple-950 dark:text-purple-300 ring-1 ring-purple-500/40 shadow-sm shadow-purple-500/10',
+      iconBox: 'bg-purple-500/15 text-purple-700 dark:text-purple-400 border border-purple-500/30',
       hover: 'hover:border-purple-500/50 hover:bg-purple-500/5 hover:shadow-purple-500/10',
-      badge: 'bg-purple-500/15 text-purple-600 dark:text-purple-400 border-purple-500/30',
-      pill: 'bg-purple-500/10 text-purple-600 dark:text-purple-400 border-purple-500/20',
+      badge: 'bg-purple-500/15 text-purple-950 dark:text-purple-300 border-purple-500/40 font-bold',
+      pill: 'bg-purple-500/15 text-purple-950 dark:text-purple-300 border-purple-500/35 font-bold',
       borderGlow: 'hover:shadow-[0_0_20px_rgba(168,85,247,0.15)]',
       gradient: 'from-purple-500/20 via-purple-500/5 to-transparent',
     },
@@ -137,11 +139,11 @@ const FAST_CATEGORIES = [
     desc: '9th of Dhul Hijjah',
     virtue: 'Expels 2 years of sins (Muslim)',
     colorClasses: {
-      active: 'border-rose-500/80 bg-rose-500/15 text-rose-400 ring-1 ring-rose-500/40 shadow-sm shadow-rose-500/10',
-      iconBox: 'bg-rose-500/15 text-rose-500 dark:text-rose-400 border border-rose-500/30',
+      active: 'border-rose-500/80 bg-rose-500/15 text-rose-950 dark:text-rose-300 ring-1 ring-rose-500/40 shadow-sm shadow-rose-500/10',
+      iconBox: 'bg-rose-500/15 text-rose-700 dark:text-rose-400 border border-rose-500/30',
       hover: 'hover:border-rose-500/50 hover:bg-rose-500/5 hover:shadow-rose-500/10',
-      badge: 'bg-rose-500/15 text-rose-600 dark:text-rose-400 border-rose-500/30',
-      pill: 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20',
+      badge: 'bg-rose-500/15 text-rose-950 dark:text-rose-300 border-rose-500/40 font-bold',
+      pill: 'bg-rose-500/15 text-rose-950 dark:text-rose-300 border-rose-500/35 font-bold',
       borderGlow: 'hover:shadow-[0_0_20px_rgba(244,63,94,0.15)]',
       gradient: 'from-rose-500/20 via-rose-500/5 to-transparent',
     },
@@ -156,13 +158,13 @@ const FAST_CATEGORIES = [
     desc: 'Make-up for missed Ramadan days',
     virtue: 'Fulfill obligatory spiritual debt',
     colorClasses: {
-      active: 'border-blue-500/80 bg-blue-500/15 text-blue-400 ring-1 ring-blue-500/40 shadow-sm shadow-blue-500/10',
-      iconBox: 'bg-blue-500/15 text-blue-500 dark:text-blue-400 border border-blue-500/30',
-      hover: 'hover:border-blue-500/50 hover:bg-blue-500/5 hover:shadow-blue-500/10',
-      badge: 'bg-blue-500/15 text-blue-600 dark:text-blue-400 border-blue-500/30',
-      pill: 'bg-blue-500/10 text-blue-600 dark:text-blue-400 border-blue-500/20',
-      borderGlow: 'hover:shadow-[0_0_20px_rgba(59,130,246,0.15)]',
-      gradient: 'from-blue-500/20 via-blue-500/5 to-transparent',
+      active: 'border-[#003459]/80 bg-[#003459]/15 text-[#001E34] dark:text-[#8FDFFF] ring-1 ring-[#003459]/40 shadow-sm shadow-[#003459]/10',
+      iconBox: 'bg-[#003459]/15 text-[#003459] dark:text-[#8FDFFF] border border-[#003459]/30',
+      hover: 'hover:border-[#003459]/50 hover:bg-[#003459]/5 hover:shadow-[#003459]/10',
+      badge: 'bg-[#003459]/15 text-[#001E34] dark:text-[#8FDFFF] border-[#003459]/40 font-bold',
+      pill: 'bg-[#003459]/15 text-[#001E34] dark:text-[#8FDFFF] border-[#003459]/35 font-bold',
+      borderGlow: 'hover:shadow-[0_0_20px_rgba(0,52,89,0.15)]',
+      gradient: 'from-[#003459]/20 via-[#003459]/5 to-transparent',
     },
   },
   {
@@ -175,11 +177,11 @@ const FAST_CATEGORIES = [
     desc: 'Spiritual vow / fulfillment of pledge',
     virtue: 'Fulfill sworn spiritual covenant',
     colorClasses: {
-      active: 'border-orange-500/80 bg-orange-500/15 text-orange-400 ring-1 ring-orange-500/40 shadow-sm shadow-orange-500/10',
-      iconBox: 'bg-orange-500/15 text-orange-500 dark:text-orange-400 border border-orange-500/30',
+      active: 'border-orange-500/80 bg-orange-500/15 text-orange-950 dark:text-orange-300 ring-1 ring-orange-500/40 shadow-sm shadow-orange-500/10',
+      iconBox: 'bg-orange-500/15 text-orange-700 dark:text-orange-400 border border-orange-500/30',
       hover: 'hover:border-orange-500/50 hover:bg-orange-500/5 hover:shadow-orange-500/10',
-      badge: 'bg-orange-500/15 text-orange-600 dark:text-orange-400 border-orange-500/30',
-      pill: 'bg-orange-500/10 text-orange-600 dark:text-orange-400 border-orange-500/20',
+      badge: 'bg-orange-500/15 text-orange-950 dark:text-orange-300 border-orange-500/40 font-bold',
+      pill: 'bg-orange-500/15 text-orange-950 dark:text-orange-300 border-orange-500/35 font-bold',
       borderGlow: 'hover:shadow-[0_0_20px_rgba(249,115,22,0.15)]',
       gradient: 'from-orange-500/20 via-orange-500/5 to-transparent',
     },
@@ -194,11 +196,11 @@ const FAST_CATEGORIES = [
     desc: 'General voluntary fasting for reward',
     virtue: 'Draw closer to Allah (Hadith Qudsi)',
     colorClasses: {
-      active: 'border-teal-500/80 bg-teal-500/15 text-teal-400 ring-1 ring-teal-500/40 shadow-sm shadow-teal-500/10',
-      iconBox: 'bg-teal-500/15 text-teal-500 dark:text-teal-400 border border-teal-500/30',
+      active: 'border-teal-500/80 bg-teal-500/15 text-teal-950 dark:text-teal-300 ring-1 ring-teal-500/40 shadow-sm shadow-teal-500/10',
+      iconBox: 'bg-teal-500/15 text-teal-700 dark:text-teal-400 border border-teal-500/30',
       hover: 'hover:border-teal-500/50 hover:bg-teal-500/5 hover:shadow-teal-500/10',
-      badge: 'bg-teal-500/15 text-teal-600 dark:text-teal-400 border-teal-500/30',
-      pill: 'bg-teal-500/10 text-teal-600 dark:text-teal-400 border-teal-500/20',
+      badge: 'bg-teal-500/15 text-teal-950 dark:text-teal-300 border-teal-500/40 font-bold',
+      pill: 'bg-teal-500/15 text-teal-950 dark:text-teal-300 border-teal-500/35 font-bold',
       borderGlow: 'hover:shadow-[0_0_20px_rgba(20,184,166,0.15)]',
       gradient: 'from-teal-500/20 via-teal-500/5 to-transparent',
     },
@@ -255,13 +257,12 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
   const [isFastModalOpen, setIsFastModalOpen] = useState(false);
   const [editingFastId, setEditingFastId] = useState(null);
   const [fastDate, setFastDate] = useState(activeDate);
-  const [fastType, setFastType] = useState('sunnah_mon_thu');
+  const [fastType, setFastType] = useState('nafl');
   const [fastStatus, setFastStatus] = useState('completed');
   const [fastSuhoorTime, setFastSuhoorTime] = useState('');
   const [fastIftarTime, setFastIftarTime] = useState('');
   const [fastNotes, setFastNotes] = useState('');
   const [fastFilter, setFastFilter] = useState('all');
-  const [deleteFastId, setDeleteFastId] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
   const [modalError, setModalError] = useState('');
 
@@ -299,7 +300,7 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
 
   const handleQuickTodayFast = async (status, type) => {
     const prevLogs = [...fastLogs];
-    const chosenType = type || todayFast?.type || 'sunnah_mon_thu';
+    const chosenType = type || todayFast?.type || 'nafl';
 
     if (status === 'none') {
       setFastLogs((prev) => prev.filter((f) => f.date !== activeDate));
@@ -332,14 +333,19 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
         type: chosenType,
       });
       notifyStreakUpdate();
+      showSuccessToast(
+        status === 'completed' ? 'Fast logged as Completed! MashaAllah' : `Fast status set to ${status}`,
+        'Fasting Log'
+      );
       fetchData(false);
     } catch (err) {
       console.error('Failed to quick-toggle fast status', err);
+      notifyError(err, 'Failed to update fasting status');
       setFastLogs(prevLogs);
     }
   };
 
-  const handleOpenCreateFastModal = (defaultType = 'sunnah_mon_thu') => {
+  const handleOpenCreateFastModal = (defaultType = 'nafl') => {
     setEditingFastId(null);
     setFastDate(activeDate);
     setFastType(defaultType);
@@ -354,7 +360,7 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
   const handleEditFast = (fast) => {
     setEditingFastId(fast._id);
     setFastDate(fast.date || activeDate);
-    setFastType(fast.type || 'sunnah_mon_thu');
+    setFastType(fast.type || 'nafl');
     setFastStatus(fast.status || 'completed');
     setFastSuhoorTime(fast.suhoorTime || '');
     setFastIftarTime(fast.iftarTime || '');
@@ -388,31 +394,40 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
         });
       }
 
+      if (editingFastId) {
+        notifyUpdated('Fast record');
+      } else {
+        notifyCreated('Fast record');
+      }
+
       setIsFastModalOpen(false);
       notifyStreakUpdate();
       fetchData(false);
     } catch (err) {
       console.error('Failed to save Islamic fast', err);
-      setModalError(
-        err.response?.data?.message || err.message || 'Failed to save fast. Please try again.'
-      );
+      const errMsg = err.response?.data?.message || err.message || 'Failed to save fast. Please try again.';
+      setModalError(errMsg);
+      notifyError(err, errMsg);
     } finally {
       setIsSaving(false);
     }
   };
 
-  const handleDeleteFast = async () => {
-    if (!deleteFastId) return;
-    const targetId = deleteFastId;
-    setDeleteFastId(null);
-    setFastLogs((prev) => prev.filter((f) => f._id !== targetId));
+  const handleDeleteFast = async (fastId) => {
+    if (!fastId) return;
+    const confirmed = await confirmDelete('Fast record');
+    if (!confirmed) return;
+
+    setFastLogs((prev) => prev.filter((f) => f._id !== fastId));
 
     try {
-      await api.delete(`/islamic/fasts/${targetId}`);
+      await api.delete(`/islamic/fasts/${fastId}`);
+      notifyDeleted('Fast record');
       notifyStreakUpdate();
       fetchData(false);
     } catch (err) {
       console.error('Failed to delete Islamic fast', err);
+      notifyError(err, 'Failed to delete fast');
       fetchData(false);
     }
   };
@@ -446,6 +461,10 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
   const totalKept =
     fastSummary.totalCompleted || fastLogs.filter((f) => f.status === 'completed').length;
 
+  if (loading) {
+    return <LoadingScreen fullScreen={false} message="Loading Fasting (Sawm) records..." />;
+  }
+
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in pb-12">
       {/* Page Header */}
@@ -478,7 +497,7 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
               variant="gradient"
               size="md"
               icon={Plus}
-              onClick={() => handleOpenCreateFastModal('sunnah_mon_thu')}
+              onClick={() => handleOpenCreateFastModal('nafl')}
             >
               {t('islamic.logFast', 'Log Fast')}
             </Button>
@@ -582,7 +601,7 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
       </div>
 
       {/* Today's Fast Status Hero Solid Banner */}
-      <div className="rounded-3xl bg-surface border border-amber-500/40 p-6 sm:p-7 shadow-lg">
+      <div className="rounded-3xl bg-surface border border-amber-500/40 p-4 sm:p-7 shadow-lg">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="flex items-start sm:items-center gap-4.5">
             {/* Solid Moon / Status Icon */}
@@ -809,7 +828,7 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
                 <span>{flt.label}</span>
                 {flt.count > 0 && (
                   <span
-                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${fastFilter === flt.id ? 'bg-white/20 text-white' : 'bg-subtle text-muted'
+                    className={`text-[10px] px-1.5 py-0.2 rounded-full font-extrabold ${fastFilter === flt.id ? 'bg-white/20 text-white' : 'bg-subtle text-secondary border border-theme'
                       }`}
                   >
                     {flt.count}
@@ -838,7 +857,7 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
               variant="gradient"
               size="sm"
               icon={Plus}
-              onClick={() => handleOpenCreateFastModal('sunnah_mon_thu')}
+              onClick={() => handleOpenCreateFastModal('nafl')}
             >
               {t('islamic.logFirstFast', 'Log First Fast')}
             </Button>
@@ -925,7 +944,7 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
                       </button>
                       <button
                         type="button"
-                        onClick={() => setDeleteFastId(fast._id)}
+                        onClick={() => handleDeleteFast(fast._id)}
                         className="p-1.5 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                         title="Delete fast log"
                       >
@@ -1117,34 +1136,6 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
             </div>
           </div>
         </form>
-      </Modal>
-
-      {/* Delete Fast Confirmation Modal */}
-      <Modal
-        isOpen={!!deleteFastId}
-        onClose={() => setDeleteFastId(null)}
-        title={t('common.confirmDeleteTitle', 'Confirm Deletion')}
-        subtitle={t(
-          'common.confirmDeleteDesc',
-          'Are you sure you want to delete this item? This action cannot be undone.'
-        )}
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-secondary">
-            {t(
-              'islamic.deleteFastDesc',
-              'Are you sure you want to delete this Islamic fast log? This action cannot be undone.'
-            )}
-          </p>
-          <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
-            <Button variant="secondary" onClick={() => setDeleteFastId(null)}>
-              {t('common.cancel', 'Cancel')}
-            </Button>
-            <Button variant="danger" onClick={handleDeleteFast}>
-              {t('common.delete', 'Delete')}
-            </Button>
-          </div>
-        </div>
       </Modal>
     </div>
   );
