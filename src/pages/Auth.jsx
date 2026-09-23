@@ -5,6 +5,8 @@ import { useLanguage } from '../context/LanguageContext';
 import { useNavigate } from 'react-router-dom';
 import { Sparkles, Mail, Lock, User, ArrowRight, Eye, EyeOff, Check, ShieldCheck } from 'lucide-react';
 import { Button } from '../components/Button';
+import { Logo } from '../components/Logo';
+import { showSuccessToast, showErrorToast } from '../utils/alerts';
 
 // Official Google 'G' Logo SVG
 const GoogleIcon = () => (
@@ -112,15 +114,16 @@ export const Auth = () => {
   // Handle detailed auth errors with actionable messages
   const handleAuthError = (err) => {
     console.error('Authentication Error:', err);
+    let msg = 'Google sign-in failed. Please try again.';
     if (err.response?.data?.message) {
-      setError(err.response.data.message);
+      msg = err.response.data.message;
     } else if (err.code === 'ERR_NETWORK' || !err.response) {
-      setError('Unable to connect to backend server. Please check your network connection or server status.');
+      msg = 'Unable to connect to backend server. Please check your network connection or server status.';
     } else if (err.message) {
-      setError(err.message);
-    } else {
-      setError('Google sign-in failed. Please try again.');
+      msg = err.message;
     }
+    setError(msg);
+    showErrorToast(msg, 'Authentication Failed');
   };
 
   // Handle Google Token Response from background Google Sign-In button
@@ -133,6 +136,7 @@ export const Auth = () => {
         credential: response.credential,
         name: name?.trim() || undefined,
       });
+      showSuccessToast('Successfully signed in with Google!', 'Welcome back');
       navigate('/dashboard');
     } catch (err) {
       handleAuthError(err);
@@ -299,8 +303,10 @@ export const Auth = () => {
     try {
       if (isLogin) {
         await login(email, password);
+        showSuccessToast('Welcome back to Life OS!', 'Logged in');
       } else {
         await register(name, email, password);
+        showSuccessToast('Account created successfully! Welcome to Life OS.', 'Account Created');
       }
       navigate('/');
     } catch (err) {
@@ -316,11 +322,11 @@ export const Auth = () => {
       <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none" />
       <div className="absolute bottom-1/4 right-1/4 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
 
-      <div className="w-full max-w-md bg-surface border border-theme rounded-3xl p-6 sm:p-8 card-shadow relative z-10 animate-in fade-in zoom-in-95 duration-200">
+      <div className="w-full max-w-md bg-surface border border-theme rounded-3xl p-4 sm:p-8 card-shadow relative z-10 animate-in fade-in zoom-in-95 duration-200">
         {/* Header Branding */}
-        <div className="text-center mb-6">
-          <div className="w-13 h-13 rounded-2xl bg-gradient-to-tr from-indigo-600 via-purple-600 to-accent text-white flex items-center justify-center mx-auto mb-3.5 shadow-lg shadow-indigo-500/25">
-            <Sparkles className="w-6 h-6" />
+        <div className="text-center mb-5 sm:mb-6">
+          <div className="flex justify-center mb-4">
+            <Logo size="lg" variant="glow" animated={true} />
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
             {isLogin ? t('auth.welcomeBack') : t('auth.signUpTitle')}
@@ -382,7 +388,7 @@ export const Auth = () => {
             <div className="absolute inset-0 bg-gradient-to-r from-indigo-500/[0.04] via-purple-500/[0.04] to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 pointer-events-none" />
 
             {googleLoading ? (
-              <div className="w-5 h-5 border-2 border-indigo-500 border-t-transparent rounded-full animate-spin shrink-0" />
+              <Logo size="xs" loading={true} />
             ) : (
               <div className="shrink-0 transition-transform duration-200 group-hover:scale-110">
                 <GoogleIcon />
