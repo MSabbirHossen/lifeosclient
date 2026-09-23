@@ -24,7 +24,49 @@ import {
   Sparkles,
 } from 'lucide-react';
 
-const CATEGORIES = ['Health', 'Learning', 'Productivity', 'Deen', 'Mindset', 'Other'];
+const CATEGORIES = [
+  'Health',
+  'Learning',
+  'Productivity',
+  'Project / Work',
+  'Deen',
+  'Mindset',
+  'Other',
+];
+
+const CATEGORY_STYLES = {
+  'Health': 'bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border-emerald-500/25',
+  'Learning': 'bg-sky-500/10 text-sky-700 dark:text-sky-400 border-sky-500/25',
+  'Productivity': 'bg-indigo-500/10 text-indigo-700 dark:text-indigo-400 border-indigo-500/25',
+  'Project / Work': 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/35 font-bold',
+  'Work': 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/35 font-bold',
+  'Project': 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/35 font-bold',
+  'Work & Projects': 'bg-amber-500/15 text-amber-800 dark:text-amber-300 border-amber-500/35 font-bold',
+  'Deen': 'bg-teal-500/10 text-teal-700 dark:text-teal-400 border-teal-500/25',
+  'Mindset': 'bg-purple-500/10 text-purple-700 dark:text-purple-400 border-purple-500/25',
+  'Other': 'bg-subtle text-secondary border-theme',
+};
+
+const DAYS_OF_WEEK = [
+  { id: 'Sun', label: 'Sun', full: 'Sunday' },
+  { id: 'Mon', label: 'Mon', full: 'Monday' },
+  { id: 'Tue', label: 'Tue', full: 'Tuesday' },
+  { id: 'Wed', label: 'Wed', full: 'Wednesday' },
+  { id: 'Thu', label: 'Thu', full: 'Thursday' },
+  { id: 'Fri', label: 'Fri', full: 'Friday' },
+  { id: 'Sat', label: 'Sat', full: 'Saturday' },
+];
+
+const getDayOfWeekCode = (dateStr) => {
+  if (!dateStr) return 'Mon';
+  const parts = dateStr.split('-').map(Number);
+  if (parts.length < 3) return 'Mon';
+  const dateObj = new Date(Date.UTC(parts[0], parts[1] - 1, parts[2]));
+  const dayIndex = dateObj.getUTCDay(); // 0 = Sun, 1 = Mon ...
+  const map = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+  return map[dayIndex];
+};
+
 const MONTH_NAMES = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
 
 // Helper to calculate how many days a habit has been incomplete
@@ -71,11 +113,19 @@ export const HabitsTracker = ({ selectedDate }) => {
 
   // Form State
   const [name, setName] = useState('');
-  const [category, setCategory] = useState('Productivity');
+  const [category, setCategory] = useState('Project / Work');
   const [targetFrequency, setTargetFrequency] = useState('daily');
+  const [customDays, setCustomDays] = useState(['Sun', 'Mon', 'Tue', 'Wed', 'Thu']);
   const [description, setDescription] = useState('');
   const [createError, setCreateError] = useState('');
   const [saving, setSaving] = useState(false);
+  const [selectedCategory, setSelectedCategory] = useState('all');
+
+  const handleToggleDay = (dayId) => {
+    setCustomDays((prev) =>
+      prev.includes(dayId) ? prev.filter((d) => d !== dayId) : [...prev, dayId]
+    );
+  };
 
   const fetchData = useCallback(async (showLoading = true) => {
     const hasCache = getLocalCache(`/habits?date=${activeDate}`);
@@ -175,8 +225,9 @@ export const HabitsTracker = ({ selectedDate }) => {
     setEditingHabitId(null);
     setName('');
     setDescription('');
-    setCategory('Productivity');
+    setCategory('Project / Work');
     setTargetFrequency('daily');
+    setCustomDays(['Sun', 'Mon', 'Tue', 'Wed', 'Thu']);
     setCreateError('');
     setIsModalOpen(true);
   };
@@ -185,8 +236,13 @@ export const HabitsTracker = ({ selectedDate }) => {
     setEditingHabitId(habit._id);
     setName(habit.name || '');
     setDescription(habit.description || '');
-    setCategory(habit.category || 'Productivity');
+    setCategory(habit.category || 'Project / Work');
     setTargetFrequency(habit.targetFrequency || 'daily');
+    setCustomDays(
+      Array.isArray(habit.customDays) && habit.customDays.length > 0
+        ? habit.customDays
+        : ['Sun', 'Mon', 'Tue', 'Wed', 'Thu']
+    );
     setCreateError('');
     setIsModalOpen(true);
   };
@@ -198,6 +254,11 @@ export const HabitsTracker = ({ selectedDate }) => {
       return;
     }
 
+    if (targetFrequency === 'custom' && (!customDays || customDays.length === 0)) {
+      setCreateError('Please select at least one day for custom frequency');
+      return;
+    }
+
     setSaving(true);
     setCreateError('');
     try {
@@ -205,6 +266,7 @@ export const HabitsTracker = ({ selectedDate }) => {
         name: name.trim(),
         category,
         targetFrequency,
+        customDays: targetFrequency === 'custom' ? customDays : [],
         description: description.trim(),
       };
 
@@ -301,6 +363,24 @@ export const HabitsTracker = ({ selectedDate }) => {
       return (b.streak || b.currentStreak || 0) - (a.streak || a.currentStreak || 0);
     });
   }, [safeHabits, activeDate]);
+
+  const filteredHabits = useMemo(() => {
+    if (selectedCategory === 'all') return sortedHabits;
+    return sortedHabits.filter((h) => {
+      if (selectedCategory === 'Project / Work') {
+        return (
+          h.category === 'Project / Work' ||
+          h.category === 'Work' ||
+          h.category === 'Project' ||
+          h.category === 'Projects' ||
+          h.category === 'Work & Projects'
+        );
+      }
+      return h.category === selectedCategory;
+    });
+  }, [sortedHabits, selectedCategory]);
+
+  const activeDayCode = getDayOfWeekCode(activeDate);
 
   // Available timeframe options (Past Year, specific years, Lifetime)
   const currentYear = new Date().getFullYear();
@@ -480,37 +560,102 @@ export const HabitsTracker = ({ selectedDate }) => {
 
       {/* Daily Habits Checklist */}
       <div className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-primary tracking-tight">{t('habits.activeHabits', "Today's Habits Checklist")}</h2>
-          <span className="text-xs font-semibold text-secondary">
-            {completedCount} of {safeHabits.length} done
-          </span>
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-bold text-primary tracking-tight">
+              {t('habits.activeHabits', "Today's Habits Checklist")}
+            </h2>
+            <span className="text-xs font-semibold text-secondary">
+              {completedCount} of {safeHabits.length} done
+            </span>
+          </div>
+
+          {/* Category Filter Tabs */}
+          <div className="flex items-center gap-1.5 overflow-x-auto pb-1 max-w-full custom-scrollbar">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory('all')}
+              className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                selectedCategory === 'all'
+                  ? 'bg-accent text-white shadow-xs'
+                  : 'bg-surface border border-theme text-secondary hover:text-primary hover:bg-subtle'
+              }`}
+            >
+              {t('common.all', 'All')} ({safeHabits.length})
+            </button>
+            {CATEGORIES.map((cat) => {
+              const count = safeHabits.filter((h) => {
+                if (cat === 'Project / Work') {
+                  return (
+                    h.category === 'Project / Work' ||
+                    h.category === 'Work' ||
+                    h.category === 'Project' ||
+                    h.category === 'Projects' ||
+                    h.category === 'Work & Projects'
+                  );
+                }
+                return h.category === cat;
+              }).length;
+
+              if (count === 0 && selectedCategory !== cat) return null;
+
+              return (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setSelectedCategory(cat)}
+                  className={`px-3 py-1.5 rounded-xl text-xs font-bold transition-all shrink-0 cursor-pointer ${
+                    selectedCategory === cat
+                      ? 'bg-accent text-white shadow-xs'
+                      : 'bg-surface border border-theme text-secondary hover:text-primary hover:bg-subtle'
+                  }`}
+                >
+                  {cat} ({count})
+                </button>
+              );
+            })}
+          </div>
         </div>
 
         {loading ? (
           <LoadingScreen fullScreen={false} message="Loading habits & streaks..." size="md" />
-        ) : safeHabits.length === 0 ? (
+        ) : filteredHabits.length === 0 ? (
           <EmptyState
             icon={CheckSquare}
-            title="No habits created yet"
-            description="Start by building a new habit routine (e.g. Read 20 mins, Workout, Fasting)."
+            title={selectedCategory === 'all' ? "No habits created yet" : `No habits found in "${selectedCategory}"`}
+            description={
+              selectedCategory === 'all'
+                ? "Start by building a new habit routine (e.g. Read 20 mins, Workout, Project Check-in)."
+                : "Try selecting a different category or create a new habit for this category."
+            }
             actionText="Create Habit"
             onAction={handleOpenCreateModal}
           />
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-5">
-            {sortedHabits.map((habit) => {
+            {filteredHabits.map((habit) => {
               const isDone = habit.completedToday || habit.isCompletedToday;
               const rawIncompleteDays = !isDone ? getHabitIncompleteDays(habit, activeDate) : 0;
               const isNeverCompleted = rawIncompleteDays >= 1000;
               const displayMissedDays = isNeverCompleted ? rawIncompleteDays - 1000 : rawIncompleteDays;
+
+              const isCustom = habit.targetFrequency === 'custom';
+              const habitCustomDays = Array.isArray(habit.customDays) ? habit.customDays : [];
+              const isScheduledForActiveDate = !isCustom || habitCustomDays.includes(activeDayCode);
+
+              const categoryBadgeClass =
+                CATEGORY_STYLES[habit.category] || CATEGORY_STYLES['Other'];
 
               return (
                 <Card
                   key={habit._id}
                   hover
                   className={`transition-all duration-200 ${
-                    isDone ? 'border-emerald-500/40 bg-emerald-500/5 opacity-85' : ''
+                    isDone
+                      ? 'border-emerald-500/40 bg-emerald-500/5 opacity-85'
+                      : !isScheduledForActiveDate
+                      ? 'opacity-70 border-dashed border-theme/70'
+                      : ''
                   }`}
                   bottomAction={
                     <div className="flex items-center gap-1.5">
@@ -592,10 +737,37 @@ export const HabitsTracker = ({ selectedDate }) => {
                         )}
                       </div>
 
-                      <div className="flex items-center gap-2">
-                        <Badge variant="neutral" size="xs">
+                      <div className="flex items-center gap-1.5 flex-wrap">
+                        <span
+                          className={`px-2 py-0.5 text-[11px] rounded-lg border leading-tight ${categoryBadgeClass}`}
+                        >
                           {habit.category}
-                        </Badge>
+                        </span>
+
+                        {isCustom ? (
+                          <span
+                            className={`px-2 py-0.5 text-[10px] rounded-lg border font-semibold leading-tight ${
+                              isScheduledForActiveDate
+                                ? 'bg-primary/10 text-primary border-primary/20'
+                                : 'bg-subtle text-secondary border-theme opacity-80'
+                            }`}
+                            title={`Scheduled: ${habitCustomDays.join(', ')}`}
+                          >
+                            {habitCustomDays.length === 7
+                              ? 'All Days'
+                              : habitCustomDays.join(', ')}
+                            {!isScheduledForActiveDate && ' (Off today)'}
+                          </span>
+                        ) : habit.targetFrequency === 'weekly' ? (
+                          <span className="px-2 py-0.5 text-[10px] rounded-lg border bg-sky-500/10 text-sky-700 dark:text-sky-300 border-sky-500/20 font-semibold leading-tight">
+                            Weekly
+                          </span>
+                        ) : (
+                          <span className="px-2 py-0.5 text-[10px] rounded-lg border bg-subtle text-secondary border-theme font-medium leading-tight">
+                            Daily
+                          </span>
+                        )}
+
                         {habit.description && (
                           <span className="text-xs text-secondary truncate">{habit.description}</span>
                         )}
@@ -814,7 +986,7 @@ export const HabitsTracker = ({ selectedDate }) => {
             <input
               type="text"
               required
-              placeholder="e.g. Read 20 pages, 100 Pushups, Fasting"
+              placeholder="e.g. Work on Feature X, Read 20 pages, Code Practice"
               value={name}
               onChange={(e) => setName(e.target.value)}
               className="input-base"
@@ -848,11 +1020,88 @@ export const HabitsTracker = ({ selectedDate }) => {
                 onChange={(e) => setTargetFrequency(e.target.value)}
                 className="select-base"
               >
-                <option value="daily">{t('habits.daily')}</option>
-                <option value="weekly">{t('habits.weekly')}</option>
+                <option value="daily">{t('habits.daily', 'Daily')}</option>
+                <option value="weekly">{t('habits.weekly', 'Weekly')}</option>
+                <option value="custom">{t('habits.custom', 'Custom Days of Week')}</option>
               </select>
             </div>
           </div>
+
+          {/* Interactive Custom Days Selector when targetFrequency is 'custom' */}
+          {targetFrequency === 'custom' && (
+            <div className="p-3.5 rounded-2xl bg-subtle/50 border border-theme space-y-3 animate-in fade-in">
+              <div className="flex items-center justify-between">
+                <label className="block text-xs font-bold text-primary uppercase tracking-wider">
+                  {t('habits.selectDays', 'Select Active Days')}
+                </label>
+                <span className="text-[11px] font-semibold text-secondary">
+                  {customDays.length} / 7 days selected
+                </span>
+              </div>
+
+              {/* 7 Days Toggle Strip */}
+              <div className="grid grid-cols-7 gap-1.5">
+                {DAYS_OF_WEEK.map((day) => {
+                  const isSelected = customDays.includes(day.id);
+                  return (
+                    <button
+                      key={day.id}
+                      type="button"
+                      onClick={() => handleToggleDay(day.id)}
+                      title={day.full}
+                      className={`h-10 rounded-xl text-xs font-bold transition-all flex flex-col items-center justify-center cursor-pointer border ${
+                        isSelected
+                          ? 'bg-accent text-white border-accent shadow-xs scale-102'
+                          : 'bg-surface border-theme text-secondary hover:text-primary hover:border-accent/40'
+                      }`}
+                    >
+                      <span>{day.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Quick Presets */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-1 text-[11px]">
+                <span className="text-secondary font-medium mr-1">Presets:</span>
+                <button
+                  type="button"
+                  onClick={() => setCustomDays(['Sun', 'Mon', 'Tue', 'Wed', 'Thu'])}
+                  className="px-2.5 py-1 rounded-lg bg-surface border border-theme text-secondary hover:text-primary hover:bg-subtle transition-all cursor-pointer font-semibold"
+                >
+                  {t('habits.weekdays', 'Weekdays (Sun-Thu)')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomDays(['Fri', 'Sat'])}
+                  className="px-2.5 py-1 rounded-lg bg-surface border border-theme text-secondary hover:text-primary hover:bg-subtle transition-all cursor-pointer font-semibold"
+                >
+                  {t('habits.weekends', 'Weekends (Fri-Sat)')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomDays(['Sun', 'Tue', 'Thu'])}
+                  className="px-2.5 py-1 rounded-lg bg-surface border border-theme text-secondary hover:text-primary hover:bg-subtle transition-all cursor-pointer font-semibold"
+                >
+                  {t('habits.sunTueThu', 'Sun / Tue / Thu')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomDays(['Mon', 'Wed', 'Sat'])}
+                  className="px-2.5 py-1 rounded-lg bg-surface border border-theme text-secondary hover:text-primary hover:bg-subtle transition-all cursor-pointer font-semibold"
+                >
+                  {t('habits.monWedSat', 'Mon / Wed / Sat')}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCustomDays(['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'])}
+                  className="px-2.5 py-1 rounded-lg bg-surface border border-theme text-secondary hover:text-primary hover:bg-subtle transition-all cursor-pointer font-semibold"
+                >
+                  {t('habits.allDays', 'All Days')}
+                </button>
+              </div>
+            </div>
+          )}
 
           <div>
             <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
@@ -860,7 +1109,7 @@ export const HabitsTracker = ({ selectedDate }) => {
             </label>
             <input
               type="text"
-              placeholder="e.g. Right after morning coffee"
+              placeholder="e.g. Right after morning coffee / sprint review"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               className="input-base"
