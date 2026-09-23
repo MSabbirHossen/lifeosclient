@@ -7,8 +7,11 @@ import { Modal } from '../components/Modal';
 import { StatCard } from '../components/StatCard';
 import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
+import { LoadingScreen } from '../components/LoadingScreen';
+import { Logo } from '../components/Logo';
 import { DateInput } from '../components/DateInput';
 import api from '../utils/api';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, confirmDelete } from '../utils/alerts';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import {
   Dumbbell,
@@ -505,10 +508,12 @@ export const FitnessTracker = ({ selectedDate }) => {
             prev.map((w) => (w._id === editingWorkoutId ? res.data : w))
           );
         }
+        notifyUpdated('Workout');
       } else {
         const res = await api.post('/workouts', payload);
         setIsWorkoutModalOpen(false);
         if (res.data) setWorkouts((prev) => [res.data, ...prev]);
+        notifyCreated('Workout');
       }
       setWName('');
       setWNotes('');
@@ -516,6 +521,7 @@ export const FitnessTracker = ({ selectedDate }) => {
       fetchData(false);
     } catch (err) {
       console.error('Failed to log workout', err);
+      notifyError(err, 'Failed to save workout');
     } finally {
       setSavingWorkout(false);
     }
@@ -579,47 +585,62 @@ export const FitnessTracker = ({ selectedDate }) => {
             prev.map((m) => (m._id === editingMetricId ? res.data : m))
           );
         }
+        notifyUpdated('Body metric');
       } else {
         const res = await api.post('/body-metrics', payload);
         setIsMetricModalOpen(false);
         if (res.data) setBodyMetrics((prev) => [...prev.filter((m) => m.date !== mDate), res.data]);
+        notifyCreated('Body metric');
       }
       openCreateMetricModal();
       setIsMetricModalOpen(false);
       fetchData(false);
     } catch (err) {
       console.error('Failed to log body metric', err);
+      notifyError(err, 'Failed to save body metric');
     } finally {
       setSavingMetric(false);
     }
   };
 
-  const handleDeleteWorkout = async () => {
-    if (!deleteWorkoutId) return;
-    const targetId = deleteWorkoutId;
+  const handleDeleteWorkout = async (wId) => {
+    const targetId = wId || deleteWorkoutId;
+    if (!targetId) return;
+
+    const isConfirmed = await confirmDelete('Workout');
+    if (!isConfirmed) return;
+
     setDeleteWorkoutId(null);
     setWorkouts((prev) => prev.filter((w) => w._id !== targetId));
 
     try {
       await api.delete(`/workouts/${targetId}`);
+      notifyDeleted('Workout');
       fetchData(false);
     } catch (err) {
       console.error('Failed to delete workout', err);
+      notifyError(err, 'Failed to delete workout');
       fetchData(false);
     }
   };
 
-  const handleDeleteMetric = async () => {
-    if (!deleteMetricId) return;
-    const targetId = deleteMetricId;
+  const handleDeleteMetric = async (mId) => {
+    const targetId = mId || deleteMetricId;
+    if (!targetId) return;
+
+    const isConfirmed = await confirmDelete('Body Metric');
+    if (!isConfirmed) return;
+
     setDeleteMetricId(null);
     setBodyMetrics((prev) => prev.filter((m) => m._id !== targetId));
 
     try {
       await api.delete(`/body-metrics/${targetId}`);
+      notifyDeleted('Body metric');
       fetchData(false);
     } catch (err) {
       console.error('Failed to delete body metric', err);
+      notifyError(err, 'Failed to delete body metric');
       fetchData(false);
     }
   };
@@ -721,9 +742,7 @@ export const FitnessTracker = ({ selectedDate }) => {
         </div>
 
         {loading ? (
-          <div className="p-12 flex justify-center">
-            <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-          </div>
+          <LoadingScreen fullScreen={false} message="Loading workouts & metrics..." size="md" />
         ) : workouts.length === 0 ? (
           <EmptyState
             icon={Dumbbell}
@@ -748,7 +767,7 @@ export const FitnessTracker = ({ selectedDate }) => {
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => setDeleteWorkoutId(w._id)}
+                      onClick={() => handleDeleteWorkout(w._id)}
                       className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-xs transition-all cursor-pointer"
                       title="Delete Workout"
                     >
@@ -986,7 +1005,7 @@ export const FitnessTracker = ({ selectedDate }) => {
                         </button>
                         <button
                           type="button"
-                          onClick={() => setDeleteMetricId(m._id)}
+                          onClick={() => handleDeleteMetric(m._id)}
                           className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-xs transition-all cursor-pointer"
                           title="Delete Measurement"
                         >
@@ -1117,7 +1136,7 @@ export const FitnessTracker = ({ selectedDate }) => {
               <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1.5">
                 {t('fitness.targetCategory')}
               </label>
-              <div className="grid grid-cols-4 gap-1">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1">
                 {TARGET_TYPES.map((tCat) => {
                   const conf = TARGET_CONFIG[tCat] || { icon: '🎯', label: tCat, color: 'indigo' };
                   const isSelected = wTarget === tCat;
@@ -1212,7 +1231,7 @@ export const FitnessTracker = ({ selectedDate }) => {
                   )}
                   {searchingSuggestions && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <div className="w-3.5 h-3.5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                      <Logo size="xs" loading={true} />
                     </div>
                   )}
                 </div>

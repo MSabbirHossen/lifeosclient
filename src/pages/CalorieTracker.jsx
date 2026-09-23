@@ -7,8 +7,11 @@ import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
+import { LoadingScreen } from '../components/LoadingScreen';
+import { Logo } from '../components/Logo';
 import { DateInput } from '../components/DateInput';
-import api from '../utils/api';
+import api, { getLocalCache, setLocalCache } from '../utils/api';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import {
   Utensils,
@@ -135,8 +138,8 @@ export const CalorieTracker = ({ selectedDate }) => {
   const { t, isRTL } = useLanguage();
   const activeDate = selectedDate || getFormattedDate();
 
-  const [meals, setMeals] = useState([]);
-  const [summary, setSummary] = useState({
+  const [meals, setMeals] = useState(() => getLocalCache(`/meals?date=${activeDate}`)?.data || []);
+  const [summary, setSummary] = useState(() => getLocalCache(`/summary?date=${activeDate}`)?.data || {
     caloriesConsumed: 0,
     dailyCalorieGoal: 2000,
     remainingCalories: 2000,
@@ -150,7 +153,7 @@ export const CalorieTracker = ({ selectedDate }) => {
   const [macroSettings, setMacroSettings] = useState(() => getSavedMacroSettings());
   const [showCalculatorModal, setShowCalculatorModal] = useState(false);
   const [showDocsModal, setShowDocsModal] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !getLocalCache(`/meals?date=${activeDate}`));
   const [frequentFoods, setFrequentFoods] = useState(POPULAR_STAPLES);
 
   // Modal State
@@ -190,19 +193,24 @@ export const CalorieTracker = ({ selectedDate }) => {
   }, []);
 
   const fetchData = useCallback(async (showLoading = true) => {
-    if (showLoading) setLoading(true);
+    const hasCache = getLocalCache(`/meals?date=${activeDate}`);
+    if (showLoading && !hasCache) setLoading(true);
+
     try {
       const [mealsRes, summaryRes] = await Promise.all([
         api.get(`/meals?date=${activeDate}`),
         api.get(`/summary?date=${activeDate}`),
       ]);
+      setLocalCache(`/meals?date=${activeDate}`, mealsRes.data || []);
+      setLocalCache(`/summary?date=${activeDate}`, summaryRes.data || {});
+
       setMeals(mealsRes.data || []);
       setSummary(summaryRes.data || {});
       fetchFrequentFoods();
     } catch (err) {
       console.error('Failed to fetch calorie tracker data', err);
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
     }
   }, [activeDate, fetchFrequentFoods]);
 
@@ -465,16 +473,19 @@ export const CalorieTracker = ({ selectedDate }) => {
             prev.map((m) => (m._id === editingMealId ? res.data : m))
           );
         }
+        notifyUpdated('Meal');
       } else {
         const res = await api.post('/meals', payload);
         setIsModalOpen(false);
         if (res.data) {
           setMeals((prev) => [res.data, ...prev]);
         }
+        notifyCreated('Meal');
       }
       fetchData(false);
     } catch (err) {
       console.error('Failed to save meal', err);
+      notifyError(err, 'Failed to save meal');
     } finally {
       setSaving(false);
     }
@@ -494,24 +505,35 @@ export const CalorieTracker = ({ selectedDate }) => {
 
     try {
       await api.post('/water', { date: activeDate, increment: delta });
+      showSuccessToast(
+        delta > 0 ? '+1 Glass added (+250 ml)' : '-1 Glass removed (-250 ml)',
+        'Hydration Log'
+      );
       fetchData(false);
     } catch (err) {
       console.error('Failed to update water', err);
+      notifyError(err, 'Failed to update water');
       fetchData(false);
     }
   };
 
-  const handleDeleteMeal = async () => {
-    if (!deleteId) return;
-    const targetId = deleteId;
+  const handleDeleteMeal = async (mealId) => {
+    const targetId = mealId || deleteId;
+    if (!targetId) return;
+
+    const isConfirmed = await confirmDelete('Meal');
+    if (!isConfirmed) return;
+
     setDeleteId(null);
     setMeals((prev) => prev.filter((m) => m._id !== targetId));
 
     try {
       await api.delete(`/meals/${targetId}`);
+      notifyDeleted('Meal');
       fetchData(false);
     } catch (err) {
       console.error('Failed to delete meal', err);
+      notifyError(err, 'Failed to delete meal');
       fetchData(false);
     }
   };
@@ -734,9 +756,7 @@ export const CalorieTracker = ({ selectedDate }) => {
           </div>
 
           {loading ? (
-            <div className="p-12 flex justify-center">
-              <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-            </div>
+            <LoadingScreen fullScreen={false} message="Loading meals..." size="md" />
           ) : meals.length === 0 ? (
             <EmptyState
               icon={Utensils}
@@ -761,7 +781,7 @@ export const CalorieTracker = ({ selectedDate }) => {
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => setDeleteId(meal._id)}
+                        onClick={() => handleDeleteMeal(meal._id)}
                         className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-xs transition-all cursor-pointer"
                         title="Delete Meal"
                       >
@@ -819,7 +839,7 @@ export const CalorieTracker = ({ selectedDate }) => {
               <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1.5">
                 {t('calories.mealType')}
               </label>
-              <div className="grid grid-cols-4 gap-1.5">
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-1.5">
                 {MEAL_TYPES.map((mType) => {
                   const conf = MEAL_TYPE_CONFIG[mType] || { icon: '🍽️', label: mType };
                   const isSelected = formMealType === mType;
@@ -909,7 +929,7 @@ export const CalorieTracker = ({ selectedDate }) => {
                   )}
                   {searchingSuggestions && (
                     <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      <div className="w-3.5 h-3.5 border-2 border-accent border-t-transparent rounded-full animate-spin" />
+                      <Logo size="xs" loading={true} />
                     </div>
                   )}
                 </div>
