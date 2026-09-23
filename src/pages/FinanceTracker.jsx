@@ -7,7 +7,9 @@ import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
-import api from '../utils/api';
+import { LoadingScreen } from '../components/LoadingScreen';
+import api, { getLocalCache, setLocalCache } from '../utils/api';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
 import { useAuth } from '../context/AuthContext';
 import { DateInput } from '../components/DateInput';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
@@ -239,8 +241,8 @@ export const FinanceTracker = ({ selectedDate }) => {
   const availableCurrencies = Array.from(new Set([defaultCurrency, ...POPULAR_CURRENCIES, ...customCurrencies]));
   const displayCurrency = defaultCurrency || 'USD';
 
-  const [transactions, setTransactions] = useState([]);
-  const [summary, setSummary] = useState({
+  const [transactions, setTransactions] = useState(() => getLocalCache('/finance/transactions')?.data?.transactions || getLocalCache('/finance/transactions')?.data || []);
+  const [summary, setSummary] = useState(() => getLocalCache(`/finance/summary?currency=${defaultCurrency}`)?.data || {
     currency: defaultCurrency,
     totalIncome: 0,
     totalExpenses: 0,
@@ -248,7 +250,7 @@ export const FinanceTracker = ({ selectedDate }) => {
     methodBalances: {},
     currencyTotals: {},
   });
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => !getLocalCache('/finance/transactions'));
 
   // Filters State
   const [filterType, setFilterType] = useState('all');
@@ -286,27 +288,32 @@ export const FinanceTracker = ({ selectedDate }) => {
   const [savingTransfer, setSavingTransfer] = useState(false);
 
   const fetchFinanceData = useCallback(async (showLoading = true) => {
-    if (showLoading) setLoading(true);
+    const hasCache = getLocalCache('/finance/transactions');
+    if (showLoading && !hasCache) setLoading(true);
+
     try {
       const [txRes, summaryRes] = await Promise.all([
         api.get('/finance/transactions'),
         api.get(`/finance/summary?currency=${defaultCurrency}`),
       ]);
-      setTransactions(txRes.data.transactions || txRes.data || []);
-      setSummary(
-        summaryRes.data || {
-          currency: defaultCurrency,
-          totalIncome: 0,
-          totalExpenses: 0,
-          netSavings: 0,
-          methodBalances: {},
-          currencyTotals: {},
-        }
-      );
+      const txData = txRes.data.transactions || txRes.data || [];
+      const sumData = summaryRes.data || {
+        currency: defaultCurrency,
+        totalIncome: 0,
+        totalExpenses: 0,
+        netSavings: 0,
+        methodBalances: {},
+        currencyTotals: {},
+      };
+      setLocalCache('/finance/transactions', txData);
+      setLocalCache(`/finance/summary?currency=${defaultCurrency}`, sumData);
+
+      setTransactions(txData);
+      setSummary(sumData);
     } catch (err) {
       console.error('Failed to fetch finance data', err);
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
     }
   }, [defaultCurrency]);
 
@@ -482,14 +489,17 @@ export const FinanceTracker = ({ selectedDate }) => {
             prev.map((t) => (t._id === editingTransactionId ? res.data : t))
           );
         }
+        notifyUpdated('Transaction');
       } else {
         const res = await api.post('/finance/transactions', payload);
         setIsTransactionModalOpen(false);
         if (res.data) setTransactions((prev) => [res.data, ...prev]);
+        notifyCreated('Transaction');
       }
       fetchFinanceData(false);
     } catch (err) {
       console.error('Failed to log transaction', err);
+      notifyError(err, 'Failed to save transaction');
     } finally {
       setSavingTx(false);
     }
@@ -525,25 +535,33 @@ export const FinanceTracker = ({ selectedDate }) => {
 
       setIsTransferModalOpen(false);
       if (res.data) setTransactions((prev) => [res.data, ...prev]);
+      showSuccessToast('Funds transferred successfully!', 'Transfer Complete');
       fetchFinanceData(false);
     } catch (err) {
       console.error('Failed to transfer funds', err);
+      notifyError(err, 'Failed to transfer funds');
     } finally {
       setSavingTransfer(false);
     }
   };
 
-  const handleDeleteTransaction = async () => {
-    if (!deleteId) return;
-    const targetId = deleteId;
+  const handleDeleteTransaction = async (txId) => {
+    const targetId = txId || deleteId;
+    if (!targetId) return;
+
+    const isConfirmed = await confirmDelete('Transaction');
+    if (!isConfirmed) return;
+
     setDeleteId(null);
     setTransactions((prev) => prev.filter((tx) => tx._id !== targetId));
 
     try {
       await api.delete(`/finance/transactions/${targetId}`);
+      notifyDeleted('Transaction');
       fetchFinanceData(false);
     } catch (err) {
       console.error('Failed to delete transaction', err);
+      notifyError(err, 'Failed to delete transaction');
       fetchFinanceData(false);
     }
   };
@@ -819,9 +837,7 @@ export const FinanceTracker = ({ selectedDate }) => {
         }
       >
         {loading ? (
-          <div className="p-12 flex justify-center">
-            <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-          </div>
+          <LoadingScreen fullScreen={false} message="Loading financial records..." size="md" />
         ) : filteredTransactions.length === 0 ? (
           <EmptyState
             icon={Wallet}
@@ -924,7 +940,7 @@ export const FinanceTracker = ({ selectedDate }) => {
                             <Edit2 className="w-4 h-4" />
                           </button>
                           <button
-                            onClick={() => setDeleteId(tx._id)}
+                            onClick={() => handleDeleteTransaction(tx._id)}
                             className="p-1.5 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
                             title="Delete Transaction"
                           >
