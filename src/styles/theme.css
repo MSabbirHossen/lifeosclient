@@ -1,31 +1,90 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where([data-theme=dark], [data-theme=dark] *));
+
+@theme {
+  --color-white: #ffffff;
+  --color-white-100: #333333;
+  --color-white-200: #666666;
+  --color-white-300: #999999;
+  --color-white-400: #cccccc;
+  --color-white-500: #ffffff;
+  --color-white-600: #ffffff;
+  --color-white-700: #ffffff;
+  --color-white-800: #ffffff;
+  --color-white-900: #ffffff;
+
+  --color-ink-black: #00171f;
+  --color-ink-black-100: #000506;
+  --color-ink-black-200: #00090c;
+  --color-ink-black-300: #000e12;
+  --color-ink-black-400: #001218;
+  --color-ink-black-500: #00171f;
+  --color-ink-black-600: #005f7e;
+  --color-ink-black-700: #00a7de;
+  --color-ink-black-800: #3fcfff;
+  --color-ink-black-900: #9fe7ff;
+
+  --color-deep-space-blue: #003459;
+  --color-deep-space-blue-100: #000a11;
+  --color-deep-space-blue-200: #001423;
+  --color-deep-space-blue-300: #001e34;
+  --color-deep-space-blue-400: #002845;
+  --color-deep-space-blue-500: #003459;
+  --color-deep-space-blue-600: #0064ab;
+  --color-deep-space-blue-700: #0195ff;
+  --color-deep-space-blue-800: #56b8ff;
+  --color-deep-space-blue-900: #aadcff;
+
+  --color-cerulean: #007ea7;
+  --color-cerulean-100: #001922;
+  --color-cerulean-200: #003243;
+  --color-cerulean-300: #004c65;
+  --color-cerulean-400: #006587;
+  --color-cerulean-500: #007ea7;
+  --color-cerulean-600: #00b1ed;
+  --color-cerulean-700: #32ccff;
+  --color-cerulean-800: #76ddff;
+  --color-cerulean-900: #bbeeff;
+
+  --color-fresh-sky: #00a8e8;
+  --color-fresh-sky-100: #00212e;
+  --color-fresh-sky-200: #00425c;
+  --color-fresh-sky-300: #00638a;
+  --color-fresh-sky-400: #0084b8;
+  --color-fresh-sky-500: #00a8e8;
+  --color-fresh-sky-600: #1fbfff;
+  --color-fresh-sky-700: #57cfff;
+  --color-fresh-sky-800: #8fdfff;
+  --color-fresh-sky-900: #c7efff;
+}
+
 :root {
   /* Fonts */
   --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-heading: 'Outfit', 'Plus Jakarta Sans', sans-serif;
 
-  /* Base Colors - Light Theme */
-  --color-bg: #F8FAFC;
-  --color-bg-subtle: #F1F5F9;
+  /* Base Colors - Polished High-Readability Light Theme */
+  --color-bg: #FFFFFF;
+  --color-bg-subtle: #F4F9FC;
   --color-surface: #FFFFFF;
-  --color-surface-hover: #F8FAFC;
-  --color-surface-active: #F1F5F9;
-  --color-border: #E2E8F0;
-  --color-border-subtle: #EDF2F7;
-  --color-border-hover: #CBD5E1;
+  --color-surface-hover: #F0F7FB;
+  --color-surface-active: #E5F3FA;
+  --color-border: #E1EDF3;
+  --color-border-subtle: #EDF4F8;
+  --color-border-hover: #007EA7;
 
-  /* Typography Colors */
-  --color-text-primary: #0F172A;
-  --color-text-secondary: #64748B;
-  --color-text-muted: #94A3B8;
+  /* Typography Colors - High Contrast & Crystal Clear */
+  --color-text-primary: #00171F;
+  --color-text-secondary: #003459;
+  --color-text-muted: #5A7B92;
 
-  /* Vibrant Accents */
-  --color-accent: #4F46E5;
-  --color-accent-hover: #4338CA;
-  --color-accent-light: #EEF2FF;
-  --color-accent-border: #C7D2FE;
-  --color-accent-glow: rgba(79, 70, 229, 0.15);
+  /* Vibrant Ocean Accents */
+  --color-accent: #007EA7;
+  --color-accent-hover: #006587;
+  --color-accent-light: #EBF8FE;
+  --color-accent-border: #BCEEFF;
+  --color-accent-glow: rgba(0, 168, 232, 0.20);
 
   /* Status Colors */
   --color-success: #10B981;
@@ -40,9 +99,9 @@
   --color-purple: #8B5CF6;
   --color-purple-bg: #F5F3FF;
   --color-purple-border: #DDD6FE;
-  --color-cyan: #06B6D4;
-  --color-cyan-bg: #ECFEFF;
-  --color-cyan-border: #A5F3FC;
+  --color-cyan: #00A8E8;
+  --color-cyan-bg: #EBF8FE;
+  --color-cyan-border: #BCEEFF;
 
   /* Geometry & Shadows */
   --radius-sm: 8px;
@@ -50,11 +109,11 @@
   --radius-lg: 16px;
   --radius-xl: 20px;
   --radius-2xl: 24px;
-  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.04);
-  --shadow-card: 0 1px 3px 0 rgba(15, 23, 42, 0.05), 0 1px 2px -1px rgba(15, 23, 42, 0.05);
-  --shadow-hover: 0 10px 25px -5px rgba(15, 23, 42, 0.08), 0 8px 10px -6px rgba(15, 23, 42, 0.04);
-  --shadow-modal: 0 25px 50px -12px rgba(15, 23, 42, 0.25);
-  --shadow-glow: 0 0 20px rgba(79, 70, 229, 0.25);
+  --shadow-sm: 0 1px 2px 0 rgba(0, 23, 31, 0.04);
+  --shadow-card: 0 2px 6px 0 rgba(0, 52, 89, 0.05), 0 1px 2px -1px rgba(0, 52, 89, 0.04);
+  --shadow-hover: 0 12px 25px -5px rgba(0, 52, 89, 0.10), 0 6px 10px -6px rgba(0, 52, 89, 0.04);
+  --shadow-modal: 0 25px 50px -12px rgba(0, 23, 31, 0.25);
+  --shadow-glow: 0 0 20px rgba(0, 168, 232, 0.25);
 }
 
 [data-theme="dark"] {
@@ -327,7 +386,7 @@ input[type="date"]::-webkit-calendar-picker-indicator {
 
 /* Gradient text utility */
 .text-gradient {
-  background: linear-gradient(135deg, var(--color-accent) 0%, #8B5CF6 100%);
+  background: linear-gradient(135deg, #003459 0%, #007EA7 50%, #00A8E8 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
 }
@@ -385,6 +444,332 @@ body.font-arabic, [lang="ar"], [dir="rtl"] {
 [dir="rtl"] .ltr-only {
   direction: ltr;
   text-align: left;
+}/* SweetAlert2 Life OS Design System Theme */
+.swal2-container {
+  z-index: 99999999 !important;
+  font-family: var(--font-sans) !important;
 }
+
+.swal2-container.swal2-top-end,
+.swal2-container.swal2-top,
+.swal2-container.swal2-top-right {
+  top: 1.25rem !important;
+  right: 1.25rem !important;
+  left: auto !important;
+  bottom: auto !important;
+  position: fixed !important;
+  pointer-events: none !important;
+}
+
+[dir="rtl"] .swal2-container.swal2-top-end,
+[dir="rtl"] .swal2-container.swal2-top-right {
+  right: auto !important;
+  left: 1.25rem !important;
+}
+
+.swal2-container.swal2-toast-shown {
+  background-color: transparent !important;
+  pointer-events: none !important;
+}
+
+.lifeos-swal-toast {
+  pointer-events: auto !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.75rem !important;
+  padding: 0.875rem 1.25rem !important;
+  min-width: 320px !important;
+  max-width: 460px !important;
+  border-radius: var(--radius-lg) !important;
+  border: 1px solid var(--color-border) !important;
+  background-color: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.28), 0 8px 10px -6px rgba(0, 0, 0, 0.2) !important;
+  backdrop-filter: blur(16px) !important;
+  -webkit-backdrop-filter: blur(16px) !important;
+  overflow: hidden !important;
+  position: relative !important;
+  cursor: pointer !important;
+  transition: opacity 0.2s ease, transform 0.2s ease !important;
+}
+
+.lifeos-swal-toast.swal2-show {
+  animation: lifeosToastSlideIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.lifeos-swal-toast.swal2-hide {
+  animation: lifeosToastSlideOut 0.2s ease-in forwards !important;
+}
+
+@keyframes lifeosToastSlideIn {
+  from {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes lifeosToastSlideOut {
+  from {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-12px) scale(0.96);
+  }
+}
+
+.lifeos-swal-toast.lifeos-swal-toast-success {
+  border-left: 4px solid #10B981 !important;
+}
+[dir="rtl"] .lifeos-swal-toast.lifeos-swal-toast-success {
+  border-left: 1px solid var(--color-border) !important;
+  border-right: 4px solid #10B981 !important;
+}
+
+.lifeos-swal-toast.lifeos-swal-toast-error {
+  border-left: 4px solid #EF4444 !important;
+}
+[dir="rtl"] .lifeos-swal-toast.lifeos-swal-toast-error {
+  border-left: 1px solid var(--color-border) !important;
+  border-right: 4px solid #EF4444 !important;
+}
+
+.lifeos-swal-toast.lifeos-swal-toast-info {
+  border-left: 4px solid #6366F1 !important;
+}
+[dir="rtl"] .lifeos-swal-toast.lifeos-swal-toast-info {
+  border-left: 1px solid var(--color-border) !important;
+  border-right: 4px solid #6366F1 !important;
+}
+
+.lifeos-swal-toast.lifeos-swal-toast-warning {
+  border-left: 4px solid #F59E0B !important;
+}
+[dir="rtl"] .lifeos-swal-toast.lifeos-swal-toast-warning {
+  border-left: 1px solid var(--color-border) !important;
+  border-right: 4px solid #F59E0B !important;
+}
+
+.lifeos-swal-toast .swal2-icon {
+  margin: 0 !important;
+  width: 1.75rem !important;
+  height: 1.75rem !important;
+  min-width: 1.75rem !important;
+  border-width: 2px !important;
+}
+
+.lifeos-swal-toast .swal2-icon .swal2-icon-content {
+  font-size: 1rem !important;
+}
+
+.lifeos-swal-toast .swal2-title,
+.lifeos-swal-toast-title {
+  margin: 0 !important;
+  padding: 0 !important;
+  font-size: 0.875rem !important;
+  font-weight: 700 !important;
+  line-height: 1.35 !important;
+  color: var(--color-text-primary) !important;
+  text-align: left !important;
+}
+[dir="rtl"] .lifeos-swal-toast .swal2-title,
+[dir="rtl"] .lifeos-swal-toast-title {
+  text-align: right !important;
+}
+
+.lifeos-swal-toast .swal2-html-container,
+.lifeos-swal-toast-text {
+  margin: 0.2rem 0 0 0 !important;
+  padding: 0 !important;
+  font-size: 0.8rem !important;
+  line-height: 1.35 !important;
+  color: var(--color-text-secondary) !important;
+  text-align: left !important;
+}
+[dir="rtl"] .lifeos-swal-toast .swal2-html-container,
+[dir="rtl"] .lifeos-swal-toast-text {
+  text-align: right !important;
+}
+
+.lifeos-swal-toast .swal2-timer-progress-bar {
+  height: 3px !important;
+  background: var(--color-accent) !important;
+}
+.lifeos-swal-toast.lifeos-swal-toast-success .swal2-timer-progress-bar {
+  background: #10B981 !important;
+}
+.lifeos-swal-toast.lifeos-swal-toast-error .swal2-timer-progress-bar {
+  background: #EF4444 !important;
+}
+.lifeos-swal-toast.lifeos-swal-toast-warning .swal2-timer-progress-bar {
+  background: #F59E0B !important;
+}
+
+.lifeos-swal-popup {
+  border-radius: var(--radius-2xl) !important;
+  border: 1px solid var(--color-border) !important;
+  background-color: var(--color-surface) !important;
+  color: var(--color-text-primary) !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35) !important;
+  padding: 1.75rem !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+.lifeos-swal-title {
+  font-family: var(--font-heading) !important;
+  font-size: 1.25rem !important;
+  font-weight: 700 !important;
+  color: var(--color-text-primary) !important;
+  margin-bottom: 0.5rem !important;
+}
+
+.lifeos-swal-text {
+  font-size: 0.875rem !important;
+  color: var(--color-text-secondary) !important;
+  line-height: 1.5 !important;
+  margin-top: 0.25rem !important;
+}
+
+.lifeos-swal-actions {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: flex-end !important;
+  gap: 0.75rem !important;
+  margin-top: 1.5rem !important;
+  width: 100% !important;
+}
+
+.lifeos-swal-confirm-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.625rem 1.25rem !important;
+  border-radius: var(--radius-md) !important;
+  font-size: 0.875rem !important;
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+  background: linear-gradient(135deg, #007EA7 0%, #003459 100%) !important;
+  border: none !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  box-shadow: 0 4px 14px rgba(0, 126, 167, 0.3) !important;
+}
+
+.lifeos-swal-confirm-btn:hover {
+  transform: translateY(-1px) !important;
+  box-shadow: 0 6px 20px rgba(0, 126, 167, 0.45) !important;
+}
+
+.lifeos-swal-confirm-btn:active {
+  transform: translateY(0) !important;
+}
+
+.lifeos-swal-danger-btn {
+  background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%) !important;
+  box-shadow: 0 4px 14px rgba(239, 68, 68, 0.3) !important;
+}
+
+.lifeos-swal-danger-btn:hover {
+  box-shadow: 0 6px 20px rgba(239, 68, 68, 0.45) !important;
+}
+
+.lifeos-swal-cancel-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 0.625rem 1.25rem !important;
+  border-radius: var(--radius-md) !important;
+  font-size: 0.875rem !important;
+  font-weight: 600 !important;
+  color: var(--color-text-secondary) !important;
+  background-color: var(--color-bg-subtle) !important;
+  border: 1px solid var(--color-border) !important;
+  cursor: pointer !important;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+.lifeos-swal-cancel-btn:hover {
+  background-color: var(--color-surface-hover) !important;
+  color: var(--color-text-primary) !important;
+  border-color: var(--color-border-hover) !important;
+}
+
+/* =========================================================================
+   COMPREHENSIVE RESPONSIVE DESIGN SYSTEM & WEARABLE SUPPORT
+   ========================================================================= */
+
+/* Safe area insets for mobile notches, bottom bars, and smartwatches */
+:root {
+  --sat: env(safe-area-inset-top, 0px);
+  --sar: env(safe-area-inset-right, 0px);
+  --sab: env(safe-area-inset-bottom, 0px);
+  --sal: env(safe-area-inset-left, 0px);
+}
+
+/* Smooth momentum horizontal touch scrolling */
+.touch-scroll-x {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-x: contain;
+  scrollbar-width: thin;
+}
+
+/* Hide scrollbars cleanly while preserving scrollability */
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-none::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}
+.no-scrollbar,
+.scrollbar-none {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Prevent text overflow on narrow viewports */
+.text-wrap-balance {
+  text-wrap: balance;
+}
+.break-anywhere {
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+/* Responsive Recharts container fixes */
+.recharts-responsive-container {
+  min-height: 180px;
+  width: 100% !important;
+}
+
+/* Responsive tables */
+.responsive-table-wrapper {
+  width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border-radius: var(--radius-xl);
+  border: 1px solid var(--color-border);
+}
+
+/* Ultra-compact / Smartwatch Viewports (<340px) */
+@media (max-width: 340px) {
+  body {
+    font-size: 13px;
+  }
+
+  .input-base,
+  .select-base,
+  .textarea-base {
+    font-size: 13px;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+  }
+}
+
 
 
