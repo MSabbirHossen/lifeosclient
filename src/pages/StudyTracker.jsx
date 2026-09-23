@@ -7,8 +7,10 @@ import { Modal } from '../components/Modal';
 import { StatCard } from '../components/StatCard';
 import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
+import { LoadingScreen } from '../components/LoadingScreen';
 import { DateInput } from '../components/DateInput';
 import api from '../utils/api';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import {
   GraduationCap,
@@ -69,10 +71,6 @@ export const StudyTracker = ({ selectedDate }) => {
   const [topicGoalId, setTopicGoalId] = useState('');
   const [topicNotes, setTopicNotes] = useState('');
   const [savingTopic, setSavingTopic] = useState(false);
-
-  // Deletion modals
-  const [deleteSessionId, setDeleteSessionId] = useState(null);
-  const [deleteTopicId, setDeleteTopicId] = useState(null);
 
   const fetchData = useCallback(async (showLoading = true) => {
     if (showLoading) setLoading(true);
@@ -265,14 +263,17 @@ export const StudyTracker = ({ selectedDate }) => {
             prev.map((s) => (s._id === editingSessionId ? res.data : s))
           );
         }
+        notifyUpdated('Study session');
       } else {
         const res = await api.post('/study', payload);
         setIsSessionModalOpen(false);
         if (res.data) setSessions((prev) => [res.data, ...prev]);
+        notifyCreated('Study session');
       }
       fetchData(false);
     } catch (err) {
       console.error('Failed to log study session', err);
+      notifyError(err, 'Failed to save study session');
     } finally {
       setSavingSession(false);
     }
@@ -305,10 +306,12 @@ export const StudyTracker = ({ selectedDate }) => {
             prev.map((t) => (t._id === editingTopicId ? res.data : t))
           );
         }
+        notifyUpdated('Study topic');
       } else {
         const res = await api.post('/study/topics', payload);
         setIsTopicModalOpen(false);
         if (res.data) setTopics((prev) => [res.data, ...prev]);
+        notifyCreated('Study topic');
       }
       setTopicSubject('');
       setTopicTitle('');
@@ -320,6 +323,7 @@ export const StudyTracker = ({ selectedDate }) => {
       fetchData(false);
     } catch (err) {
       console.error('Failed to plan topic', err);
+      notifyError(err, 'Failed to save study topic');
     } finally {
       setSavingTopic(false);
     }
@@ -342,9 +346,14 @@ export const StudyTracker = ({ selectedDate }) => {
 
     try {
       await api.put(`/study/topics/${topicId}`, { deltaChapter: delta });
+      showSuccessToast(
+        delta > 0 ? '+1 Chapter completed' : '-1 Chapter adjusted',
+        'Topic Progress'
+      );
       fetchData(false);
     } catch (err) {
       console.error('Failed to update chapter count', err);
+      notifyError(err, 'Failed to update chapter progress');
       fetchData(false);
     }
   };
@@ -368,6 +377,7 @@ export const StudyTracker = ({ selectedDate }) => {
       fetchData(false);
     } catch (err) {
       console.error('Failed to update subtopic', err);
+      notifyError(err, 'Failed to update subtopic');
       fetchData(false);
     }
   };
@@ -380,39 +390,50 @@ export const StudyTracker = ({ selectedDate }) => {
 
     try {
       await api.put(`/study/topics/${topicId}`, { status: newStatus });
+      showSuccessToast(
+        `Status updated to ${newStatus.replace('_', ' ')}`,
+        'Topic Status'
+      );
       fetchData(false);
     } catch (err) {
       console.error('Failed to update topic status', err);
+      notifyError(err, 'Failed to update topic status');
       fetchData(false);
     }
   };
 
-  const handleDeleteSession = async () => {
-    if (!deleteSessionId) return;
-    const targetId = deleteSessionId;
-    setDeleteSessionId(null);
-    setSessions((prev) => prev.filter((s) => s._id !== targetId));
+  const handleDeleteSession = async (sessionId) => {
+    if (!sessionId) return;
+    const confirmed = await confirmDelete('Study session');
+    if (!confirmed) return;
+
+    setSessions((prev) => prev.filter((s) => s._id !== sessionId));
 
     try {
-      await api.delete(`/study/${targetId}`);
+      await api.delete(`/study/${sessionId}`);
+      notifyDeleted('Study session');
       fetchData(false);
     } catch (err) {
       console.error('Failed to delete study session', err);
+      notifyError(err, 'Failed to delete study session');
       fetchData(false);
     }
   };
 
-  const handleDeleteTopic = async () => {
-    if (!deleteTopicId) return;
-    const targetId = deleteTopicId;
-    setDeleteTopicId(null);
-    setTopics((prev) => prev.filter((t) => t._id !== targetId));
+  const handleDeleteTopic = async (topicId) => {
+    if (!topicId) return;
+    const confirmed = await confirmDelete('Study topic');
+    if (!confirmed) return;
+
+    setTopics((prev) => prev.filter((t) => t._id !== topicId));
 
     try {
-      await api.delete(`/study/topics/${targetId}`);
+      await api.delete(`/study/topics/${topicId}`);
+      notifyDeleted('Study topic');
       fetchData(false);
     } catch (err) {
       console.error('Failed to delete study topic', err);
+      notifyError(err, 'Failed to delete study topic');
       fetchData(false);
     }
   };
@@ -553,7 +574,7 @@ export const StudyTracker = ({ selectedDate }) => {
                       </div>
 
                       {/* Quick Chapter Stepper Buttons */}
-                      <div className="flex items-center justify-between pt-1">
+                      <div className="flex items-center justify-between gap-1.5 flex-wrap pt-1">
                         <span className="text-[11px] text-secondary font-medium">Quick Stepper:</span>
                         <div className="flex items-center gap-1.5">
                           <button
@@ -649,7 +670,7 @@ export const StudyTracker = ({ selectedDate }) => {
                         <Edit2 className="w-3.5 h-3.5" />
                       </button>
                       <button
-                        onClick={() => setDeleteTopicId(top._id)}
+                        onClick={() => handleDeleteTopic(top._id)}
                         className="p-1 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 cursor-pointer"
                         title="Delete Topic"
                       >
@@ -672,9 +693,7 @@ export const StudyTracker = ({ selectedDate }) => {
         </div>
 
         {loading ? (
-          <div className="p-12 flex justify-center">
-            <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-          </div>
+          <LoadingScreen fullScreen={false} message="Loading study sessions..." size="md" />
         ) : sessions.length === 0 ? (
           <EmptyState
             icon={GraduationCap}
@@ -699,7 +718,7 @@ export const StudyTracker = ({ selectedDate }) => {
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => setDeleteSessionId(sess._id)}
+                      onClick={() => handleDeleteSession(sess._id)}
                       className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-xs transition-all cursor-pointer"
                       title="Delete Session"
                     >
@@ -1254,50 +1273,6 @@ export const StudyTracker = ({ selectedDate }) => {
             </Button>
           </div>
         </form>
-      </Modal>
-
-      {/* Delete Session Confirmation Modal */}
-      <Modal
-        isOpen={!!deleteSessionId}
-        onClose={() => setDeleteSessionId(null)}
-        title={t('common.confirmDeleteTitle')}
-        subtitle={t('common.confirmDeleteDesc')}
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-secondary">
-            {t('study.deleteSessionDesc')}
-          </p>
-          <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
-            <Button variant="secondary" onClick={() => setDeleteSessionId(null)}>
-              {t('common.cancel')}
-            </Button>
-            <Button variant="danger" onClick={handleDeleteSession}>
-              {t('common.delete')}
-            </Button>
-          </div>
-        </div>
-      </Modal>
-
-      {/* Delete Topic Confirmation Modal */}
-      <Modal
-        isOpen={!!deleteTopicId}
-        onClose={() => setDeleteTopicId(null)}
-        title={t('common.confirmDeleteTitle')}
-        subtitle={t('common.confirmDeleteDesc')}
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-secondary">
-            {t('study.deleteTopicDesc')}
-          </p>
-          <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
-            <Button variant="secondary" onClick={() => setDeleteTopicId(null)}>
-              {t('common.cancel')}
-            </Button>
-            <Button variant="danger" onClick={handleDeleteTopic}>
-              {t('common.delete')}
-            </Button>
-          </div>
-        </div>
       </Modal>
     </div>
   );

@@ -7,7 +7,9 @@ import { Button } from '../components/Button';
 import { Modal } from '../components/Modal';
 import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
-import api from '../utils/api';
+import { LoadingScreen } from '../components/LoadingScreen';
+import api, { getLocalCache, setLocalCache } from '../utils/api';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, confirmDelete } from '../utils/alerts';
 import { DateInput } from '../components/DateInput';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import {
@@ -38,15 +40,14 @@ export const TimeTracker = ({ selectedDate }) => {
   const { t, isRTL } = useLanguage();
   const currentDate = selectedDate || getFormattedDate();
 
-  const [logs, setLogs] = useState([]);
-  const [summary, setSummary] = useState({ totalMinutes: 0, byCategory: {} });
-  const [activitiesList, setActivitiesList] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [logs, setLogs] = useState(() => getLocalCache(`/time-tracker/logs?date=${currentDate}`)?.data || []);
+  const [summary, setSummary] = useState(() => getLocalCache(`/time-tracker/summary?date=${currentDate}`)?.data || { totalMinutes: 0, byCategory: {} });
+  const [activitiesList, setActivitiesList] = useState(() => getLocalCache('/time-tracker/activities')?.data || []);
+  const [loading, setLoading] = useState(() => !getLocalCache(`/time-tracker/logs?date=${currentDate}`));
 
   // Modal State
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingLog, setEditingLog] = useState(null);
-  const [deleteId, setDeleteId] = useState(null);
 
   // Form State
   const [formDate, setFormDate] = useState(currentDate);
@@ -66,20 +67,26 @@ export const TimeTracker = ({ selectedDate }) => {
   };
 
   const fetchLogs = useCallback(async (showLoading = true) => {
-    if (showLoading) setLoading(true);
+    const hasCache = getLocalCache(`/time-tracker/logs?date=${currentDate}`);
+    if (showLoading && !hasCache) setLoading(true);
+
     try {
       const [logsRes, summaryRes, actRes] = await Promise.all([
         api.get(`/time-tracker/logs?date=${currentDate}`),
         api.get(`/time-tracker/summary?date=${currentDate}`),
         api.get('/time-tracker/activities'),
       ]);
+      setLocalCache(`/time-tracker/logs?date=${currentDate}`, logsRes.data || []);
+      setLocalCache(`/time-tracker/summary?date=${currentDate}`, summaryRes.data || { totalMinutes: 0, byCategory: {} });
+      setLocalCache('/time-tracker/activities', actRes.data || []);
+
       setLogs(logsRes.data || []);
       setSummary(summaryRes.data || { totalMinutes: 0, byCategory: {} });
       setActivitiesList(actRes.data || []);
     } catch (err) {
       console.error('Failed to fetch time tracker data', err);
     } finally {
-      if (showLoading) setLoading(false);
+      setLoading(false);
     }
   }, [currentDate]);
 
@@ -164,32 +171,38 @@ export const TimeTracker = ({ selectedDate }) => {
         if (res.data) {
           setLogs((prev) => prev.map((l) => (l._id === editingLog._id ? res.data : l)));
         }
+        notifyUpdated('Time log');
       } else {
         const res = await api.post('/time-tracker/logs', payload);
         if (res.data) {
           setLogs((prev) => [...prev, res.data]);
         }
+        notifyCreated('Time log');
       }
       setIsModalOpen(false);
       fetchLogs(false);
     } catch (err) {
       console.error('Failed to save time log', err);
+      notifyError(err, 'Failed to save time log');
     } finally {
       setSaving(false);
     }
   };
 
-  const handleDelete = async () => {
-    if (!deleteId) return;
-    const targetId = deleteId;
-    setDeleteId(null);
-    setLogs((prev) => prev.filter((l) => l._id !== targetId));
+  const handleDelete = async (logId) => {
+    if (!logId) return;
+    const confirmed = await confirmDelete('Time log');
+    if (!confirmed) return;
+
+    setLogs((prev) => prev.filter((l) => l._id !== logId));
 
     try {
-      await api.delete(`/time-tracker/logs/${targetId}`);
+      await api.delete(`/time-tracker/logs/${logId}`);
+      notifyDeleted('Time log');
       fetchLogs(false);
     } catch (err) {
       console.error('Failed to delete time log', err);
+      notifyError(err, 'Failed to delete time log');
       fetchLogs(false);
     }
   };
@@ -277,9 +290,7 @@ export const TimeTracker = ({ selectedDate }) => {
         </div>
 
         {loading ? (
-          <div className="p-12 flex justify-center">
-            <div className="w-8 h-8 border-4 border-accent border-t-transparent rounded-full animate-spin"></div>
-          </div>
+          <LoadingScreen fullScreen={false} message="Loading time blocks..." size="md" />
         ) : logs.length === 0 ? (
           <EmptyState
             icon={Clock}
@@ -304,7 +315,7 @@ export const TimeTracker = ({ selectedDate }) => {
                       <Edit2 className="w-3.5 h-3.5" />
                     </button>
                     <button
-                      onClick={() => setDeleteId(log._id)}
+                      onClick={() => handleDelete(log._id)}
                       className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-rose-600 hover:border-rose-500/40 hover:bg-rose-500/10 shadow-xs transition-all cursor-pointer"
                       title={t('time.deleteLog', 'Delete Time Block')}
                     >
@@ -548,28 +559,6 @@ export const TimeTracker = ({ selectedDate }) => {
             </Button>
           </div>
         </form>
-      </Modal>
-
-      {/* Delete Confirmation Modal */}
-      <Modal
-        isOpen={!!deleteId}
-        onClose={() => setDeleteId(null)}
-        title={t('common.confirmDeleteTitle', 'Confirm Deletion')}
-        subtitle={t('common.confirmDeleteDesc', 'This action cannot be undone.')}
-      >
-        <div className="space-y-4">
-          <p className="text-sm text-secondary">
-            {t('time.deleteTimeDesc', 'Are you sure you want to delete this time block? It will be permanently removed from your records.')}
-          </p>
-          <div className="flex justify-end gap-3 pt-3 border-t border-subtle">
-            <Button variant="secondary" onClick={() => setDeleteId(null)}>
-              {t('common.cancel', 'Cancel')}
-            </Button>
-            <Button variant="danger" onClick={handleDelete}>
-              {t('common.delete', 'Delete')}
-            </Button>
-          </div>
-        </div>
       </Modal>
     </div>
   );
