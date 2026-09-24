@@ -46,9 +46,9 @@ export const Card = ({
                 </div>
               )}
               <div className="min-w-0 flex-1">
-                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0 flex-wrap">
+                <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
                   {title && (
-                    <h3 className="text-sm font-bold text-primary tracking-tight leading-tight">
+                    <h3 className="text-sm font-bold text-primary tracking-tight leading-snug truncate">
                       {title}
                     </h3>
                   )}
@@ -58,7 +58,7 @@ export const Card = ({
               </div>
             </div>
             {action && (
-              <div className="shrink-0 flex items-center gap-1.5 sm:gap-2 justify-end">
+              <div className="shrink-0 flex items-center gap-1.5 sm:gap-2 justify-end ml-2">
                 {action}
               </div>
             )}

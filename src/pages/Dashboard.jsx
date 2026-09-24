@@ -396,8 +396,10 @@ export const Dashboard = ({ selectedDate }) => {
               </Badge>
             }
             action={
-              <Button variant="ghost" size="xs" onClick={() => navigate('/calories')}>
-                {t('nav.calories')} <ArrowRight className="w-3 h-3 ml-1" />
+              <Button variant="ghost" size="xs" onClick={() => navigate('/calories')} title={t('nav.calories')}>
+                <span className="hidden xl:inline">{t('nav.calories')}</span>
+                <span className="xl:hidden">{t('common.viewAll', 'View')}</span>
+                <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
               </Button>
             }
           >
@@ -459,7 +461,7 @@ export const Dashboard = ({ selectedDate }) => {
           </Card>
 
           {/* 16:8 Fasting & Finance 2-Col Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
             {/* 16:8 Fasting Component */}
             <FastingTimer compact={true} />
 
@@ -471,8 +473,10 @@ export const Dashboard = ({ selectedDate }) => {
               subtitle={t('dashboard.expensesCashflow')}
               icon={Wallet}
               action={
-                <Button variant="ghost" size="xs" onClick={() => navigate('/finance')}>
-                  {t('nav.finance')} <ArrowRight className="w-3 h-3 ml-1" />
+                <Button variant="ghost" size="xs" onClick={() => navigate('/finance')} title={t('nav.finance')}>
+                  <span className="hidden xl:inline">{t('nav.finance')}</span>
+                  <span className="xl:hidden">{t('common.viewAll', 'View')}</span>
+                  <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
                 </Button>
               }
             >
@@ -501,8 +505,10 @@ export const Dashboard = ({ selectedDate }) => {
             subtitle={t('dashboard.timeBlocksSummary', 'Logged blocks categorized across deep work, study, deen, & rest')}
             icon={Clock}
             action={
-              <Button variant="ghost" size="xs" onClick={() => navigate('/time-tracker')}>
-                {t('nav.focus', 'Focus')} <ArrowRight className="w-3 h-3 ml-1" />
+              <Button variant="ghost" size="xs" onClick={() => navigate('/time-tracker')} title={t('nav.focus')}>
+                <span className="hidden xl:inline">{t('nav.focus')}</span>
+                <span className="xl:hidden">{t('common.viewAll', 'View')}</span>
+                <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
               </Button>
             }
           >
@@ -556,8 +562,10 @@ export const Dashboard = ({ selectedDate }) => {
             subtitle={t('dashboard.promptOfDay', 'Prompt of the Day')}
             icon={BookOpen}
             action={
-              <Button variant="ghost" size="xs" onClick={() => navigate('/journal')}>
-                {t('nav.reflection', 'Reflection & Journal')} <ArrowRight className="w-3 h-3 ml-1" />
+              <Button variant="ghost" size="xs" onClick={() => navigate('/journal')} title={t('nav.reflection')}>
+                <span className="hidden xl:inline">{t('nav.reflection')}</span>
+                <span className="xl:hidden">{t('common.viewAll', 'View')}</span>
+                <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
               </Button>
             }
           >
@@ -613,8 +621,9 @@ export const Dashboard = ({ selectedDate }) => {
               </Badge>
             }
             action={
-              <Button variant="ghost" size="xs" onClick={() => navigate('/islamic-fasting')}>
-                {t('common.viewAll', 'View All')} <ArrowRight className="w-3 h-3 ml-1" />
+              <Button variant="ghost" size="xs" onClick={() => navigate('/islamic-fasting')} title={t('nav.islamicFasting')}>
+                <span>{t('common.viewAll', 'View All')}</span>
+                <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
               </Button>
             }
           >
@@ -750,8 +759,10 @@ export const Dashboard = ({ selectedDate }) => {
             subtitle={t('dashboard.dailyIslamicWisdom', 'Daily Islamic Wisdom')}
             icon={Compass}
             action={
-              <Button variant="ghost" size="xs" onClick={() => navigate('/islamic')}>
-                {t('nav.islamic', 'Islamic & Deen Hub')} <ArrowRight className="w-3 h-3 ml-1" />
+              <Button variant="ghost" size="xs" onClick={() => navigate('/islamic')} title={t('nav.islamic')}>
+                <span className="hidden xl:inline">{t('nav.islamic')}</span>
+                <span className="xl:hidden">{t('common.viewAll', 'View')}</span>
+                <ArrowRight className="w-3.5 h-3.5 ml-0.5" />
               </Button>
             }
           >
