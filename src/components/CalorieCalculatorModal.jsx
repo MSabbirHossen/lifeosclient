@@ -26,7 +26,8 @@ import {
   saveMacroSettings,
 } from '../utils/calorieCalculator';
 import api from '../utils/api';
-import { notifyUpdated, notifyError, showSuccessToast } from '../utils/alerts';
+import { notifyUpdated, notifyError, showSuccessToast, notifyGuestAction } from '../utils/alerts';
+import { useAuth } from '../context/AuthContext';
 
 export const CalorieCalculatorModal = ({
   isOpen,
@@ -36,6 +37,7 @@ export const CalorieCalculatorModal = ({
   currentWeight,
 }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
   const [savedSettings] = useState(() => getSavedMacroSettings());
 
   const [gender, setGender] = useState(savedSettings?.bodyProfile?.gender || 'male');
@@ -71,27 +73,41 @@ export const CalorieCalculatorModal = ({
   const macroTargets = calculateMacroTargets(budgetResult.budgetKcal, macroPreset);
 
   const handleApply = async () => {
+    const newSettings = {
+      presetId: macroPreset,
+      bodyProfile: {
+        gender,
+        weightKg: weightKg ? Number(weightKg) : 70,
+        heightCm: heightCm ? Number(heightCm) : 175,
+        age: age ? Number(age) : 25,
+        activityLevel,
+        goal,
+      },
+    };
+    saveMacroSettings(newSettings);
+
+    if (!user) {
+      notifyGuestAction('Calorie & macro goal', 'applied to preview');
+      if (onApplied) {
+        onApplied({
+          budgetKcal: budgetResult.budgetKcal,
+          macroTargets,
+          bmr,
+          tdee: budgetResult.tdee,
+        });
+      }
+      onClose();
+      return;
+    }
+
     setSaving(true);
     setAppliedSuccess(false);
+
     try {
       // 1. Update user profile on backend
       await api.put('/auth/profile', {
         dailyCalorieGoal: budgetResult.budgetKcal,
       });
-
-      // 2. Persist full macro settings locally
-      const newSettings = {
-        presetId: macroPreset,
-        bodyProfile: {
-          gender,
-          weightKg: weightKg ? Number(weightKg) : 70,
-          heightCm: heightCm ? Number(heightCm) : 175,
-          age: age ? Number(age) : 25,
-          activityLevel,
-          goal,
-        },
-      };
-      saveMacroSettings(newSettings);
 
       setAppliedSuccess(true);
       notifyUpdated('Caloric & macro targets');

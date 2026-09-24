@@ -11,7 +11,8 @@ import { LoadingScreen } from '../components/LoadingScreen';
 import { Logo } from '../components/Logo';
 import { DateInput } from '../components/DateInput';
 import api, { getLocalCache, setLocalCache } from '../utils/api';
-import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete, notifyGuestAction } from '../utils/alerts';
+import { useAuth } from '../context/AuthContext';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import {
   Utensils,
@@ -136,7 +137,9 @@ const MACRO_COLORS = ['#6366F1', '#10B981', '#F59E0B']; // Protein (Indigo), Car
 
 export const CalorieTracker = ({ selectedDate }) => {
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const activeDate = selectedDate || getFormattedDate();
+
 
   const [meals, setMeals] = useState(() => getLocalCache(`/meals?date=${activeDate}`)?.data || []);
   const [summary, setSummary] = useState(() => getLocalCache(`/summary?date=${activeDate}`)?.data || {
@@ -441,7 +444,6 @@ export const CalorieTracker = ({ selectedDate }) => {
     e.preventDefault();
     if (!itemName.trim()) return;
 
-    setSaving(true);
     const finalQuantity = quantity === '' ? (isPerHundred ? 100 : 1) : Number(quantity) || 1;
     const payload = {
       date: formDate,
@@ -463,6 +465,25 @@ export const CalorieTracker = ({ selectedDate }) => {
       ],
     };
 
+    if (!user) {
+      const mockMeal = {
+        _id: editingMealId || `guest-meal-${Date.now()}`,
+        ...payload,
+        createdAt: new Date().toISOString(),
+      };
+      if (editingMealId) {
+        setMeals((prev) => prev.map((m) => (m._id === editingMealId ? mockMeal : m)));
+        notifyGuestAction('Meal', 'updated');
+      } else {
+        setMeals((prev) => [mockMeal, ...prev]);
+        notifyGuestAction('Meal', 'logged');
+      }
+      setIsModalOpen(false);
+      setEditingMealId(null);
+      return;
+    }
+
+    setSaving(true);
     try {
       if (editingMealId) {
         const res = await api.put(`/meals/${editingMealId}`, payload);
@@ -503,6 +524,11 @@ export const CalorieTracker = ({ selectedDate }) => {
       waterMl: newMl,
     }));
 
+    if (!user) {
+      notifyGuestAction('Hydration log', delta > 0 ? '+1 Glass added (+250 ml)' : '-1 Glass removed (-250 ml)');
+      return;
+    }
+
     try {
       await api.post('/water', { date: activeDate, increment: delta });
       showSuccessToast(
@@ -527,6 +553,11 @@ export const CalorieTracker = ({ selectedDate }) => {
     setDeleteId(null);
     setMeals((prev) => prev.filter((m) => m._id !== targetId));
 
+    if (!user) {
+      notifyGuestAction('Meal', 'deleted');
+      return;
+    }
+
     try {
       await api.delete(`/meals/${targetId}`);
       notifyDeleted('Meal');
@@ -537,6 +568,7 @@ export const CalorieTracker = ({ selectedDate }) => {
       fetchData(false);
     }
   };
+
 
   const caloriePercentage = Math.min(
     100,

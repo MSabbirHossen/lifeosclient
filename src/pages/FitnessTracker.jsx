@@ -11,7 +11,8 @@ import { LoadingScreen } from '../components/LoadingScreen';
 import { Logo } from '../components/Logo';
 import { DateInput } from '../components/DateInput';
 import api from '../utils/api';
-import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, confirmDelete } from '../utils/alerts';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, confirmDelete, notifyGuestAction } from '../utils/alerts';
+import { useAuth } from '../context/AuthContext';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import {
   Dumbbell,
@@ -164,7 +165,9 @@ const inToCm = (inches) => (inches !== undefined && inches !== null && inches !=
 
 export const FitnessTracker = ({ selectedDate }) => {
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const currentDate = selectedDate || getFormattedDate();
+
 
   const [workouts, setWorkouts] = useState([]);
   const [bodyMetrics, setBodyMetrics] = useState([]);
@@ -482,23 +485,44 @@ export const FitnessTracker = ({ selectedDate }) => {
 
     const finalCalories = wCalories ? Number(wCalories) : estimatedCalories;
 
+    const payload = {
+      date: wDate,
+      name: wName.trim(),
+      trackingType: wTrackingType,
+      sets: wSets ? Number(wSets) : 3,
+      reps: wReps ? Number(wReps) : 10,
+      weight: wWeight ? Number(wWeight) : 0,
+      durationMinutes: wDuration ? Number(wDuration) : 30,
+      caloriesBurned: finalCalories,
+      idealCaloriesPerSet: Number(wIdealCalPerSet),
+      idealCaloriesPerMin: Number(wIdealCalPerMin),
+      target: wTarget,
+      notes: wNotes.trim(),
+    };
+
+    if (!user) {
+      const mockWorkout = {
+        _id: editingWorkoutId || `guest-workout-${Date.now()}`,
+        ...payload,
+        createdAt: new Date().toISOString(),
+      };
+      if (editingWorkoutId) {
+        setWorkouts((prev) => prev.map((w) => (w._id === editingWorkoutId ? mockWorkout : w)));
+        notifyGuestAction('Workout', 'updated');
+      } else {
+        setWorkouts((prev) => [mockWorkout, ...prev]);
+        notifyGuestAction('Workout', 'logged');
+      }
+      setIsWorkoutModalOpen(false);
+      setEditingWorkoutId(null);
+      setWName('');
+      setWNotes('');
+      setWCalories('');
+      return;
+    }
+
     setSavingWorkout(true);
     try {
-      const payload = {
-        date: wDate,
-        name: wName.trim(),
-        trackingType: wTrackingType,
-        sets: wSets ? Number(wSets) : 3,
-        reps: wReps ? Number(wReps) : 10,
-        weight: wWeight ? Number(wWeight) : 0,
-        durationMinutes: wDuration ? Number(wDuration) : 30,
-        caloriesBurned: finalCalories,
-        idealCaloriesPerSet: Number(wIdealCalPerSet),
-        idealCaloriesPerMin: Number(wIdealCalPerMin),
-        target: wTarget,
-        notes: wNotes.trim(),
-      };
-
       if (editingWorkoutId) {
         const res = await api.put(`/workouts/${editingWorkoutId}`, payload);
         setIsWorkoutModalOpen(false);
@@ -545,37 +569,55 @@ export const FitnessTracker = ({ selectedDate }) => {
       return;
     }
 
+    const isImp = unitSystem === 'imperial';
+    const weightInKg = isImp ? lbsToKg(mWeight) : (mWeight ? Number(mWeight) : undefined);
+    const heightInCm = isImp ? inToCm(mHeight) : (mHeight ? Number(mHeight) : undefined);
+    const waistInCm = isImp ? inToCm(mWaist) : (mWaist ? Number(mWaist) : undefined);
+    const chestInCm = isImp ? inToCm(mChest) : (mChest ? Number(mChest) : undefined);
+    const armInCm = isImp ? inToCm(mArm) : (mArm ? Number(mArm) : undefined);
+    const shouldersInCm = isImp ? inToCm(mShoulders) : (mShoulders ? Number(mShoulders) : undefined);
+    const hipsInCm = isImp ? inToCm(mHips) : (mHips ? Number(mHips) : undefined);
+    const thighsInCm = isImp ? inToCm(mThighs) : (mThighs ? Number(mThighs) : undefined);
+    const calvesInCm = isImp ? inToCm(mCalves) : (mCalves ? Number(mCalves) : undefined);
+    const neckInCm = isImp ? inToCm(mNeck) : (mNeck ? Number(mNeck) : undefined);
+    const bodyFatNum = mBodyFat !== '' && mBodyFat !== null && mBodyFat !== undefined ? Number(mBodyFat) : undefined;
+
+    const payload = {
+      date: mDate,
+      weightKg: weightInKg !== undefined && weightInKg !== '' ? Number(weightInKg) : undefined,
+      heightCm: heightInCm !== undefined && heightInCm !== '' ? Number(heightInCm) : undefined,
+      waistCm: waistInCm !== undefined && waistInCm !== '' ? Number(waistInCm) : undefined,
+      bodyFatPercent: bodyFatNum !== undefined && !isNaN(bodyFatNum) ? Number(bodyFatNum) : undefined,
+      chestCm: chestInCm !== undefined && chestInCm !== '' ? Number(chestInCm) : undefined,
+      armCm: armInCm !== undefined && armInCm !== '' ? Number(armInCm) : undefined,
+      shouldersCm: shouldersInCm !== undefined && shouldersInCm !== '' ? Number(shouldersInCm) : undefined,
+      hipsCm: hipsInCm !== undefined && hipsInCm !== '' ? Number(hipsInCm) : undefined,
+      thighsCm: thighsInCm !== undefined && thighsInCm !== '' ? Number(thighsCm) : undefined,
+      calvesCm: calvesInCm !== undefined && calvesInCm !== '' ? Number(calvesInCm) : undefined,
+      neckCm: neckInCm !== undefined && neckInCm !== '' ? Number(neckInCm) : undefined,
+      notes: mNotes.trim(),
+    };
+
+    if (!user) {
+      const mockMetric = {
+        _id: editingMetricId || `guest-metric-${Date.now()}`,
+        ...payload,
+        createdAt: new Date().toISOString(),
+      };
+      if (editingMetricId) {
+        setBodyMetrics((prev) => prev.map((m) => (m._id === editingMetricId ? mockMetric : m)));
+        notifyGuestAction('Body metric', 'updated');
+      } else {
+        setBodyMetrics((prev) => [...prev.filter((m) => m.date !== mDate), mockMetric]);
+        notifyGuestAction('Body metric', 'logged');
+      }
+      openCreateMetricModal();
+      setIsMetricModalOpen(false);
+      return;
+    }
+
     setSavingMetric(true);
     try {
-      const isImp = unitSystem === 'imperial';
-      const weightInKg = isImp ? lbsToKg(mWeight) : (mWeight ? Number(mWeight) : undefined);
-      const heightInCm = isImp ? inToCm(mHeight) : (mHeight ? Number(mHeight) : undefined);
-      const waistInCm = isImp ? inToCm(mWaist) : (mWaist ? Number(mWaist) : undefined);
-      const chestInCm = isImp ? inToCm(mChest) : (mChest ? Number(mChest) : undefined);
-      const armInCm = isImp ? inToCm(mArm) : (mArm ? Number(mArm) : undefined);
-      const shouldersInCm = isImp ? inToCm(mShoulders) : (mShoulders ? Number(mShoulders) : undefined);
-      const hipsInCm = isImp ? inToCm(mHips) : (mHips ? Number(mHips) : undefined);
-      const thighsInCm = isImp ? inToCm(mThighs) : (mThighs ? Number(mThighs) : undefined);
-      const calvesInCm = isImp ? inToCm(mCalves) : (mCalves ? Number(mCalves) : undefined);
-      const neckInCm = isImp ? inToCm(mNeck) : (mNeck ? Number(mNeck) : undefined);
-      const bodyFatNum = mBodyFat !== '' && mBodyFat !== null && mBodyFat !== undefined ? Number(mBodyFat) : undefined;
-
-      const payload = {
-        date: mDate,
-        weightKg: weightInKg !== undefined && weightInKg !== '' ? Number(weightInKg) : undefined,
-        heightCm: heightInCm !== undefined && heightInCm !== '' ? Number(heightInCm) : undefined,
-        waistCm: waistInCm !== undefined && waistInCm !== '' ? Number(waistInCm) : undefined,
-        bodyFatPercent: bodyFatNum !== undefined && !isNaN(bodyFatNum) ? Number(bodyFatNum) : undefined,
-        chestCm: chestInCm !== undefined && chestInCm !== '' ? Number(chestInCm) : undefined,
-        armCm: armInCm !== undefined && armInCm !== '' ? Number(armInCm) : undefined,
-        shouldersCm: shouldersInCm !== undefined && shouldersInCm !== '' ? Number(shouldersInCm) : undefined,
-        hipsCm: hipsInCm !== undefined && hipsInCm !== '' ? Number(hipsInCm) : undefined,
-        thighsCm: thighsInCm !== undefined && thighsInCm !== '' ? Number(thighsCm) : undefined,
-        calvesCm: calvesInCm !== undefined && calvesInCm !== '' ? Number(calvesInCm) : undefined,
-        neckCm: neckInCm !== undefined && neckInCm !== '' ? Number(neckInCm) : undefined,
-        notes: mNotes.trim(),
-      };
-
       if (editingMetricId) {
         const res = await api.put(`/body-metrics/${editingMetricId}`, payload);
         setIsMetricModalOpen(false);
@@ -613,6 +655,11 @@ export const FitnessTracker = ({ selectedDate }) => {
     setDeleteWorkoutId(null);
     setWorkouts((prev) => prev.filter((w) => w._id !== targetId));
 
+    if (!user) {
+      notifyGuestAction('Workout', 'deleted');
+      return;
+    }
+
     try {
       await api.delete(`/workouts/${targetId}`);
       notifyDeleted('Workout');
@@ -634,6 +681,11 @@ export const FitnessTracker = ({ selectedDate }) => {
     setDeleteMetricId(null);
     setBodyMetrics((prev) => prev.filter((m) => m._id !== targetId));
 
+    if (!user) {
+      notifyGuestAction('Body metric', 'deleted');
+      return;
+    }
+
     try {
       await api.delete(`/body-metrics/${targetId}`);
       notifyDeleted('Body metric');
@@ -644,6 +696,7 @@ export const FitnessTracker = ({ selectedDate }) => {
       fetchData(false);
     }
   };
+
 
   const totalCaloriesBurned = workouts.reduce((sum, w) => sum + (w.caloriesBurned || 0), 0);
   const totalWorkoutMinutes = workouts.reduce((sum, w) => sum + (w.durationMinutes || 0), 0);
