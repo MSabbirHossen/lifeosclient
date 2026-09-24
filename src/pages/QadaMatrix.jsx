@@ -453,7 +453,7 @@ export const QadaMatrix = ({ selectedDate }) => {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fade-in">
+    <div className="space-y-4 sm:space-y-5 animate-fade-in">
       <PageHeader
         category={t('categories.spiritual', 'Spiritual Discipline')}
         title={t('qada.title', 'Salah & Qada Matrix')}
@@ -494,7 +494,7 @@ export const QadaMatrix = ({ selectedDate }) => {
       />
 
       {/* Top Stat Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
         <StatCard
           title={t('qada.totalQadaOwed')}
           value={totalOwedAll}
@@ -544,7 +544,7 @@ export const QadaMatrix = ({ selectedDate }) => {
           </Badge>
         }
       >
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-2.5 mt-2">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 mt-1">
           {DAILY_5_PRAYERS.map((prayerName, idx) => {
             const currentLog = salahLogs.find((l) => (l.prayerName || l.salah) === prayerName);
             const currentStatus = currentLog?.status || 'unlogged';
@@ -553,12 +553,12 @@ export const QadaMatrix = ({ selectedDate }) => {
             return (
               <div
                 key={prayerName}
-                className={`p-3 sm:p-3.5 rounded-2xl bg-subtle/80 border border-theme flex flex-col justify-between space-y-2.5 transition-all hover:border-theme-strong ${
+                className={`p-2.5 sm:p-3 rounded-xl bg-subtle/80 border border-theme flex flex-col justify-between space-y-2 transition-all hover:border-theme-strong ${
                   isLastOnMobile ? 'col-span-2 sm:col-span-1' : ''
                 }`}
               >
                 <div className="flex items-center justify-between sm:flex-col sm:items-start gap-1">
-                  <span className="font-extrabold text-sm text-primary tracking-tight">{prayerName}</span>
+                  <span className="font-extrabold text-xs sm:text-sm text-primary tracking-tight">{prayerName}</span>
                   {currentStatus !== 'unlogged' ? (
                     <Badge
                       variant={
@@ -573,7 +573,7 @@ export const QadaMatrix = ({ selectedDate }) => {
                   )}
                 </div>
 
-                <div className="grid grid-cols-2 sm:grid-cols-1 gap-1 pt-1">
+                <div className="grid grid-cols-2 sm:grid-cols-1 gap-1 pt-0.5">
                   {SALAH_STATUSES.map((st) => {
                     const isSelected = currentStatus === st.value;
                     return (
@@ -581,8 +581,8 @@ export const QadaMatrix = ({ selectedDate }) => {
                         key={st.value}
                         type="button"
                         onClick={() => handleUpdateSalah(prayerName, st.value)}
-                        className={`py-1.5 px-1.5 text-[10px] font-bold rounded-lg transition-all duration-150 cursor-pointer border text-center ${isSelected
-                          ? 'bg-accent text-white border-accent shadow-xs scale-102 font-extrabold'
+                        className={`py-1 px-1.5 text-[10px] font-bold rounded-lg transition-all duration-150 cursor-pointer border text-center ${isSelected
+                          ? 'bg-accent text-white border-accent shadow-xs font-black'
                           : 'bg-surface text-secondary border-theme hover:text-primary hover:bg-subtle'
                           }`}
                       >
@@ -628,7 +628,7 @@ export const QadaMatrix = ({ selectedDate }) => {
         </div>
 
         {/* 6 Responsive Prayer Cards Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5">
           {ALL_PRAYERS.map((prayer) => {
             const record = qadaData.find((q) => q.prayerName === prayer) || {
               prayerName: prayer,
@@ -678,7 +678,7 @@ export const QadaMatrix = ({ selectedDate }) => {
                     <button
                       type="button"
                       onClick={() => handleOpenEdit(record)}
-                      className="p-1.5 rounded-lg bg-surface border border-theme text-secondary hover:text-accent hover:border-accent/40 hover:bg-accent/10 shadow-xs transition-all cursor-pointer"
+                      className="p-1 rounded-lg bg-surface border border-theme text-secondary hover:text-accent hover:border-accent/40 hover:bg-accent/10 shadow-xs transition-all cursor-pointer"
                       title={`Edit ${prayer} baseline or dates`}
                     >
                       <Edit2 className="w-3.5 h-3.5" />
@@ -688,42 +688,42 @@ export const QadaMatrix = ({ selectedDate }) => {
                 className="overflow-hidden"
               >
                 {/* 3 Metric Badges: Owed, Made Up, Remaining */}
-                <div className="grid grid-cols-3 gap-1.5 sm:gap-2 my-1 text-center">
-                  <div className="bg-subtle border border-theme rounded-xl p-1.5 sm:p-2.5 flex flex-col justify-center min-w-0">
-                    <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-secondary truncate">
+                <div className="grid grid-cols-3 gap-1.5 my-0.5 text-center">
+                  <div className="bg-subtle border border-theme rounded-lg p-1.5 flex flex-col justify-center min-w-0">
+                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-secondary truncate">
                       Owed
                     </span>
-                    <span className="text-xs sm:text-base font-black text-primary mt-0.5 truncate">
+                    <span className="text-xs sm:text-sm font-black text-primary mt-0.5 truncate">
                       {record.totalOwed.toLocaleString()}
                     </span>
                   </div>
 
-                  <div className="bg-emerald-500/15 border border-emerald-500/35 rounded-xl p-1.5 sm:p-2.5 flex flex-col justify-center min-w-0">
-                    <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-emerald-950 dark:text-emerald-300 truncate">
+                  <div className="bg-emerald-500/15 border border-emerald-500/35 rounded-lg p-1.5 flex flex-col justify-center min-w-0">
+                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-emerald-950 dark:text-emerald-300 truncate">
                       Made Up
                     </span>
-                    <span className="text-xs sm:text-base font-black text-emerald-950 dark:text-emerald-300 mt-0.5 truncate">
+                    <span className="text-xs sm:text-sm font-black text-emerald-950 dark:text-emerald-300 mt-0.5 truncate">
                       {record.totalCompleted.toLocaleString()}
                     </span>
                   </div>
 
-                  <div className="bg-rose-500/15 border border-rose-500/35 rounded-xl p-1.5 sm:p-2.5 flex flex-col justify-center min-w-0">
-                    <span className="text-[9px] sm:text-[10px] font-extrabold uppercase tracking-wider text-rose-950 dark:text-rose-300 truncate">
+                  <div className="bg-rose-500/15 border border-rose-500/35 rounded-lg p-1.5 flex flex-col justify-center min-w-0">
+                    <span className="text-[9px] font-extrabold uppercase tracking-wider text-rose-950 dark:text-rose-300 truncate">
                       Remaining
                     </span>
-                    <span className="text-xs sm:text-base font-black text-rose-950 dark:text-rose-300 mt-0.5 truncate">
+                    <span className="text-xs sm:text-sm font-black text-rose-950 dark:text-rose-300 mt-0.5 truncate">
                       {remaining.toLocaleString()}
                     </span>
                   </div>
                 </div>
 
                 {/* Progress bar */}
-                <div className="mt-3.5 space-y-1.5">
+                <div className="mt-2.5 space-y-1">
                   <div className="flex items-center justify-between text-xs">
-                    <span className="text-[11px] font-semibold text-secondary">Progress</span>
-                    <span className="text-[11px] font-bold text-primary">{percent}%</span>
+                    <span className="text-[10px] font-semibold text-secondary">Progress</span>
+                    <span className="text-[10px] font-bold text-primary">{percent}%</span>
                   </div>
-                  <div className="h-2 bg-subtle rounded-full overflow-hidden border border-theme">
+                  <div className="h-1.5 bg-subtle rounded-full overflow-hidden border border-theme">
                     <div
                       className="h-full bg-gradient-to-r from-emerald-600 to-teal-500 rounded-full transition-all duration-300"
                       style={{ width: `${percent}%` }}
@@ -732,25 +732,25 @@ export const QadaMatrix = ({ selectedDate }) => {
                 </div>
 
                 {/* Quick Make-Up Actions with right padding to clear bottomAction */}
-                <div className="mt-4 pt-3 border-t border-subtle flex items-center justify-between gap-2 pr-12">
-                  <span className="text-xs font-bold text-secondary">Quick Log</span>
+                <div className="mt-2.5 pt-2 border-t border-subtle flex items-center justify-between gap-2 pr-10">
+                  <span className="text-[11px] font-bold text-secondary">Quick Log</span>
                   <div className="flex items-center gap-1.5">
                     <button
                       type="button"
                       onClick={() => handleStep(prayer, -1)}
                       disabled={record.totalCompleted <= 0}
-                      className="p-2 rounded-xl bg-subtle text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
+                      className="p-1.5 rounded-lg bg-subtle text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer"
                       title="Step back 1 completed prayer"
                     >
-                      <Minus className="w-3.5 h-3.5" />
+                      <Minus className="w-3 h-3" />
                     </button>
                     <button
                       type="button"
                       onClick={() => handleStep(prayer, 1)}
-                      className="px-3.5 py-1.5 rounded-xl bg-emerald-500/15 text-emerald-950 dark:text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25 transition-all text-xs font-black flex items-center gap-1.5 cursor-pointer shadow-xs active:scale-95"
+                      className="px-2.5 py-1 rounded-lg bg-emerald-500/15 text-emerald-950 dark:text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/25 transition-all text-xs font-black flex items-center gap-1 cursor-pointer shadow-xs active:scale-95"
                       title={`Add 1 completed ${prayer}`}
                     >
-                      <Plus className="w-3.5 h-3.5 stroke-[3]" />
+                      <Plus className="w-3 h-3 stroke-[3]" />
                       <span>1 Make-up</span>
                     </button>
                   </div>

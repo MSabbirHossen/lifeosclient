@@ -498,7 +498,7 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
   }
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fade-in pb-12">
+    <div className="space-y-4 sm:space-y-5 animate-fade-in pb-8">
       {/* Page Header */}
       <PageHeader
         category={t('categories.spiritual', 'Spiritual Discipline')}
@@ -508,7 +508,7 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
           'Track obligatory Ramadan, Sunnah days (Mon/Thu & Ayyam al-Beed), Qada make-up, and voluntary fasts.'
         )} (${formatDisplayDate(activeDate)})`}
         action={
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2 flex-wrap">
             <Button
               variant="secondary"
               size="md"
@@ -538,108 +538,108 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
       />
 
       {/* Top Stat Cards Row */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
         {/* Total Fasts */}
-        <div className="rounded-2xl bg-surface border border-theme p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-theme-strong group">
+        <div className="rounded-xl sm:rounded-2xl bg-surface border border-theme p-3 sm:p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-theme-strong group">
           <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-muted uppercase tracking-wider block">
+            <div className="space-y-0.5">
+              <span className="text-[10px] sm:text-[11px] font-bold text-muted uppercase tracking-wider block">
                 {t('islamic.totalCompletedFasts', 'Total Fasts Completed')}
               </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl sm:text-2xl font-black text-primary tracking-tight">
                   {totalKept}
                 </span>
-                <span className="text-xs font-semibold text-amber-500">
+                <span className="text-[10px] sm:text-xs font-semibold text-amber-500">
                   {totalKept === 1 ? 'Day' : 'Days'}
                 </span>
               </div>
-              <p className="text-[11px] text-secondary font-medium">All-time verified fasts</p>
+              <p className="text-[10px] text-secondary font-medium">All-time verified fasts</p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-xs">
-              <Moon className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-amber-500/15 text-amber-500 dark:text-amber-400 border border-amber-500/30 flex items-center justify-center shrink-0 shadow-xs">
+              <Moon className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </div>
           </div>
         </div>
 
         {/* Ramadan Fasts */}
-        <div className="rounded-2xl bg-surface border border-theme p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-theme-strong group">
+        <div className="rounded-xl sm:rounded-2xl bg-surface border border-theme p-3 sm:p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-theme-strong group">
           <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-muted uppercase tracking-wider block">
+            <div className="space-y-0.5">
+              <span className="text-[10px] sm:text-[11px] font-bold text-muted uppercase tracking-wider block">
                 {t('islamic.ramadanFasts', 'Ramadan Fasts')}
               </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl sm:text-2xl font-black text-primary tracking-tight">
                   {fastSummary.ramadanCount || 0}
                 </span>
-                <span className="text-xs font-semibold text-emerald-500">
+                <span className="text-[10px] sm:text-xs font-semibold text-emerald-500">
                   {fastSummary.ramadanCount === 1 ? 'Day' : 'Days'}
                 </span>
               </div>
-              <p className="text-[11px] text-secondary font-medium">Fard obligatory fasts</p>
+              <p className="text-[10px] text-secondary font-medium">Fard obligatory fasts</p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-xs">
-              <CheckCircle2 className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-emerald-500/15 text-emerald-500 dark:text-emerald-400 border border-emerald-500/30 flex items-center justify-center shrink-0 shadow-xs">
+              <CheckCircle2 className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </div>
           </div>
         </div>
 
         {/* Sunnah & Nafl */}
-        <div className="rounded-2xl bg-surface border border-theme p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-theme-strong group">
+        <div className="rounded-xl sm:rounded-2xl bg-surface border border-theme p-3 sm:p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-theme-strong group">
           <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-muted uppercase tracking-wider block">
+            <div className="space-y-0.5">
+              <span className="text-[10px] sm:text-[11px] font-bold text-muted uppercase tracking-wider block">
                 {t('islamic.sunnahNaflFasts', 'Sunnah & Nafl Fasts')}
               </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl sm:text-2xl font-black text-primary tracking-tight">
                   {fastSummary.sunnahCount || 0}
                 </span>
-                <span className="text-xs font-semibold text-indigo-500">
+                <span className="text-[10px] sm:text-xs font-semibold text-indigo-500">
                   {fastSummary.sunnahCount === 1 ? 'Day' : 'Days'}
                 </span>
               </div>
-              <p className="text-[11px] text-secondary font-medium">Mon/Thu, Ayyam al-Beed, etc.</p>
+              <p className="text-[10px] text-secondary font-medium">Mon/Thu, Ayyam al-Beed, etc.</p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-indigo-500/15 text-indigo-500 dark:text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0 shadow-xs">
-              <Sparkles className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-indigo-500/15 text-indigo-500 dark:text-indigo-400 border border-indigo-500/30 flex items-center justify-center shrink-0 shadow-xs">
+              <Sparkles className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </div>
           </div>
         </div>
 
         {/* Qada Make-up */}
-        <div className="rounded-2xl bg-surface border border-theme p-5 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-theme-strong group">
+        <div className="rounded-xl sm:rounded-2xl bg-surface border border-theme p-3 sm:p-4 transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md hover:border-theme-strong group">
           <div className="flex items-start justify-between">
-            <div className="space-y-1">
-              <span className="text-xs font-bold text-muted uppercase tracking-wider block">
+            <div className="space-y-0.5">
+              <span className="text-[10px] sm:text-[11px] font-bold text-muted uppercase tracking-wider block">
                 {t('islamic.qadaFasts', 'Qada Fasts')}
               </span>
-              <div className="flex items-baseline gap-2">
-                <span className="text-2xl sm:text-3xl font-extrabold text-primary tracking-tight">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-xl sm:text-2xl font-black text-primary tracking-tight">
                   {fastSummary.qadaCount || 0}
                 </span>
-                <span className="text-xs font-semibold text-purple-500">
+                <span className="text-[10px] sm:text-xs font-semibold text-purple-500">
                   {fastSummary.qadaCount === 1 ? 'Day' : 'Days'}
                 </span>
               </div>
-              <p className="text-[11px] text-secondary font-medium">Historical fasts recovered</p>
+              <p className="text-[10px] text-secondary font-medium">Historical fasts recovered</p>
             </div>
-            <div className="w-11 h-11 rounded-xl bg-purple-500/15 text-purple-500 dark:text-purple-400 border border-purple-500/30 flex items-center justify-center shrink-0 shadow-xs">
-              <RotateCcw className="w-5 h-5" />
+            <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-purple-500/15 text-purple-500 dark:text-purple-400 border border-purple-500/30 flex items-center justify-center shrink-0 shadow-xs">
+              <RotateCcw className="w-4 h-4 sm:w-4.5 sm:h-4.5" />
             </div>
           </div>
         </div>
       </div>
 
       {/* Today's Fast Status Hero Solid Banner */}
-      <div className="rounded-3xl bg-surface border border-amber-500/40 p-4 sm:p-7 shadow-lg">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="flex items-start sm:items-center gap-4.5">
+      <div className="rounded-2xl bg-surface border border-amber-500/40 p-3.5 sm:p-4.5 shadow-md">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
+          <div className="flex items-start sm:items-center gap-3.5">
             {/* Solid Moon / Status Icon */}
             <div className="relative shrink-0">
               <div
-                className={`w-14 h-14 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center shadow-md transition-all ${todayFast?.status === 'completed'
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center shadow-md transition-all ${todayFast?.status === 'completed'
                   ? 'bg-emerald-600 text-white shadow-emerald-500/30'
                   : todayFast?.status === 'fasting'
                     ? 'bg-amber-500 text-white shadow-amber-500/30 ring-2 ring-amber-400/50'
@@ -647,35 +647,35 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
                   }`}
               >
                 {todayFast?.status === 'completed' ? (
-                  <CheckCircle2 className="w-8 h-8" />
+                  <CheckCircle2 className="w-6 h-6" />
                 ) : (
-                  <Moon className="w-8 h-8" />
+                  <Moon className="w-6 h-6" />
                 )}
               </div>
               {todayFast?.status === 'fasting' && (
-                <span className="absolute -top-1 -right-1 flex h-4 w-4">
+                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
                   <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-amber-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-4 w-4 bg-amber-500 border-2 border-surface"></span>
+                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-amber-500 border-2 border-surface"></span>
                 </span>
               )}
             </div>
 
             {/* Status Information */}
-            <div className="space-y-1.5 min-w-0">
-              <div className="flex items-center gap-3 flex-wrap">
-                <h3 className="font-extrabold text-base sm:text-lg text-primary tracking-tight">
+            <div className="space-y-1 min-w-0">
+              <div className="flex items-center gap-2.5 flex-wrap">
+                <h3 className="font-extrabold text-sm sm:text-base text-primary tracking-tight">
                   {t('islamic.todayFastingStatus', "Today's Fasting Status")}
                 </h3>
                 {todayFast ? (
                   <span
-                    className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold border shadow-xs ${todayFast.status === 'completed'
+                    className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[11px] font-bold border shadow-xs ${todayFast.status === 'completed'
                       ? 'bg-emerald-500/20 text-emerald-600 dark:text-emerald-400 border-emerald-500/40'
                       : todayFast.status === 'fasting'
                         ? 'bg-amber-500/20 text-amber-600 dark:text-amber-400 border-amber-500/40'
                         : 'bg-rose-500/20 text-rose-600 dark:text-rose-400 border-rose-500/40'
                       }`}
                   >
-                    {todayFast.status === 'completed' && <Check className="w-3.5 h-3.5" />}
+                    {todayFast.status === 'completed' && <Check className="w-3 h-3" />}
                     {todayFast.status === 'completed'
                       ? t('islamic.fastCompleted', 'Fast Completed (Alhamdulillah)')
                       : todayFast.status === 'fasting'
@@ -683,7 +683,7 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
                         : t('islamic.fastStatuses.broken', 'Exempt / Broken')}
                   </span>
                 ) : (
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-subtle text-muted border border-theme">
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold bg-subtle text-muted border border-theme">
                     {t('islamic.notFasting', 'Not Fasting')}
                   </span>
                 )}
@@ -692,28 +692,28 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
               <div className="text-xs text-secondary font-medium">
                 {todayFast ? (
                   <div className="flex items-center gap-2 flex-wrap pt-0.5">
-                    <span className="font-bold text-accent px-2 py-0.5 rounded-lg bg-accent/10 border border-accent/20">
+                    <span className="font-bold text-accent px-1.5 py-0.5 rounded-md bg-accent/10 border border-accent/20 text-[11px]">
                       {t(
                         FAST_CATEGORIES.find((c) => c.id === todayFast.type)?.labelKey,
                         FAST_CATEGORIES.find((c) => c.id === todayFast.type)?.defaultName
                       )}
                     </span>
                     {todayFast.suhoorTime && (
-                      <span className="flex items-center gap-1 text-muted">
-                        <Sunrise className="w-3.5 h-3.5 text-amber-500" /> Suhoor: {todayFast.suhoorTime}
+                      <span className="flex items-center gap-1 text-muted text-[11px]">
+                        <Sunrise className="w-3 h-3 text-amber-500" /> Suhoor: {todayFast.suhoorTime}
                       </span>
                     )}
                     {todayFast.iftarTime && (
-                      <span className="flex items-center gap-1 text-muted">
-                        <Sunset className="w-3.5 h-3.5 text-indigo-400" /> Iftar: {todayFast.iftarTime}
+                      <span className="flex items-center gap-1 text-muted text-[11px]">
+                        <Sunset className="w-3 h-3 text-indigo-400" /> Iftar: {todayFast.iftarTime}
                       </span>
                     )}
                     {todayFast.notes && (
-                      <span className="italic text-secondary">· "{todayFast.notes}"</span>
+                      <span className="italic text-secondary text-[11px]">· "{todayFast.notes}"</span>
                     )}
                   </div>
                 ) : (
-                  <p className="text-muted">
+                  <p className="text-muted text-[11px]">
                     {formatDisplayDate(activeDate)} · Click a quick button to record today's fast.
                   </p>
                 )}
@@ -722,28 +722,28 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
           </div>
 
           {/* Quick Action Buttons */}
-          <div className="flex items-center gap-2.5 flex-wrap shrink-0">
+          <div className="flex items-center gap-2 flex-wrap shrink-0">
             <button
               type="button"
               onClick={() => handleQuickTodayFast('fasting')}
-              className={`px-4 py-2.5 text-xs font-bold rounded-xl border transition-all duration-200 cursor-pointer flex items-center gap-2 shadow-xs ${todayFast?.status === 'fasting'
-                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-400 shadow-md shadow-amber-500/25 ring-2 ring-amber-500/40 scale-102'
-                : 'bg-surface/90 hover:bg-surface text-secondary hover:text-primary border-theme hover:border-amber-500/40 hover:shadow-md'
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-xs ${todayFast?.status === 'fasting'
+                ? 'bg-gradient-to-r from-amber-500 to-orange-500 text-white border-amber-400 shadow-md shadow-amber-500/25 ring-2 ring-amber-500/40'
+                : 'bg-surface/90 hover:bg-surface text-secondary hover:text-primary border-theme hover:border-amber-500/40'
                 }`}
             >
-              <Sparkles className="w-4 h-4 text-amber-400" />
+              <Sparkles className="w-3.5 h-3.5 text-amber-400" />
               {t('islamic.fastingToday', 'Fasting Today')}
             </button>
 
             <button
               type="button"
               onClick={() => handleQuickTodayFast('completed')}
-              className={`px-4 py-2.5 text-xs font-bold rounded-xl border transition-all duration-200 cursor-pointer flex items-center gap-2 shadow-xs ${todayFast?.status === 'completed'
-                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-500 shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/40 scale-102'
-                : 'bg-surface/90 hover:bg-surface text-secondary hover:text-primary border-theme hover:border-emerald-500/40 hover:shadow-md'
+              className={`px-3 py-1.5 text-xs font-bold rounded-xl border transition-all duration-200 cursor-pointer flex items-center gap-1.5 shadow-xs ${todayFast?.status === 'completed'
+                ? 'bg-gradient-to-r from-emerald-600 to-teal-600 text-white border-emerald-500 shadow-md shadow-emerald-500/25 ring-2 ring-emerald-500/40'
+                : 'bg-surface/90 hover:bg-surface text-secondary hover:text-primary border-theme hover:border-emerald-500/40'
                 }`}
             >
-              <Check className="w-4 h-4 text-emerald-400" />
+              <Check className="w-3.5 h-3.5 text-emerald-400" />
               {t('islamic.fastCompleted', 'Fast Completed (Alhamdulillah)')}
             </button>
 
@@ -751,10 +751,10 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
               <button
                 type="button"
                 onClick={() => handleQuickTodayFast('none')}
-                className="p-2.5 text-xs font-bold rounded-xl bg-surface/90 hover:bg-rose-500/10 text-rose-500 hover:text-rose-600 border border-theme hover:border-rose-500/30 transition-all cursor-pointer shadow-xs"
+                className="p-1.5 text-xs font-bold rounded-xl bg-surface/90 hover:bg-rose-500/10 text-rose-500 hover:text-rose-600 border border-theme hover:border-rose-500/30 transition-all cursor-pointer shadow-xs"
                 title="Remove today's fast status"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-3.5 h-3.5" />
               </button>
             )}
           </div>
@@ -762,12 +762,12 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
       </div>
 
       {/* Sunnah & Prescribed Fasting Types Grid */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center justify-between gap-4 flex-wrap">
           <div>
             <div className="flex items-center gap-2">
               <div className="w-2 h-2 rounded-full bg-accent" />
-              <h3 className="text-base sm:text-lg font-bold text-primary">
+              <h3 className="text-base font-bold text-primary">
                 {t('islamic.sunnahGuideTitle', 'Sunnah Fasting Recommendations')}
               </h3>
             </div>
@@ -778,7 +778,7 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
         </div>
 
         {/* 3x3 Luxury Responsive Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3.5 sm:gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2.5 sm:gap-3">
           {FAST_CATEGORIES.map((cat) => {
             const count =
               fastSummary.breakdown?.[cat.id] ||
@@ -791,38 +791,38 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
                 key={cat.id}
                 type="button"
                 onClick={() => handleOpenCreateFastModal(cat.id)}
-                className={`relative overflow-hidden p-4 sm:p-4.5 rounded-2xl bg-surface/90 border border-theme text-start flex flex-col justify-between space-y-3.5 group cursor-pointer transition-all duration-300 hover:-translate-y-1 hover:shadow-lg ${theme.borderGlow} ${theme.hover}`}
+                className={`relative overflow-hidden p-3 sm:p-3.5 rounded-xl bg-surface/90 border border-theme text-start flex flex-col justify-between space-y-2.5 group cursor-pointer transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${theme.borderGlow} ${theme.hover}`}
               >
                 {/* Subtle Card Background Glow */}
                 <div
-                  className={`absolute top-0 right-0 w-32 h-32 bg-gradient-to-bl ${theme.gradient} rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform duration-500`}
+                  className={`absolute top-0 right-0 w-28 h-28 bg-gradient-to-bl ${theme.gradient} rounded-full blur-xl pointer-events-none group-hover:scale-125 transition-transform duration-500`}
                 />
 
-                <div className="relative z-10 flex items-start justify-between gap-3 w-full">
+                <div className="relative z-10 flex items-start justify-between gap-2 w-full">
                   <div
-                    className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all duration-300 group-hover:scale-110 shadow-xs ${theme.iconBox}`}
+                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all duration-200 group-hover:scale-105 shadow-xs ${theme.iconBox}`}
                   >
-                    <IconComponent className="w-5 h-5" />
+                    <IconComponent className="w-4 h-4" />
                   </div>
                   <span
-                    className={`px-2.5 py-0.5 rounded-full text-[11px] font-extrabold border transition-all ${theme.badge}`}
+                    className={`px-2 py-0.5 rounded-full text-[10px] font-extrabold border transition-all ${theme.badge}`}
                   >
                     {count} {count === 1 ? 'done' : 'done'}
                   </span>
                 </div>
 
-                <div className="relative z-10 space-y-1">
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="text-sm font-bold text-primary block truncate group-hover:text-accent transition-colors">
+                <div className="relative z-10 space-y-0.5">
+                  <div className="flex items-center justify-between gap-1.5">
+                    <span className="text-xs font-bold text-primary block truncate group-hover:text-accent transition-colors">
                       {t(cat.shortKey, cat.defaultName)}
                     </span>
-                    <ArrowRight className="w-3.5 h-3.5 text-muted opacity-0 -translate-x-2 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
+                    <ArrowRight className="w-3 h-3 text-muted opacity-0 -translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 transition-all duration-200" />
                   </div>
-                  <span className="text-xs text-secondary block line-clamp-1">
+                  <span className="text-[11px] text-secondary block line-clamp-1">
                     {cat.desc}
                   </span>
                   {cat.virtue && (
-                    <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-md border mt-1 ${theme.pill}`}>
+                    <span className={`inline-block text-[9px] font-semibold px-1.5 py-0.5 rounded border mt-0.5 ${theme.pill}`}>
                       {cat.virtue}
                     </span>
                   )}
@@ -832,6 +832,7 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
           })}
         </div>
       </div>
+
 
       {/* Fasting History & Logs Section */}
       <Card
