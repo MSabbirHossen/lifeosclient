@@ -315,7 +315,7 @@ export const Dashboard = ({ selectedDate }) => {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-2 sm:gap-2.5">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-2.5">
           {['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((prayer, idx) => {
             const status = salahMap[prayer] || 'pending';
             const config = SALAH_STATUS_CONFIG[status] || SALAH_STATUS_CONFIG.pending;
@@ -327,7 +327,7 @@ export const Dashboard = ({ selectedDate }) => {
                 type="button"
                 onClick={() => handleCycleSalah(prayer)}
                 className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between transition-all cursor-pointer hover:scale-[1.02] active:scale-95 ${
-                  isLastOnMobile ? 'col-span-2 sm:col-span-1' : ''
+                  isLastOnMobile ? 'col-span-2 sm:col-span-1 md:col-span-1' : ''
                 } ${config.class}`}
                 title={`Click to cycle status: ${prayer}`}
               >
@@ -552,13 +552,12 @@ export const Dashboard = ({ selectedDate }) => {
           <Card
             hover
             onClick={() => navigate('/journal')}
-            title={t('reflection.guidedReflection')}
-            subtitle={t('dashboard.promptOfDay')}
+            title={t('reflection.guidedReflection', 'Guided Self-Reflection')}
+            subtitle={t('dashboard.promptOfDay', 'Prompt of the Day')}
             icon={BookOpen}
-            badge={<Badge variant="primary" size="xs">{t('nav.reflection')}</Badge>}
             action={
               <Button variant="ghost" size="xs" onClick={() => navigate('/journal')}>
-                {t('nav.reflection')} <ArrowRight className="w-3 h-3 ml-1" />
+                {t('nav.reflection', 'Reflection & Journal')} <ArrowRight className="w-3 h-3 ml-1" />
               </Button>
             }
           >
@@ -567,7 +566,7 @@ export const Dashboard = ({ selectedDate }) => {
                 <Sparkles className="w-3 h-3 mr-1" /> {summary.prompt?.category || 'Self-Growth'}
               </Badge>
               <p className="text-sm font-extrabold text-primary italic leading-relaxed">
-                "{summary.prompt?.question}"
+                "{summary.prompt?.question || 'What is one key win you achieved today, and what habits made it possible?'}"
               </p>
 
               {summary.journal && summary.journal.promptAnswer ? (
@@ -582,7 +581,7 @@ export const Dashboard = ({ selectedDate }) => {
                   icon={Plus}
                   onClick={() => setIsReflectionModalOpen(true)}
                 >
-                  {t('reflection.saveReflection')}
+                  {t('reflection.saveReflection', 'Save Daily Reflection')}
                 </Button>
               )}
             </div>
@@ -662,7 +661,7 @@ export const Dashboard = ({ selectedDate }) => {
                       <button
                         type="button"
                         onClick={(e) => {
-                          e.stopPropagation();
+                           e.stopPropagation();
                           handleToggleFastToday('fasting', 'nafl');
                         }}
                         className="flex-1 py-1.5 px-2.5 rounded-lg text-xs font-bold bg-amber-500/20 text-amber-700 dark:text-amber-300 hover:bg-amber-500/30 border border-amber-500/30 transition-all cursor-pointer text-center"
@@ -747,13 +746,12 @@ export const Dashboard = ({ selectedDate }) => {
           <Card
             hover
             onClick={() => navigate('/islamic')}
-            title={t('dashboard.spiritualAnchor')}
-            subtitle={t('dashboard.dailyIslamicWisdom')}
+            title={t('dashboard.spiritualAnchor', 'Spiritual Anchor')}
+            subtitle={t('dashboard.dailyIslamicWisdom', 'Daily Islamic Wisdom')}
             icon={Compass}
-            badge={<Badge variant="success" size="xs">{t('nav.islamic')}</Badge>}
             action={
               <Button variant="ghost" size="xs" onClick={() => navigate('/islamic')}>
-                {t('nav.islamic')} <ArrowRight className="w-3 h-3 ml-1" />
+                {t('nav.islamic', 'Islamic & Deen Hub')} <ArrowRight className="w-3 h-3 ml-1" />
               </Button>
             }
           >
