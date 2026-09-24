@@ -10,7 +10,8 @@ import { Badge } from '../components/Badge';
 import { LoadingScreen } from '../components/LoadingScreen';
 import { DateInput } from '../components/DateInput';
 import api from '../utils/api';
-import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete, notifyGuestAction } from '../utils/alerts';
+import { useAuth } from '../context/AuthContext';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import {
   GraduationCap,
@@ -32,7 +33,9 @@ import {
 
 export const StudyTracker = ({ selectedDate }) => {
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const activeDate = selectedDate || getFormattedDate();
+
 
   const [sessions, setSessions] = useState([]);
   const [topics, setTopics] = useState([]);
@@ -238,22 +241,40 @@ export const StudyTracker = ({ selectedDate }) => {
     e.preventDefault();
     if (!subject.trim()) return;
 
+    const payload = {
+      date: sessionDate || activeDate,
+      subject: subject.trim(),
+      resource: resource.trim(),
+      startTime: startTime || undefined,
+      endTime: endTime || undefined,
+      topicId: selectedTopicId || undefined,
+      durationMinutes: Number(durationMinutes) || 45,
+      progressPercent: Number(progressPercent) || 0,
+      goalId: selectedGoalId || undefined,
+      habitId: selectedHabitId || undefined,
+      notes: notes.trim(),
+    };
+
+    if (!user) {
+      const mockSession = {
+        _id: editingSessionId || `guest-session-${Date.now()}`,
+        ...payload,
+        createdAt: new Date().toISOString(),
+      };
+      if (editingSessionId) {
+        setSessions((prev) => prev.map((s) => (s._id === editingSessionId ? mockSession : s)));
+        notifyGuestAction('Study session', 'updated');
+      } else {
+        setSessions((prev) => [mockSession, ...prev]);
+        notifyGuestAction('Study session', 'logged');
+      }
+      setIsSessionModalOpen(false);
+      setEditingSessionId(null);
+      return;
+    }
+
     setSavingSession(true);
     try {
-      const payload = {
-        date: sessionDate || activeDate,
-        subject: subject.trim(),
-        resource: resource.trim(),
-        startTime: startTime || undefined,
-        endTime: endTime || undefined,
-        topicId: selectedTopicId || undefined,
-        durationMinutes: Number(durationMinutes) || 45,
-        progressPercent: Number(progressPercent) || 0,
-        goalId: selectedGoalId || undefined,
-        habitId: selectedHabitId || undefined,
-        notes: notes.trim(),
-      };
-
       if (editingSessionId) {
         const res = await api.put(`/study/${editingSessionId}`, payload);
         setIsSessionModalOpen(false);
@@ -283,20 +304,45 @@ export const StudyTracker = ({ selectedDate }) => {
     e.preventDefault();
     if (!topicSubject.trim() || !topicTitle.trim()) return;
 
+    const payload = {
+      subject: topicSubject.trim(),
+      title: topicTitle.trim(),
+      status: topicStatus,
+      totalChapters: Number(totalChapters) || 1,
+      completedChapters: Number(completedChapters) || 0,
+      subtopics: subtopicsList,
+      targetDate: topicTargetDate || undefined,
+      linkedGoalId: topicGoalId || undefined,
+      notes: topicNotes.trim(),
+    };
+
+    if (!user) {
+      const mockTopic = {
+        _id: editingTopicId || `guest-topic-${Date.now()}`,
+        ...payload,
+        createdAt: new Date().toISOString(),
+      };
+      if (editingTopicId) {
+        setTopics((prev) => prev.map((t) => (t._id === editingTopicId ? mockTopic : t)));
+        notifyGuestAction('Study topic', 'updated');
+      } else {
+        setTopics((prev) => [mockTopic, ...prev]);
+        notifyGuestAction('Study topic', 'created');
+      }
+      setIsTopicModalOpen(false);
+      setEditingTopicId(null);
+      setTopicSubject('');
+      setTopicTitle('');
+      setTotalChapters('');
+      setCompletedChapters('');
+      setSubtopicsList([]);
+      setNewSubtopicInput('');
+      setTopicNotes('');
+      return;
+    }
+
     setSavingTopic(true);
     try {
-      const payload = {
-        subject: topicSubject.trim(),
-        title: topicTitle.trim(),
-        status: topicStatus,
-        totalChapters: Number(totalChapters) || 1,
-        completedChapters: Number(completedChapters) || 0,
-        subtopics: subtopicsList,
-        targetDate: topicTargetDate || undefined,
-        linkedGoalId: topicGoalId || undefined,
-        notes: topicNotes.trim(),
-      };
-
       if (editingTopicId) {
         const res = await api.put(`/study/topics/${editingTopicId}`, payload);
         setIsTopicModalOpen(false);
@@ -323,7 +369,7 @@ export const StudyTracker = ({ selectedDate }) => {
       fetchData(false);
     } catch (err) {
       console.error('Failed to plan topic', err);
-      notifyError(err, 'Failed to save study topic');
+      notifyError(err, 'Failed to save topic');
     } finally {
       setSavingTopic(false);
     }
@@ -343,6 +389,11 @@ export const StudyTracker = ({ selectedDate }) => {
         return { ...t, completedChapters: newCompleted, status: newStatus };
       })
     );
+
+    if (!user) {
+      notifyGuestAction('Topic progress', delta > 0 ? '+1 Chapter completed' : 'progress adjusted');
+      return;
+    }
 
     try {
       await api.put(`/study/topics/${topicId}`, { deltaChapter: delta });
@@ -372,6 +423,11 @@ export const StudyTracker = ({ selectedDate }) => {
       prev.map((t) => (t._id === topicId ? { ...t, subtopics: updatedSubtopics } : t))
     );
 
+    if (!user) {
+      notifyGuestAction('Subtopic', 'toggled');
+      return;
+    }
+
     try {
       await api.put(`/study/topics/${topicId}`, { subtopics: updatedSubtopics });
       fetchData(false);
@@ -387,6 +443,11 @@ export const StudyTracker = ({ selectedDate }) => {
     setTopics((prev) =>
       prev.map((t) => (t._id === topicId ? { ...t, status: newStatus } : t))
     );
+
+    if (!user) {
+      notifyGuestAction('Topic status', `changed to ${newStatus.replace('_', ' ')}`);
+      return;
+    }
 
     try {
       await api.put(`/study/topics/${topicId}`, { status: newStatus });
@@ -409,6 +470,11 @@ export const StudyTracker = ({ selectedDate }) => {
 
     setSessions((prev) => prev.filter((s) => s._id !== sessionId));
 
+    if (!user) {
+      notifyGuestAction('Study session', 'deleted');
+      return;
+    }
+
     try {
       await api.delete(`/study/${sessionId}`);
       notifyDeleted('Study session');
@@ -427,6 +493,11 @@ export const StudyTracker = ({ selectedDate }) => {
 
     setTopics((prev) => prev.filter((t) => t._id !== topicId));
 
+    if (!user) {
+      notifyGuestAction('Study topic', 'deleted');
+      return;
+    }
+
     try {
       await api.delete(`/study/topics/${topicId}`);
       notifyDeleted('Study topic');
@@ -437,6 +508,7 @@ export const StudyTracker = ({ selectedDate }) => {
       fetchData(false);
     }
   };
+
 
   const totalMinutes = sessions.reduce((sum, s) => sum + (s.durationMinutes || 0), 0);
   const completedTopics = topics.filter((t) => t.status === 'completed').length;

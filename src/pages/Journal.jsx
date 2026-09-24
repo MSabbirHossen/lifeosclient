@@ -8,7 +8,8 @@ import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
 import { LoadingScreen } from '../components/LoadingScreen';
 import api from '../utils/api';
-import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, confirmDelete } from '../utils/alerts';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, confirmDelete, notifyGuestAction } from '../utils/alerts';
+import { useAuth } from '../context/AuthContext';
 import { DateInput } from '../components/DateInput';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import { GuidedReflectionModal } from '../components/GuidedReflectionModal';
@@ -39,8 +40,10 @@ const MOOD_OPTIONS = [
 
 export const Journal = ({ selectedDate }) => {
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const [entries, setEntries] = useState([]);
   const [loading, setLoading] = useState(true);
+
   const [prompt, setPrompt] = useState(null);
   const [loadingPrompt, setLoadingPrompt] = useState(false);
 
@@ -147,6 +150,7 @@ export const Journal = ({ selectedDate }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     const payload = {
       date: formDate,
       summary,
@@ -158,6 +162,23 @@ export const Journal = ({ selectedDate }) => {
       promptQuestion: formPromptQuestion,
       promptAnswer,
     };
+
+    if (!user) {
+      const mockEntry = {
+        _id: editingEntry?._id || `guest-journal-${Date.now()}`,
+        ...payload,
+        createdAt: new Date().toISOString(),
+      };
+      if (editingEntry) {
+        setEntries((prev) => prev.map((item) => (item._id === editingEntry._id ? mockEntry : item)));
+        notifyGuestAction('Journal entry', 'updated');
+      } else {
+        setEntries((prev) => [mockEntry, ...prev]);
+        notifyGuestAction('Journal entry', 'created');
+      }
+      setIsModalOpen(false);
+      return;
+    }
 
     try {
       if (editingEntry) {
@@ -181,6 +202,14 @@ export const Journal = ({ selectedDate }) => {
 
     const isConfirmed = await confirmDelete('Journal Entry');
     if (!isConfirmed) return;
+
+    setEntries((prev) => prev.filter((item) => item._id !== targetId));
+
+    if (!user) {
+      notifyGuestAction('Journal entry', 'deleted');
+      setDeleteId(null);
+      return;
+    }
 
     try {
       await api.delete(`/journal/${targetId}`);

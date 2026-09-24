@@ -7,7 +7,7 @@ import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { useLanguage } from '../context/LanguageContext';
 import api from '../utils/api';
-import { notifyUpdated, notifyError, showSuccessToast } from '../utils/alerts';
+import { notifyUpdated, notifyError, showSuccessToast, notifyGuestAction } from '../utils/alerts';
 import { Link } from 'react-router-dom';
 import {
   Settings as SettingsIcon,
@@ -138,11 +138,19 @@ export const Settings = () => {
 
   const handleSaveSettings = async (e) => {
     e.preventDefault();
-    setSaving(true);
-    setSaveSuccess(false);
 
     const resolvedCurrency = (isCustom ? customCurrency.trim().toUpperCase() : currency) || 'USD';
     localStorage.setItem('lifeos_currency', resolvedCurrency);
+
+    if (!user) {
+      notifyGuestAction('Settings', 'saved locally for preview');
+      setSaveSuccess(true);
+      setTimeout(() => setSaveSuccess(false), 3000);
+      return;
+    }
+
+    setSaving(true);
+    setSaveSuccess(false);
 
     try {
       const payload = {
@@ -171,6 +179,11 @@ export const Settings = () => {
   };
 
   const handleExportData = async () => {
+    if (!user) {
+      notifyGuestAction('Account data export', 'requires sign in');
+      return;
+    }
+
     setExportLoading(true);
     try {
       const res = await api.get('/backup/export');
@@ -193,6 +206,7 @@ export const Settings = () => {
       setExportLoading(false);
     }
   };
+
 
   return (
     <div className="space-y-6 sm:space-y-8 animate-fade-in max-w-4xl">

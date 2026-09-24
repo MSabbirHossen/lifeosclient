@@ -9,7 +9,8 @@ import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
 import { LoadingScreen } from '../components/LoadingScreen';
 import api, { getLocalCache, setLocalCache } from '../utils/api';
-import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, confirmDelete } from '../utils/alerts';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, confirmDelete, notifyGuestAction } from '../utils/alerts';
+import { useAuth } from '../context/AuthContext';
 import { DateInput } from '../components/DateInput';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import {
@@ -38,7 +39,9 @@ const CATEGORY_COLORS = {
 
 export const TimeTracker = ({ selectedDate }) => {
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const currentDate = selectedDate || getFormattedDate();
+
 
   const [logs, setLogs] = useState(() => getLocalCache(`/time-tracker/logs?date=${currentDate}`)?.data || []);
   const [summary, setSummary] = useState(() => getLocalCache(`/time-tracker/summary?date=${currentDate}`)?.data || { totalMinutes: 0, byCategory: {} });
@@ -153,7 +156,6 @@ export const TimeTracker = ({ selectedDate }) => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    setSaving(true);
     const payload = {
       date: formDate,
       category,
@@ -165,6 +167,24 @@ export const TimeTracker = ({ selectedDate }) => {
       notes: notes.trim(),
     };
 
+    if (!user) {
+      const mockLog = {
+        _id: editingLog?._id || `guest-log-${Date.now()}`,
+        ...payload,
+        createdAt: new Date().toISOString(),
+      };
+      if (editingLog) {
+        setLogs((prev) => prev.map((l) => (l._id === editingLog._id ? mockLog : l)));
+        notifyGuestAction('Time log', 'updated');
+      } else {
+        setLogs((prev) => [...prev, mockLog]);
+        notifyGuestAction('Time log', 'created');
+      }
+      setIsModalOpen(false);
+      return;
+    }
+
+    setSaving(true);
     try {
       if (editingLog) {
         const res = await api.put(`/time-tracker/logs/${editingLog._id}`, payload);
@@ -195,6 +215,11 @@ export const TimeTracker = ({ selectedDate }) => {
     if (!confirmed) return;
 
     setLogs((prev) => prev.filter((l) => l._id !== logId));
+
+    if (!user) {
+      notifyGuestAction('Time log', 'deleted');
+      return;
+    }
 
     try {
       await api.delete(`/time-tracker/logs/${logId}`);

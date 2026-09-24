@@ -4,8 +4,9 @@ import { Button } from './Button';
 import { Badge } from './Badge';
 import { Sparkles, Shuffle, Smile, Zap, Heart, CheckCircle2, Save, BookOpen } from 'lucide-react';
 import api from '../utils/api';
-import { notifyCreated, notifyError } from '../utils/alerts';
+import { notifyCreated, notifyError, notifyGuestAction } from '../utils/alerts';
 import { useLanguage } from '../context/LanguageContext';
+import { useAuth } from '../context/AuthContext';
 
 const GUIDED_QUESTIONS = [
   { question: "What is one small victory you achieved today that you are proud of?", category: "Gratitude" },
@@ -42,6 +43,7 @@ const GUIDED_QUESTIONS = [
 
 export const GuidedReflectionModal = ({ isOpen, onClose, selectedDate, onSaveSuccess }) => {
   const { t } = useLanguage();
+  const { user } = useAuth();
 
   const MOODS = [
     { label: t('reflection.moodGreat'), emoji: '😊', value: 'great', color: 'border-emerald-500 bg-emerald-500/10 text-emerald-500' },
@@ -96,7 +98,14 @@ export const GuidedReflectionModal = ({ isOpen, onClose, selectedDate, onSaveSuc
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!user) {
+      notifyGuestAction('Guided reflection', 'logged');
+      if (onSaveSuccess) onSaveSuccess();
+      onClose();
+      return;
+    }
     setSaving(true);
+
     try {
       await api.post('/journal', {
         date: selectedDate,

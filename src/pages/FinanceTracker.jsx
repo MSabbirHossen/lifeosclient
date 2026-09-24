@@ -9,7 +9,7 @@ import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
 import { LoadingScreen } from '../components/LoadingScreen';
 import api, { getLocalCache, setLocalCache } from '../utils/api';
-import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete, notifyGuestAction } from '../utils/alerts';
 import { useAuth } from '../context/AuthContext';
 import { DateInput } from '../components/DateInput';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
@@ -467,20 +467,37 @@ export const FinanceTracker = ({ selectedDate }) => {
     e.preventDefault();
     if (!amount || isNaN(Number(amount))) return;
 
+    const payload = {
+      date: formDate,
+      type: formType,
+      title: title.trim() || (subCategory ? `${category} (${subCategory})` : category),
+      amount: Number(amount),
+      currency,
+      category,
+      subCategory: subCategory || undefined,
+      paymentMethod,
+      notes: notes.trim(),
+    };
+
+    if (!user) {
+      const mockTx = {
+        _id: editingTransactionId || `guest-tx-${Date.now()}`,
+        ...payload,
+        createdAt: new Date().toISOString(),
+      };
+      if (editingTransactionId) {
+        setTransactions((prev) => prev.map((t) => (t._id === editingTransactionId ? mockTx : t)));
+        notifyGuestAction('Transaction', 'updated');
+      } else {
+        setTransactions((prev) => [mockTx, ...prev]);
+        notifyGuestAction('Transaction', 'recorded');
+      }
+      setIsTransactionModalOpen(false);
+      return;
+    }
+
     setSavingTx(true);
     try {
-      const payload = {
-        date: formDate,
-        type: formType,
-        title: title.trim() || (subCategory ? `${category} (${subCategory})` : category),
-        amount: Number(amount),
-        currency,
-        category,
-        subCategory: subCategory || undefined,
-        paymentMethod,
-        notes: notes.trim(),
-      };
-
       if (editingTransactionId) {
         const res = await api.put(`/finance/transactions/${editingTransactionId}`, payload);
         setIsTransactionModalOpen(false);
@@ -509,18 +526,44 @@ export const FinanceTracker = ({ selectedDate }) => {
     e.preventDefault();
     if (!fromAmount || isNaN(Number(fromAmount))) return;
 
+    const numFromAmount = Number(fromAmount);
+    const numToAmount = toAmount && !isNaN(Number(toAmount))
+      ? Number(toAmount)
+      : numFromAmount;
+
+    const isCrossCurrency = fromCurrency !== toCurrency;
+    const autoTitle = isCrossCurrency
+      ? `Exchange: ${numFromAmount} ${fromCurrency} → ${numToAmount} ${toCurrency}`
+      : `Transfer: ${fromMethod} → ${toMethod}`;
+
+    const transferPayload = {
+      date: transferDate,
+      title: transferTitle.trim() || autoTitle,
+      type: 'transfer',
+      fromPaymentMethod: fromMethod,
+      toPaymentMethod: toMethod,
+      fromCurrency,
+      toCurrency,
+      fromAmount: numFromAmount,
+      toAmount: numToAmount,
+      amount: numFromAmount,
+      notes: transferNotes.trim(),
+    };
+
+    if (!user) {
+      const mockTransfer = {
+        _id: `guest-transfer-${Date.now()}`,
+        ...transferPayload,
+        createdAt: new Date().toISOString(),
+      };
+      setTransactions((prev) => [mockTransfer, ...prev]);
+      setIsTransferModalOpen(false);
+      notifyGuestAction('Transfer', 'recorded');
+      return;
+    }
+
     setSavingTransfer(true);
     try {
-      const numFromAmount = Number(fromAmount);
-      const numToAmount = toAmount && !isNaN(Number(toAmount))
-        ? Number(toAmount)
-        : numFromAmount;
-
-      const isCrossCurrency = fromCurrency !== toCurrency;
-      const autoTitle = isCrossCurrency
-        ? `Exchange: ${numFromAmount} ${fromCurrency} → ${numToAmount} ${toCurrency}`
-        : `Transfer: ${fromMethod} → ${toMethod}`;
-
       const res = await api.post('/finance/transfer', {
         date: transferDate,
         title: transferTitle.trim() || autoTitle,
@@ -555,6 +598,11 @@ export const FinanceTracker = ({ selectedDate }) => {
     setDeleteId(null);
     setTransactions((prev) => prev.filter((tx) => tx._id !== targetId));
 
+    if (!user) {
+      notifyGuestAction('Transaction', 'deleted');
+      return;
+    }
+
     try {
       await api.delete(`/finance/transactions/${targetId}`);
       notifyDeleted('Transaction');
@@ -565,6 +613,7 @@ export const FinanceTracker = ({ selectedDate }) => {
       fetchFinanceData(false);
     }
   };
+
 
   // Filtered Ledger List
   const filteredTransactions = transactions.filter((tx) => {
