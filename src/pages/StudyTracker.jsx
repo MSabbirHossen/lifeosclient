@@ -520,13 +520,13 @@ export const StudyTracker = ({ selectedDate }) => {
   };
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fade-in">
+    <div className="space-y-4 sm:space-y-5 animate-fade-in">
       <PageHeader
         category={t('nav.study', 'Learning & Mastery')}
         title={t('study.title', 'Study & Learning Tracker')}
         description={`${t('study.subtitle', 'Organize subjects, log study pomodoros, schedule spaced repetition, and master topics.')} (${formatDisplayDate(activeDate)})`}
         action={
-          <div className="flex items-center gap-2.5">
+          <div className="flex items-center gap-2">
             <Button
               variant="secondary"
               size="md"
@@ -548,7 +548,7 @@ export const StudyTracker = ({ selectedDate }) => {
       />
 
       {/* Top Stats Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-3.5">
         <StatCard
           title="Study Time Today"
           value={`${Math.floor(totalMinutes / 60)}h ${totalMinutes % 60}m`}
@@ -579,17 +579,17 @@ export const StudyTracker = ({ selectedDate }) => {
         subtitle="Manage chapter syllabus, monitor remaining progress, and check off sub-topics"
         icon={ListTodo}
         action={
-          <Button variant="outline" size="sm" icon={Plus} onClick={openCreateTopicModal}>
+          <Button variant="outline" size="xs" icon={Plus} onClick={openCreateTopicModal} className="text-xs font-bold">
             Add Chapter / Topic
           </Button>
         }
       >
         {topics.length === 0 ? (
-          <div className="p-6 text-center text-xs text-secondary italic bg-subtle/50 rounded-xl border border-dashed border-theme mt-2">
+          <div className="p-3.5 sm:p-4 text-center text-xs text-secondary bg-subtle/50 rounded-xl border border-dashed border-theme mt-1">
             No chapter topics planned yet. Click "Add Chapter / Topic" to organize your curriculum and eliminate backlogs.
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-3">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-3.5 mt-2">
             {topics.map((top) => {
               const statusColors = {
                 backlog: 'warning',

@@ -237,7 +237,7 @@ export const TimeTracker = ({ selectedDate }) => {
   );
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fade-in">
+    <div className="space-y-4 sm:space-y-5 animate-fade-in">
       <PageHeader
         category={t('categories.time', 'Time Distribution')}
         title={t('time.title', 'Time Tracker')}
@@ -250,7 +250,7 @@ export const TimeTracker = ({ selectedDate }) => {
       />
 
       {/* Top Stat Summary Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
         <StatCard
           title={t('time.totalFocusTime', 'Total Time Logged')}
           value={`${Math.floor((summary.totalMinutes || 0) / 60)}h ${(summary.totalMinutes || 0) % 60}m`}
@@ -285,7 +285,7 @@ export const TimeTracker = ({ selectedDate }) => {
 
       {/* Category Breakdown Chips */}
       <Card title={t('time.categoryBreakdown', 'Category Distribution')} subtitle={t('time.timeAllocationCategory', 'Time allocation breakdown across categories')}>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 mt-2">
+        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-2.5 mt-1">
           {CATEGORIES.map((cat) => {
             const mins = summary.byCategory?.[cat] || 0;
             const hours = Math.floor(mins / 60);
@@ -293,12 +293,12 @@ export const TimeTracker = ({ selectedDate }) => {
             return (
               <div
                 key={cat}
-                className="p-3.5 rounded-2xl bg-subtle border border-theme flex flex-col justify-between"
+                className="p-2 sm:p-2.5 rounded-xl bg-subtle border border-theme flex flex-col justify-between"
               >
                 <Badge variant={CATEGORY_COLORS[cat] || 'neutral'} size="xs">
                   {cat}
                 </Badge>
-                <div className="mt-2 text-base font-extrabold text-primary tracking-tight">
+                <div className="mt-1 text-xs sm:text-sm font-black text-primary tracking-tight">
                   {hours > 0 ? `${hours}h ${remainderMins}m` : `${mins}m`}
                 </div>
               </div>
@@ -308,9 +308,9 @@ export const TimeTracker = ({ selectedDate }) => {
       </Card>
 
       {/* Time Logs Timeline */}
-      <div className="space-y-4">
+      <div className="space-y-3">
         <div className="flex items-center justify-between">
-          <h2 className="text-lg font-bold text-primary tracking-tight">{t('time.todaysLogs', "Today's Time Blocks")}</h2>
+          <h2 className="text-base sm:text-lg font-bold text-primary tracking-tight">{t('time.todaysLogs', "Today's Time Blocks")}</h2>
           <span className="text-xs font-semibold text-secondary">{logs.length} blocks</span>
         </div>
 
@@ -325,7 +325,7 @@ export const TimeTracker = ({ selectedDate }) => {
             onAction={openCreateModal}
           />
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-5">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4">
             {logs.map((log) => (
               <Card
                 key={log._id}
