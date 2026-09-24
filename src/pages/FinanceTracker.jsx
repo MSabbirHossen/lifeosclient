@@ -35,6 +35,7 @@ import {
 const NESTED_EXPENSE_CATEGORIES = {
   'Food & Dining': ['Breakfast', 'Lunch', 'Dinner', 'Sahri', 'Iftar', 'Groceries', 'Restaurants', 'Coffee & Snacks', 'Delivery'],
   'Religion & Deen': ['Umrah & Hajj', 'Fitra', 'Zakat', 'Sadaqah', 'Islamic Books', 'Donations'],
+  'Giving Loan & Qard Hasan': ['Qard Hasan (Karze Hasana)', 'Giving Personal Loan', 'Giving Family/Friends Loan', 'Business Loan Disbursed', 'Emergency Lending'],
   'Technology & Cloud': ['Cloud & Hosting', 'AI Tools', 'Software Subscriptions', 'Hardware & Gadgets', 'Domains'],
   'Housing & Rent': ['Rent', 'Maintenance', 'Furniture', 'Home Improvement'],
   'Bills & Utilities': ['Electricity', 'Water', 'Internet', 'Mobile Recharge', 'Gas'],
@@ -46,8 +47,17 @@ const NESTED_EXPENSE_CATEGORIES = {
   'Other Expense': ['Miscellaneous', 'Uncategorized'],
 };
 
+const NESTED_INCOME_CATEGORIES = {
+  'Salary & Wages': ['Monthly Salary', 'Bonus & Incentives', 'Overtime', 'Allowances'],
+  'Freelance & Business': ['Client Projects', 'Consulting', 'Digital Sales', 'Contract Work'],
+  'Loan Payback & Return': ['Loan Repayment Received (Payback)', 'Qard Hasan (Karze Hasana) Returned', 'Personal Loan Payback', 'Refunds & Reimbursements'],
+  'Investments & Dividends': ['Stock Dividends', 'Profit Share', 'Real Estate / Rent', 'Savings Profit'],
+  'Gift & Support': ['Family Support', 'Gifts', 'Financial Aid'],
+  'Other Income': ['Miscellaneous', 'Uncategorized'],
+};
+
 const EXPENSE_CATEGORIES = Object.keys(NESTED_EXPENSE_CATEGORIES);
-const INCOME_CATEGORIES = ['Salary', 'Freelance & Business', 'Investments', 'Gift & Support', 'Other Income'];
+const INCOME_CATEGORIES = Object.keys(NESTED_INCOME_CATEGORIES);
 const PAYMENT_METHODS = ['Cash', 'Bank Transfer', 'Debit Card', 'Credit Card', 'Mobile Wallet (bKash/Nagad)', 'Other'];
 
 const METHOD_ICONS = {
@@ -338,8 +348,10 @@ export const FinanceTracker = ({ selectedDate }) => {
     setTitle('');
     setAmount('');
     setCurrency(defaultCurrency);
-    setCategory(type === 'income' ? 'Salary' : 'Food & Dining');
-    setSubCategory('Breakfast');
+    const defaultCat = type === 'income' ? 'Salary & Wages' : 'Food & Dining';
+    const subList = type === 'income' ? NESTED_INCOME_CATEGORIES[defaultCat] : NESTED_EXPENSE_CATEGORIES[defaultCat];
+    setCategory(defaultCat);
+    setSubCategory(subList && subList.length > 0 ? subList[0] : '');
     setPaymentMethod('Debit Card');
     setNotes('');
     setIsTransactionModalOpen(true);
@@ -1064,8 +1076,12 @@ export const FinanceTracker = ({ selectedDate }) => {
               <select
                 value={category}
                 onChange={(e) => {
-                  setCategory(e.target.value);
-                  const subList = NESTED_EXPENSE_CATEGORIES[e.target.value];
+                  const selectedCat = e.target.value;
+                  setCategory(selectedCat);
+                  const subList =
+                    formType === 'income'
+                      ? NESTED_INCOME_CATEGORIES[selectedCat]
+                      : NESTED_EXPENSE_CATEGORIES[selectedCat];
                   if (subList && subList.length > 0) setSubCategory(subList[0]);
                   else setSubCategory('');
                 }}
@@ -1079,7 +1095,8 @@ export const FinanceTracker = ({ selectedDate }) => {
               </select>
             </div>
 
-            {formType === 'expense' && NESTED_EXPENSE_CATEGORIES[category] && (
+            {((formType === 'income' && NESTED_INCOME_CATEGORIES[category]) ||
+              (formType === 'expense' && NESTED_EXPENSE_CATEGORIES[category])) && (
               <div>
                 <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
                   {t('finance.subcategory')}
@@ -1089,7 +1106,10 @@ export const FinanceTracker = ({ selectedDate }) => {
                   onChange={(e) => setSubCategory(e.target.value)}
                   className="select-base"
                 >
-                  {NESTED_EXPENSE_CATEGORIES[category].map((sub) => (
+                  {(formType === 'income'
+                    ? NESTED_INCOME_CATEGORIES[category]
+                    : NESTED_EXPENSE_CATEGORIES[category]
+                  ).map((sub) => (
                     <option key={sub} value={sub}>
                       {sub}
                     </option>
