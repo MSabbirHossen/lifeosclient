@@ -539,9 +539,9 @@ export const Settings = () => {
                 <div className="relative">
                   <input
                     type="number"
-                    min="500"
+                    min="0"
                     max="10000"
-                    step="50"
+                    step="1"
                     value={calorieGoal}
                     onChange={(e) => setCalorieGoal(e.target.value)}
                     className="input-base font-extrabold text-base pr-16"
@@ -596,8 +596,8 @@ export const Settings = () => {
                   <input
                     type="number"
                     step="0.1"
-                    min="30"
-                    max="250"
+                    min="0"
+                    max="500"
                     value={weightGoal}
                     onChange={(e) => setWeightGoal(e.target.value)}
                     className="input-base font-extrabold text-base pr-12"
@@ -653,9 +653,9 @@ export const Settings = () => {
                 <div className="relative">
                   <input
                     type="number"
-                    min="10"
+                    min="0"
                     max="1440"
-                    step="15"
+                    step="1"
                     value={studyMinutesGoal}
                     onChange={(e) => setStudyMinutesGoal(e.target.value)}
                     className="input-base font-extrabold text-base pr-16"

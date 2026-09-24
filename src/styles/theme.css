@@ -285,6 +285,16 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-text-muted);
 }
 
+/* Hide default browser number spin buttons to prevent overlap with custom unit labels */
+input[type="number"]::-webkit-inner-spin-button,
+input[type="number"]::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
 /* Explicit icon-offset classes for inputs with left/right icons */
 .input-with-icon-left,
 .input-base.input-with-icon-left,
