@@ -592,7 +592,7 @@ export const FitnessTracker = ({ selectedDate }) => {
       armCm: armInCm !== undefined && armInCm !== '' ? Number(armInCm) : undefined,
       shouldersCm: shouldersInCm !== undefined && shouldersInCm !== '' ? Number(shouldersInCm) : undefined,
       hipsCm: hipsInCm !== undefined && hipsInCm !== '' ? Number(hipsInCm) : undefined,
-      thighsCm: thighsInCm !== undefined && thighsInCm !== '' ? Number(thighsCm) : undefined,
+      thighsCm: thighsInCm !== undefined && thighsInCm !== '' ? Number(thighsInCm) : undefined,
       calvesCm: calvesInCm !== undefined && calvesInCm !== '' ? Number(calvesInCm) : undefined,
       neckCm: neckInCm !== undefined && neckInCm !== '' ? Number(neckInCm) : undefined,
       notes: mNotes.trim(),
