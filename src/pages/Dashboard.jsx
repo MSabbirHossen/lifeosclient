@@ -235,7 +235,7 @@ export const Dashboard = ({ selectedDate }) => {
   const currentCurrency = summary.finance?.currency || (user?.currency || localStorage.getItem('lifeos_currency') || 'USD').toUpperCase();
 
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fade-in">
+    <div className="space-y-4 sm:space-y-5 animate-fade-in">
       {/* Top Cockpit Header */}
       <PageHeader
         category={t('categories.overview', 'Command Center')}
@@ -344,7 +344,7 @@ export const Dashboard = ({ selectedDate }) => {
       </div>
 
       {/* Row 1: Bento Stat Strip */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-3.5">
         <StatCard
           title={t('dashboard.focusMinutes', 'Time Logged')}
           value={`${Math.floor((summary.time?.totalMinutes || 0) / 60)}h ${(summary.time?.totalMinutes || 0) % 60}m`}
@@ -380,9 +380,9 @@ export const Dashboard = ({ selectedDate }) => {
       </div>
 
       {/* Row 2: Main Asymmetrical Bento Grid */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 sm:gap-7">
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
         {/* Left 8-Cols: Calorie Engine, Fasting, & Time Timeline */}
-        <div className="lg:col-span-8 space-y-6 sm:space-y-7">
+        <div className="lg:col-span-8 space-y-4 sm:space-y-5">
           {/* Calorie Intake vs Expenditure Net Balance Engine Card */}
           <Card
             hover
@@ -403,32 +403,32 @@ export const Dashboard = ({ selectedDate }) => {
               </Button>
             }
           >
-            <div className="space-y-4 pt-1">
+            <div className="space-y-3 pt-0.5">
               {/* Dual-Bar Metrics Meter */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="p-3.5 rounded-2xl bg-amber-500/10 border border-amber-500/25">
-                  <span className="text-[11px] font-extrabold text-amber-950 dark:text-amber-300 uppercase tracking-wider block">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 sm:gap-3">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-amber-500/10 border border-amber-500/25">
+                  <span className="text-[10px] sm:text-[11px] font-extrabold text-amber-950 dark:text-amber-300 uppercase tracking-wider block">
                     {t('dashboard.caloriesToday')}
                   </span>
-                  <span className="text-2xl font-black text-primary mt-1 block">
+                  <span className="text-xl sm:text-2xl font-black text-primary mt-0.5 block">
                     {calorieIntake} <span className="text-xs font-semibold text-secondary">kcal</span>
                   </span>
                 </div>
 
-                <div className="p-3.5 rounded-2xl bg-rose-500/10 border border-rose-500/25">
-                  <span className="text-[11px] font-extrabold text-rose-950 dark:text-rose-300 uppercase tracking-wider block">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-rose-500/10 border border-rose-500/25">
+                  <span className="text-[10px] sm:text-[11px] font-extrabold text-rose-950 dark:text-rose-300 uppercase tracking-wider block">
                     {t('dashboard.burnedToday')}
                   </span>
-                  <span className="text-2xl font-black text-primary mt-1 block">
+                  <span className="text-xl sm:text-2xl font-black text-primary mt-0.5 block">
                     {calorieBurned} <span className="text-xs font-semibold text-secondary">kcal</span>
                   </span>
                 </div>
 
-                <div className={`p-3.5 rounded-2xl border ${isDeficit ? 'bg-emerald-500/10 border-emerald-500/25' : 'bg-purple-500/10 border-purple-500/25'}`}>
-                  <span className="text-[11px] font-extrabold uppercase tracking-wider block text-secondary">
+                <div className={`p-2.5 sm:p-3 rounded-xl border ${isDeficit ? 'bg-emerald-500/10 border-emerald-500/25' : 'bg-purple-500/10 border-purple-500/25'}`}>
+                  <span className="text-[10px] sm:text-[11px] font-extrabold uppercase tracking-wider block text-secondary">
                     {t('calories.energyBalance')}
                   </span>
-                  <span className={`text-2xl font-black mt-1 block ${isDeficit ? 'text-emerald-900 dark:text-emerald-300' : 'text-purple-950 dark:text-purple-300'}`}>
+                  <span className={`text-xl sm:text-2xl font-black mt-0.5 block ${isDeficit ? 'text-emerald-900 dark:text-emerald-300' : 'text-purple-950 dark:text-purple-300'}`}>
                     {netCalories} <span className="text-xs font-semibold text-secondary">/ {calorieGoal} kcal</span>
                   </span>
                 </div>
@@ -461,7 +461,7 @@ export const Dashboard = ({ selectedDate }) => {
           </Card>
 
           {/* 16:8 Fasting & Finance 2-Col Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
             {/* 16:8 Fasting Component */}
             <FastingTimer compact={true} />
 
@@ -480,16 +480,16 @@ export const Dashboard = ({ selectedDate }) => {
                 </Button>
               }
             >
-              <div className="space-y-3 pt-1">
-                <div className="p-3 rounded-xl bg-subtle border border-theme flex items-center justify-between">
+              <div className="space-y-2.5 pt-0.5">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-subtle border border-theme flex items-center justify-between">
                   <span className="text-xs font-bold text-secondary">{t('finance.todaysExpenses', "Today's Expenses")}</span>
-                  <span className="text-lg font-black text-[var(--color-danger)]">
+                  <span className="text-base sm:text-lg font-black text-[var(--color-danger)]">
                     {(summary.finance?.expensesToday || 0).toFixed(2)} {currentCurrency}
                   </span>
                 </div>
-                <div className="p-3 rounded-xl bg-subtle border border-theme flex items-center justify-between">
+                <div className="p-2.5 sm:p-3 rounded-xl bg-subtle border border-theme flex items-center justify-between">
                   <span className="text-xs font-bold text-secondary">{t('finance.monthToDate', 'Month to Date')}</span>
-                  <span className="text-base font-extrabold text-primary">
+                  <span className="text-sm sm:text-base font-extrabold text-primary">
                     {(summary.finance?.expensesMonth || 0).toFixed(2)} {currentCurrency}
                   </span>
                 </div>
@@ -513,20 +513,20 @@ export const Dashboard = ({ selectedDate }) => {
             }
           >
             {timeChartData.length === 0 ? (
-              <div className="h-44 flex flex-col items-center justify-center text-xs text-secondary italic bg-subtle/50 rounded-xl border border-dashed border-theme mt-2">
-                <Clock className="w-8 h-8 text-muted mb-2 stroke-1" />
+              <div className="h-36 sm:h-40 flex flex-col items-center justify-center text-xs text-secondary italic bg-subtle/50 rounded-xl border border-dashed border-theme mt-1.5">
+                <Clock className="w-7 h-7 text-muted mb-1.5 stroke-1" />
                 {t('time.noLogs', 'No time logs recorded for today')}
               </div>
             ) : (
-              <div className="h-56 w-full mt-2">
+              <div className="h-48 sm:h-52 w-full mt-1">
                 <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={timeChartData}
                       cx="50%"
                       cy="50%"
-                      innerRadius={60}
-                      outerRadius={90}
+                      innerRadius={55}
+                      outerRadius={80}
                       paddingAngle={4}
                       dataKey="value"
                     >
@@ -553,7 +553,7 @@ export const Dashboard = ({ selectedDate }) => {
         </div>
 
         {/* Right 4-Cols: Daily Reflection, Wisdom & Shortcuts */}
-        <div className="lg:col-span-4 space-y-6 sm:space-y-7">
+        <div className="lg:col-span-4 space-y-4 sm:space-y-5">
           {/* Guided Reflection Card with Shuffle Generator */}
           <Card
             hover
