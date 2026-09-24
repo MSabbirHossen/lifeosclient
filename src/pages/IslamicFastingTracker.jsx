@@ -7,7 +7,8 @@ import { Modal } from '../components/Modal';
 import { Badge } from '../components/Badge';
 import { LoadingScreen } from '../components/LoadingScreen';
 import api from '../utils/api';
-import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete, notifyGuestAction } from '../utils/alerts';
+import { useAuth } from '../context/AuthContext';
 import { DateInput } from '../components/DateInput';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import { notifyStreakUpdate } from '../utils/streakEvents';
@@ -240,7 +241,9 @@ const FAST_STATUSES = [
 export const IslamicFastingTracker = ({ selectedDate }) => {
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const activeDate = selectedDate || getFormattedDate();
+
 
   const [fastLogs, setFastLogs] = useState([]);
   const [fastSummary, setFastSummary] = useState({
@@ -326,6 +329,12 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
       }
     }
 
+    if (!user) {
+      notifyStreakUpdate();
+      notifyGuestAction('Fasting status', `set to ${status}`);
+      return;
+    }
+
     try {
       await api.post('/islamic/fasts', {
         date: activeDate,
@@ -371,18 +380,35 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
 
   const handleSaveFast = async (e) => {
     e.preventDefault();
+    const payload = {
+      date: fastDate,
+      type: fastType,
+      status: fastStatus,
+      suhoorTime: fastSuhoorTime.trim(),
+      iftarTime: fastIftarTime.trim(),
+      notes: fastNotes.trim(),
+    };
+
+    if (!user) {
+      const mockFast = {
+        _id: editingFastId || `guest-fast-${Date.now()}`,
+        ...payload,
+        createdAt: new Date().toISOString(),
+      };
+      setFastLogs((prev) => {
+        const filtered = prev.filter(
+          (f) => f.date !== fastDate && f._id !== (editingFastId || mockFast._id)
+        );
+        return [mockFast, ...filtered];
+      });
+      setIsFastModalOpen(false);
+      notifyGuestAction('Fast record', editingFastId ? 'updated' : 'created');
+      return;
+    }
+
     setIsSaving(true);
     setModalError('');
     try {
-      const payload = {
-        date: fastDate,
-        type: fastType,
-        status: fastStatus,
-        suhoorTime: fastSuhoorTime.trim(),
-        iftarTime: fastIftarTime.trim(),
-        notes: fastNotes.trim(),
-      };
-
       const res = await api.post('/islamic/fasts', payload);
 
       if (res.data) {
@@ -420,6 +446,11 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
 
     setFastLogs((prev) => prev.filter((f) => f._id !== fastId));
 
+    if (!user) {
+      notifyGuestAction('Fast record', 'deleted');
+      return;
+    }
+
     try {
       await api.delete(`/islamic/fasts/${fastId}`);
       notifyDeleted('Fast record');
@@ -431,6 +462,7 @@ export const IslamicFastingTracker = ({ selectedDate }) => {
       fetchData(false);
     }
   };
+
 
   // Filtered fast list
   const filteredFasts = useMemo(() => {

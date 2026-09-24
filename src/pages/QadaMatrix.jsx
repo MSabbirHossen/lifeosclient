@@ -27,7 +27,8 @@ import {
   Moon,
 } from 'lucide-react';
 import api from '../utils/api';
-import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete, notifyGuestAction } from '../utils/alerts';
+import { useAuth } from '../context/AuthContext';
 import { DateInput } from '../components/DateInput';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import { notifyStreakUpdate } from '../utils/streakEvents';
@@ -54,7 +55,9 @@ const PRAYER_META = {
 
 export const QadaMatrix = ({ selectedDate }) => {
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const activeDate = selectedDate || getFormattedDate();
+
   const [salahLogs, setSalahLogs] = useState([]);
   const [qadaData, setQadaData] = useState([]);
   const [vows, setVows] = useState([]);
@@ -118,6 +121,12 @@ export const QadaMatrix = ({ selectedDate }) => {
       return [...prev, { prayerName, salah: prayerName, status, date: activeDate }];
     });
 
+    if (!user) {
+      notifyStreakUpdate();
+      notifyGuestAction(`${prayerName} prayer`, `marked as ${status}`);
+      return;
+    }
+
     try {
       await api.post('/islamic/salah', {
         date: activeDate,
@@ -144,6 +153,11 @@ export const QadaMatrix = ({ selectedDate }) => {
       })
     );
 
+    if (!user) {
+      notifyGuestAction(`${prayerName} Qada`, increment > 0 ? '+1 completed' : 'progress adjusted');
+      return;
+    }
+
     try {
       await api.post('/islamic/qada', {
         prayerName,
@@ -157,6 +171,7 @@ export const QadaMatrix = ({ selectedDate }) => {
       fetchQadaData(); // Revert on failure
     }
   };
+
 
   const calculateDays = (startStr, endStr) => {
     if (!startStr || !endStr) return 0;
@@ -222,6 +237,25 @@ export const QadaMatrix = ({ selectedDate }) => {
 
   const handleSaveEdit = async (e) => {
     e.preventDefault();
+
+    if (!user) {
+      setQadaData((prev) =>
+        prev.map((item) => {
+          if (applyToAllPrayers || item.prayerName === editPrayer) {
+            return {
+              ...item,
+              totalOwed: Number(totalOwedInput),
+              totalCompleted: item.prayerName === editPrayer ? Number(totalCompletedInput) : item.totalCompleted,
+            };
+          }
+          return item;
+        })
+      );
+      setEditPrayer(null);
+      notifyGuestAction('Qada baseline', 'updated');
+      return;
+    }
+
     setSavingEdit(true);
     try {
       if (applyToAllPrayers) {
@@ -257,6 +291,20 @@ export const QadaMatrix = ({ selectedDate }) => {
     const netDays = Math.max(0, rawDays - Number(calcExcusedDays || 0));
     if (netDays <= 0 || calcSelectedPrayers.length === 0) return;
 
+    if (!user) {
+      setQadaData((prev) =>
+        prev.map((item) => {
+          if (calcSelectedPrayers.includes(item.prayerName)) {
+            return { ...item, totalOwed: netDays };
+          }
+          return item;
+        })
+      );
+      setIsCalculatorOpen(false);
+      notifyGuestAction('Lifetime Qada calculator', 'applied');
+      return;
+    }
+
     setSavingCalc(true);
     try {
       await api.post('/islamic/qada', {
@@ -286,16 +334,39 @@ export const QadaMatrix = ({ selectedDate }) => {
   const handleSaveVow = async (e) => {
     e.preventDefault();
     if (!vowDescription.trim()) return;
+
+    const payload = {
+      title: vowDescription.trim(),
+      description: vowDescription.trim(),
+      targetDate: vowTargetDate,
+      relatedSalah: vowRelatedSalah,
+      notes: vowNotes,
+    };
+
+    if (!user) {
+      const mockVow = {
+        _id: editingVowId || `guest-vow-${Date.now()}`,
+        ...payload,
+        status: 'Active',
+        createdAt: new Date().toISOString(),
+      };
+      if (editingVowId) {
+        setVows((prev) => prev.map((v) => (v._id === editingVowId ? mockVow : v)));
+        notifyGuestAction('Vow', 'updated');
+      } else {
+        setVows((prev) => [mockVow, ...prev]);
+        notifyGuestAction('Vow', 'created');
+      }
+      setVowDescription('');
+      setVowTargetDate('');
+      setVowNotes('');
+      setEditingVowId(null);
+      setIsVowModalOpen(false);
+      return;
+    }
+
     setSavingVow(true);
     try {
-      const payload = {
-        title: vowDescription.trim(),
-        description: vowDescription.trim(),
-        targetDate: vowTargetDate,
-        relatedSalah: vowRelatedSalah,
-        notes: vowNotes,
-      };
-
       if (editingVowId) {
         const res = await api.put(`/islamic/vows/${editingVowId}`, payload);
         if (res.data) {
@@ -329,6 +400,12 @@ export const QadaMatrix = ({ selectedDate }) => {
     setVows((prev) =>
       prev.map((v) => (v._id === vowId ? { ...v, status: isCompleted ? 'Completed' : 'Active' } : v))
     );
+
+    if (!user) {
+      notifyGuestAction('Vow', isCompleted ? 'fulfilled' : 'marked active');
+      return;
+    }
+
     try {
       await api.put(`/islamic/vows/${vowId}`, { isCompleted });
       showSuccessToast(
@@ -348,6 +425,12 @@ export const QadaMatrix = ({ selectedDate }) => {
     if (!confirmed) return;
 
     setVows((prev) => prev.filter((v) => v._id !== vowId));
+
+    if (!user) {
+      notifyGuestAction('Vow', 'deleted');
+      return;
+    }
+
     try {
       await api.delete(`/islamic/vows/${vowId}`);
       notifyDeleted('Vow');
@@ -357,6 +440,7 @@ export const QadaMatrix = ({ selectedDate }) => {
       fetchQadaData();
     }
   };
+
 
   // Aggregated stats
   const totalOwedAll = qadaData.reduce((sum, item) => sum + (item.totalOwed || 0), 0);

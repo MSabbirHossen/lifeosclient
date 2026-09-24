@@ -8,7 +8,8 @@ import { Modal } from '../components/Modal';
 import { Badge } from '../components/Badge';
 import { LoadingScreen } from '../components/LoadingScreen';
 import api, { getLocalCache, setLocalCache } from '../utils/api';
-import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete, notifyGuestAction } from '../utils/alerts';
+import { useAuth } from '../context/AuthContext';
 import { DateInput } from '../components/DateInput';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import { notifyStreakUpdate } from '../utils/streakEvents';
@@ -36,7 +37,9 @@ import {
 export const IslamicTracker = ({ selectedDate }) => {
   const navigate = useNavigate();
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const activeDate = selectedDate || getFormattedDate();
+
 
   const [salahLogs, setSalahLogs] = useState(() => getLocalCache(`/islamic/salah?date=${activeDate}`)?.data || []);
   const [qadaLogs, setQadaLogs] = useState(() => getLocalCache('/islamic/qada')?.data || []);
@@ -147,6 +150,11 @@ export const IslamicTracker = ({ selectedDate }) => {
       eveningCompleted: !isMorning ? newVal : prev.eveningCompleted,
     }));
 
+    if (!user) {
+      notifyGuestAction('Adhkar', newVal ? 'marked completed' : 'marked incomplete');
+      return;
+    }
+
     const payload = {
       date: activeDate,
       morningCompleted: isMorning ? newVal : adhkarLog.morningCompleted,
@@ -186,15 +194,37 @@ export const IslamicTracker = ({ selectedDate }) => {
     e.preventDefault();
     if (!hadithText.trim()) return;
 
-    try {
-      const payload = {
-        date: activeDate,
-        text: hadithText.trim(),
-        narrator: hadithNarrator.trim(),
-        reference: hadithReference.trim(),
-        reflection: hadithReflection.trim(),
-      };
+    const payload = {
+      date: activeDate,
+      text: hadithText.trim(),
+      narrator: hadithNarrator.trim(),
+      reference: hadithReference.trim(),
+      reflection: hadithReflection.trim(),
+    };
 
+    if (!user) {
+      const mockHadith = {
+        _id: editingHadithId || `guest-hadith-${Date.now()}`,
+        ...payload,
+        createdAt: new Date().toISOString(),
+      };
+      if (editingHadithId) {
+        setHadiths((prev) => prev.map((h) => (h._id === editingHadithId ? mockHadith : h)));
+        notifyGuestAction('Hadith bookmark', 'updated');
+      } else {
+        setHadiths((prev) => [mockHadith, ...prev]);
+        notifyGuestAction('Hadith bookmark', 'saved');
+      }
+      setIsHadithModalOpen(false);
+      setEditingHadithId(null);
+      setHadithText('');
+      setHadithNarrator('');
+      setHadithReference('');
+      setHadithReflection('');
+      return;
+    }
+
+    try {
       if (editingHadithId) {
         const res = await api.put(`/islamic/hadith/${editingHadithId}`, payload);
         setIsHadithModalOpen(false);
@@ -229,6 +259,11 @@ export const IslamicTracker = ({ selectedDate }) => {
     if (!confirmed) return;
 
     setHadiths((prev) => prev.filter((h) => h._id !== hadithId));
+
+    if (!user) {
+      notifyGuestAction('Hadith bookmark', 'deleted');
+      return;
+    }
 
     try {
       await api.delete(`/islamic/hadith/${hadithId}`);
@@ -270,6 +305,11 @@ export const IslamicTracker = ({ selectedDate }) => {
       )
     );
 
+    if (!user) {
+      notifyGuestAction('Vow', newCompleted ? 'fulfilled' : 'marked pending');
+      return;
+    }
+
     try {
       await api.put(`/islamic/vows/${id}`, {
         status: newCompleted ? 'Completed' : 'Pending',
@@ -291,13 +331,35 @@ export const IslamicTracker = ({ selectedDate }) => {
     e.preventDefault();
     if (!vowDescription.trim()) return;
 
-    try {
-      const payload = {
-        title: vowDescription.trim(),
-        description: vowDescription.trim(),
-        targetDate: vowTargetDate || undefined,
-      };
+    const payload = {
+      title: vowDescription.trim(),
+      description: vowDescription.trim(),
+      targetDate: vowTargetDate || undefined,
+    };
 
+    if (!user) {
+      const mockVow = {
+        _id: editingVowId || `guest-vow-${Date.now()}`,
+        ...payload,
+        status: 'Pending',
+        isCompleted: false,
+        createdAt: new Date().toISOString(),
+      };
+      if (editingVowId) {
+        setVows((prev) => prev.map((v) => (v._id === editingVowId ? mockVow : v)));
+        notifyGuestAction('Vow', 'updated');
+      } else {
+        setVows((prev) => [mockVow, ...prev]);
+        notifyGuestAction('Vow', 'created');
+      }
+      setIsVowModalOpen(false);
+      setEditingVowId(null);
+      setVowDescription('');
+      setVowTargetDate('');
+      return;
+    }
+
+    try {
       if (editingVowId) {
         const res = await api.put(`/islamic/vows/${editingVowId}`, payload);
         setIsVowModalOpen(false);
@@ -331,6 +393,11 @@ export const IslamicTracker = ({ selectedDate }) => {
 
     setVows((prev) => prev.filter((v) => v._id !== vowId));
 
+    if (!user) {
+      notifyGuestAction('Vow', 'deleted');
+      return;
+    }
+
     try {
       await api.delete(`/islamic/vows/${vowId}`);
       notifyDeleted('Vow');
@@ -361,14 +428,36 @@ export const IslamicTracker = ({ selectedDate }) => {
 
   const handleLogQuran = async (e) => {
     e.preventDefault();
-    try {
-      const payload = {
-        date: activeDate,
-        surahName: quranSurah.trim(),
-        pagesRead: Number(quranPages) || 1,
-        ayatsRead: quranAyats ? Number(quranAyats) : undefined,
-      };
 
+    const payload = {
+      date: activeDate,
+      surahName: quranSurah.trim(),
+      pagesRead: Number(quranPages) || 1,
+      ayatsRead: quranAyats ? Number(quranAyats) : undefined,
+    };
+
+    if (!user) {
+      const mockQuran = {
+        _id: editingQuranId || `guest-quran-${Date.now()}`,
+        ...payload,
+        createdAt: new Date().toISOString(),
+      };
+      if (editingQuranId) {
+        setQuranLogs((prev) => prev.map((q) => (q._id === editingQuranId ? mockQuran : q)));
+        notifyGuestAction('Quran reading', 'updated');
+      } else {
+        setQuranLogs((prev) => [mockQuran, ...prev]);
+        notifyGuestAction('Quran reading', 'logged');
+      }
+      setIsQuranModalOpen(false);
+      setEditingQuranId(null);
+      setQuranSurah('');
+      setQuranPages('');
+      setQuranAyats('');
+      return;
+    }
+
+    try {
       if (editingQuranId) {
         const res = await api.put(`/islamic/quran/${editingQuranId}`, payload);
         setIsQuranModalOpen(false);
@@ -403,6 +492,11 @@ export const IslamicTracker = ({ selectedDate }) => {
 
     setQuranLogs((prev) => prev.filter((q) => q._id !== quranId));
 
+    if (!user) {
+      notifyGuestAction('Quran reading', 'deleted');
+      return;
+    }
+
     try {
       await api.delete(`/islamic/quran/${quranId}`);
       notifyDeleted('Quran reading');
@@ -413,6 +507,7 @@ export const IslamicTracker = ({ selectedDate }) => {
       fetchData(false);
     }
   };
+
 
   // Aggregated calculations
   const totalQadaOwed = qadaLogs.reduce((sum, q) => sum + (q.totalOwed || 0), 0);
