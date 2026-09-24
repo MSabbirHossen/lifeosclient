@@ -9,7 +9,8 @@ import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
 import { LoadingScreen } from '../components/LoadingScreen';
 import api from '../utils/api';
-import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, confirmDelete } from '../utils/alerts';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, confirmDelete, notifyGuestAction } from '../utils/alerts';
+import { useAuth } from '../context/AuthContext';
 import { DateInput } from '../components/DateInput';
 import {
   Target,
@@ -31,9 +32,11 @@ const CATEGORIES = ['Health', 'Career', 'Learning', 'Spiritual', 'Financial', 'P
 
 export const GoalsTracker = () => {
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const [goals, setGoals] = useState([]);
   const [availableHabits, setAvailableHabits] = useState([]);
   const [loading, setLoading] = useState(true);
+
 
   // Filter State
   const [filterType, setFilterType] = useState('all');
@@ -107,17 +110,43 @@ export const GoalsTracker = () => {
     e.preventDefault();
     if (!title.trim()) return;
 
-    try {
-      const payload = {
-        title: title.trim(),
-        type,
-        category,
-        targetDate: targetDate || undefined,
-        targetCompletions: Number(targetCompletions) || 30,
-        description: description.trim(),
-        linkedHabits,
-      };
+    const payload = {
+      title: title.trim(),
+      type,
+      category,
+      targetDate: targetDate || undefined,
+      targetCompletions: Number(targetCompletions) || 30,
+      description: description.trim(),
+      linkedHabits,
+    };
 
+    if (!user) {
+      const mockGoal = {
+        _id: editingGoalId || `guest-goal-${Date.now()}`,
+        ...payload,
+        progressPercent: 0,
+        completedCount: 0,
+        createdAt: new Date().toISOString(),
+      };
+      if (editingGoalId) {
+        setGoals((prev) => prev.map((g) => (g._id === editingGoalId ? mockGoal : g)));
+        notifyGuestAction('Goal', 'updated');
+      } else {
+        setGoals((prev) => [mockGoal, ...prev]);
+        notifyGuestAction('Goal', 'created');
+      }
+      setIsModalOpen(false);
+      setEditingGoalId(null);
+      setTitle('');
+      setDescription('');
+      setTargetDate('');
+      setTargetCompletions(30);
+      setLinkedHabits([]);
+      setHabitSearch('');
+      return;
+    }
+
+    try {
       if (editingGoalId) {
         await api.put(`/goals/${editingGoalId}`, payload);
         notifyUpdated('Goal');
@@ -153,6 +182,14 @@ export const GoalsTracker = () => {
 
     const isConfirmed = await confirmDelete('Goal');
     if (!isConfirmed) return;
+
+    setGoals((prev) => prev.filter((g) => g._id !== targetId));
+
+    if (!user) {
+      notifyGuestAction('Goal', 'deleted');
+      setDeleteId(null);
+      return;
+    }
 
     try {
       await api.delete(`/goals/${targetId}`);

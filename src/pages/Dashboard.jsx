@@ -11,7 +11,7 @@ import { LoadingScreen } from '../components/LoadingScreen';
 import { Logo } from '../components/Logo';
 import { useAuth } from '../context/AuthContext';
 import api, { getLocalCache, setLocalCache } from '../utils/api';
-import { showSuccessToast, notifyError } from '../utils/alerts';
+import { showSuccessToast, notifyError, notifyGuestAction } from '../utils/alerts';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import { notifyStreakUpdate } from '../utils/streakEvents';
 import {
@@ -141,6 +141,12 @@ export const Dashboard = ({ selectedDate }) => {
 
     setSalahMap((prev) => ({ ...prev, [prayerName]: nextStatus }));
 
+    if (!user) {
+      notifyStreakUpdate();
+      notifyGuestAction(`${prayerName} prayer`, `set to ${SALAH_STATUS_CONFIG[nextStatus]?.label || nextStatus}`);
+      return;
+    }
+
     try {
       await api.post('/islamic/salah', {
         date: activeDate,
@@ -162,6 +168,22 @@ export const Dashboard = ({ selectedDate }) => {
   };
 
   const handleToggleFastToday = async (newStatus, defaultType = 'nafl') => {
+    if (!user) {
+      if (newStatus === 'none') {
+        setTodayFast(null);
+      } else {
+        setTodayFast({
+          _id: `guest-fast-${Date.now()}`,
+          date: activeDate,
+          type: defaultType,
+          status: newStatus,
+        });
+      }
+      notifyStreakUpdate();
+      notifyGuestAction('Fasting status', `set to ${newStatus}`);
+      return;
+    }
+
     try {
       if (newStatus === 'none') {
         await api.post('/islamic/fasts', { date: activeDate, status: 'none' });
@@ -190,6 +212,7 @@ export const Dashboard = ({ selectedDate }) => {
       notifyError(err, 'Failed to toggle fast status');
     }
   };
+
 
   if (loading) {
     return <LoadingScreen fullScreen={false} message={t('common.loading', 'Loading Dashboard...')} />;

@@ -9,7 +9,8 @@ import { EmptyState } from '../components/EmptyState';
 import { Badge } from '../components/Badge';
 import { LoadingScreen } from '../components/LoadingScreen';
 import api, { getLocalCache, setLocalCache } from '../utils/api';
-import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete } from '../utils/alerts';
+import { notifyCreated, notifyUpdated, notifyDeleted, notifyError, showSuccessToast, confirmDelete, notifyGuestAction } from '../utils/alerts';
+import { useAuth } from '../context/AuthContext';
 import { getFormattedDate, formatDisplayDate } from '../utils/dateHelpers';
 import { notifyStreakUpdate } from '../utils/streakEvents';
 import {
@@ -97,6 +98,7 @@ const getHabitIncompleteDays = (habit, targetDateStr) => {
 
 export const HabitsTracker = ({ selectedDate }) => {
   const { t, isRTL } = useLanguage();
+  const { user } = useAuth();
   const activeDate = selectedDate || getFormattedDate();
 
   const [habits, setHabits] = useState(() => getLocalCache(`/habits?date=${activeDate}`)?.data || []);
@@ -206,6 +208,12 @@ export const HabitsTracker = ({ selectedDate }) => {
       })
     );
 
+    if (!user) {
+      notifyStreakUpdate();
+      notifyGuestAction(targetHabit?.name || 'Habit', isNowDone ? 'marked completed' : 'marked incomplete');
+      return;
+    }
+
     try {
       await api.post(`/habits/${habitId}/toggle`, { date: activeDate });
       notifyStreakUpdate();
@@ -249,6 +257,7 @@ export const HabitsTracker = ({ selectedDate }) => {
 
   const handleCreateHabit = async (e) => {
     e.preventDefault();
+
     if (!name.trim()) {
       setCreateError('Habit name is required');
       return;
@@ -256,6 +265,32 @@ export const HabitsTracker = ({ selectedDate }) => {
 
     if (targetFrequency === 'custom' && (!customDays || customDays.length === 0)) {
       setCreateError('Please select at least one day for custom frequency');
+      return;
+    }
+
+    if (!user) {
+      const mockHabit = {
+        _id: editingHabitId || `guest-habit-${Date.now()}`,
+        name: name.trim(),
+        category,
+        targetFrequency,
+        customDays: targetFrequency === 'custom' ? customDays : [],
+        description: description.trim(),
+        completedToday: false,
+        streak: 0,
+        createdAt: new Date().toISOString(),
+      };
+      if (editingHabitId) {
+        setHabits((prev) => prev.map((h) => (h._id === editingHabitId ? { ...h, ...mockHabit } : h)));
+        notifyGuestAction('Habit', 'updated');
+      } else {
+        setHabits((prev) => [mockHabit, ...prev]);
+        notifyGuestAction('Habit', 'created');
+      }
+      setIsModalOpen(false);
+      setEditingHabitId(null);
+      setName('');
+      setDescription('');
       return;
     }
 
@@ -314,6 +349,11 @@ export const HabitsTracker = ({ selectedDate }) => {
     // Optimistically remove from list
     setHabits((prev) => prev.filter((h) => h._id !== targetId));
 
+    if (!user) {
+      notifyGuestAction('Habit', 'deleted');
+      return;
+    }
+
     try {
       await api.delete(`/habits/${targetId}`);
       notifyDeleted('Habit');
@@ -324,6 +364,7 @@ export const HabitsTracker = ({ selectedDate }) => {
       fetchData(false);
     }
   };
+
 
   const safeHabits = Array.isArray(habits) ? habits : [];
   const safeHeatmap = Array.isArray(heatmap) ? heatmap : [];
