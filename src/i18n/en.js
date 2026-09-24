@@ -712,7 +712,7 @@ export const en = {
     reset: 'Reset Count',
     target: 'Target',
     laps: 'Laps / Sets Completed',
-    tapToCount: 'Tap anywhere to count',
+    tapToCount: 'Tap to Count',
     subhanAllah: 'SubhanAllah',
     subhanAllahMeaning: 'Glory be to Allah',
     alhamdulillah: 'Alhamdulillah',

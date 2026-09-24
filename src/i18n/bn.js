@@ -711,7 +711,7 @@ export const bn = {
     reset: 'রিসেট করুন',
     target: 'লক্ষ্য',
     laps: 'সম্পন্ন চক্র / ল্যাপস',
-    tapToCount: 'গণনা করতে স্পর্শ করুন',
+    tapToCount: 'Tap to Count',
     subhanAllah: 'সুবহানাল্লাহ',
     subhanAllahMeaning: 'আল্লাহ তাআলা মহাপবিত্র',
     alhamdulillah: 'আলহামদুলিল্লাহ',

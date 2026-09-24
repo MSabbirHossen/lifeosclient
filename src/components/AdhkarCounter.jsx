@@ -93,19 +93,17 @@ export const AdhkarCounter = () => {
                 key={d.id}
                 type="button"
                 onClick={() => handleSelectDhikr(d)}
-                className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center justify-between gap-1.5 ${
-                  isSelected
-                    ? 'bg-emerald-500/15 text-emerald-950 dark:text-emerald-300 border-emerald-500/40 shadow-xs ring-1 ring-emerald-500/30 font-black'
-                    : 'bg-subtle text-primary border-theme hover:bg-surface hover:border-theme-strong font-bold'
-                }`}
+                className={`px-2.5 py-1.5 rounded-xl text-xs font-bold transition-all cursor-pointer border flex items-center justify-between gap-1.5 ${isSelected
+                  ? 'bg-emerald-500/15 text-emerald-950 dark:text-emerald-300 border-emerald-500/40 shadow-xs ring-1 ring-emerald-500/30 font-black'
+                  : 'bg-subtle text-primary border-theme hover:bg-surface hover:border-theme-strong font-bold'
+                  }`}
               >
                 <span className="truncate">{d.text}</span>
                 <span
-                  className={`text-[10px] px-1.5 py-0.5 rounded-md shrink-0 font-bold ${
-                    isSelected
-                      ? 'bg-emerald-500/25 text-emerald-950 dark:text-emerald-300'
-                      : 'bg-surface border border-theme text-secondary font-bold'
-                  }`}
+                  className={`text-[10px] px-1.5 py-0.5 rounded-md shrink-0 font-bold ${isSelected
+                    ? 'bg-emerald-500/25 text-emerald-950 dark:text-emerald-300'
+                    : 'bg-surface border border-theme text-secondary font-bold'
+                    }`}
                 >
                   {d.target}
                 </span>
@@ -129,9 +127,8 @@ export const AdhkarCounter = () => {
         <div className="flex flex-col items-center justify-center my-0.5 relative">
           <div
             onClick={handleIncrement}
-            className={`relative w-36 h-36 sm:w-40 sm:h-40 rounded-full flex flex-col items-center justify-center cursor-pointer select-none transition-transform duration-150 active:scale-95 group ${
-              isTapping ? 'scale-105' : ''
-            }`}
+            className={`relative w-36 h-36 sm:w-40 sm:h-40 rounded-full flex flex-col items-center justify-center cursor-pointer select-none transition-transform duration-150 active:scale-95 group ${isTapping ? 'scale-105' : ''
+              }`}
           >
             {/* SVG Ring Progress */}
             <svg className="w-full h-full -rotate-90" viewBox="0 0 160 160">
@@ -176,7 +173,7 @@ export const AdhkarCounter = () => {
                     </span>
                   </div>
                   <span className="text-[10px] font-bold text-secondary mt-0.5 uppercase tracking-wider">
-                    {t('adhkar.tapToCount', 'Tap anywhere')}
+                    {t('adhkar.tapToCount', 'Tap ')}
                   </span>
                 </>
               )}
@@ -207,7 +204,7 @@ export const AdhkarCounter = () => {
               className="px-2.5 py-1 rounded-lg text-xs font-bold bg-subtle text-secondary border border-theme hover:text-primary hover:bg-surface transition-all cursor-pointer"
               title="Add 10"
             >
-              +10
+              + 10
             </button>
           </div>
         </div>

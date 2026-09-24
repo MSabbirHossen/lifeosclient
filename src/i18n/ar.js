@@ -711,7 +711,7 @@ export const ar = {
     reset: 'إعادة ضبط',
     target: 'الهدف',
     laps: 'الدورات المكتملة',
-    tapToCount: 'المس في أي مكان للعد',
+    tapToCount: 'اضغط للعد',
     subhanAllah: 'سبحان الله',
     subhanAllahMeaning: 'تنزيه الله تعالى عن كل نقص',
     alhamdulillah: 'الحمد لله',
