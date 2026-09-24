@@ -29,10 +29,7 @@ import {
   Flame,
   Scale,
   BookOpen,
-  Clock,
   Wallet,
-  TrendingUp,
-  Zap,
 } from 'lucide-react';
 
 const CURRENCY_OPTIONS = [
@@ -87,7 +84,7 @@ const LANGUAGE_OPTIONS = [
 ];
 
 export const Settings = () => {
-  const { t, language, setLanguage, changeLanguage } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const { user, updateUser } = useAuth();
   const { theme, setTheme } = useTheme();
 
@@ -137,7 +134,7 @@ export const Settings = () => {
   const effectiveCurrency = (isCustom ? customCurrency.trim().toUpperCase() : currency) || 'USD';
 
   const handleSaveSettings = async (e) => {
-    e.preventDefault();
+    if (e && e.preventDefault) e.preventDefault();
 
     const resolvedCurrency = (isCustom ? customCurrency.trim().toUpperCase() : currency) || 'USD';
     localStorage.setItem('lifeos_currency', resolvedCurrency);
@@ -207,551 +204,570 @@ export const Settings = () => {
     }
   };
 
-
   return (
-    <div className="space-y-6 sm:space-y-8 animate-fade-in max-w-4xl">
-      <PageHeader
-        category={t('categories.system', 'System & Preferences')}
-        title={t('settings.title', 'System Preferences & Settings')}
-        description={t('settings.subtitle', 'Configure appearance, localization, units, data backups, and account settings.')}
-      />
+    <div className="space-y-5 animate-fade-in max-w-6xl mx-auto pb-8">
+      {/* Top Header with Compact Direct Save Button */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 pb-1 border-b border-subtle">
+        <PageHeader
+          category={t('categories.system', 'System & Preferences')}
+          title={t('settings.title', 'System Preferences & Settings')}
+          description={t('settings.subtitle', 'Configure appearance, localization, units, data backups, and account settings.')}
+          className="mb-0"
+        />
+        <div className="flex items-center gap-2 self-start sm:self-auto shrink-0">
+          <Button
+            type="button"
+            onClick={handleSaveSettings}
+            variant="gradient"
+            size="md"
+            icon={Save}
+            loading={saving}
+            className="shadow-md shadow-indigo-500/20 font-bold px-4"
+          >
+            {t('settings.saveAllPreferences')}
+          </Button>
+        </div>
+      </div>
 
       {saveSuccess && (
-        <div className="p-3.5 rounded-2xl bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in">
+        <div className="p-3 rounded-xl bg-emerald-500/10 border border-emerald-500/25 flex items-center gap-2 text-xs font-bold text-emerald-600 dark:text-emerald-400 animate-fade-in">
           <CheckCircle2 className="w-4 h-4 shrink-0" />
           {t('settings.savedSuccessfully')}
         </div>
       )}
 
-      {/* Language & Localization Card */}
-      <Card hover title={t('settings.language')} subtitle={t('settings.switchLanguageSubtitle')} icon={Globe}>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mt-2">
-          {LANGUAGE_OPTIONS.map((lang) => {
-            const isSelected = language === lang.code;
-            return (
-              <button
-                key={lang.code}
-                type="button"
-                onClick={() => setLanguage(lang.code)}
-                className={`p-4 rounded-2xl border transition-all duration-200 cursor-pointer flex items-center justify-between gap-3 text-left group ${
-                  isSelected
-                    ? 'bg-accent/10 border-accent text-accent ring-2 ring-accent/20 shadow-md shadow-accent/5 -translate-y-0.5'
-                    : 'bg-subtle/80 hover:bg-surface border-theme hover:border-theme-strong text-secondary hover:text-primary'
-                }`}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <div
-                    className={`w-10 h-10 rounded-xl border flex items-center justify-center font-black text-xs shrink-0 transition-transform duration-200 group-hover:scale-105 shadow-xs ${
-                      isSelected
-                        ? 'bg-accent text-white border-accent shadow-accent/25'
-                        : `${lang.badgeBg} ${lang.badgeText} border-theme`
-                    }`}
-                  >
-                    {lang.badgeCode}
-                  </div>
-                  <div className="min-w-0">
-                    <span className={`text-sm font-bold block truncate text-primary ${lang.fontClass || ''}`}>
-                      {lang.nativeLabel}
-                    </span>
-                    <span className="text-[11px] text-secondary block truncate">
-                      {lang.subtitle}
-                    </span>
-                  </div>
-                </div>
-                <div
-                  className={`w-5 h-5 rounded-full border flex items-center justify-center shrink-0 transition-all ${
-                    isSelected
-                      ? 'bg-accent border-accent text-white shadow-xs'
-                      : 'border-theme bg-surface text-transparent group-hover:border-accent/40'
+      <form onSubmit={handleSaveSettings} className="space-y-5">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-start">
+          {/* LEFT COLUMN: Appearance, Language, Profile & Data (col-span-6) */}
+          <div className="lg:col-span-6 space-y-5">
+            {/* 1. Theme Appearance (Compact Segmented) */}
+            <Card
+              hover
+              title={t('settings.themeAppearance')}
+              subtitle={t('settings.themeAppearanceSubtitle')}
+              icon={Sparkles}
+              headerClassName="pb-2.5"
+            >
+              <div className="grid grid-cols-3 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTheme('light')}
+                  className={`py-2.5 px-3 rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-2 font-bold text-xs ${
+                    theme === 'light'
+                      ? 'bg-accent/15 border-accent text-accent shadow-xs'
+                      : 'bg-subtle border-theme text-secondary hover:text-primary hover:border-[var(--color-border-hover)]'
                   }`}
                 >
-                  <Check className="w-3 h-3 stroke-[3]" />
-                </div>
-              </button>
-            );
-          })}
-        </div>
-      </Card>
+                  <Sun className="w-4 h-4 text-amber-500" />
+                  <span>{t('settings.lightTheme')}</span>
+                </button>
 
-      <form onSubmit={handleSaveSettings} className="space-y-6 sm:space-y-7">
-        {/* Appearance Theme Card */}
-        <Card hover title={t('settings.themeAppearance')} subtitle={t('settings.themeAppearanceSubtitle')} icon={Sparkles}>
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-3.5 mt-2">
-            <button
-              type="button"
-              onClick={() => setTheme('light')}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col items-center gap-2.5 ${
-                theme === 'light'
-                  ? 'bg-accent/10 border-accent text-accent shadow-sm'
-                  : 'bg-subtle border-theme text-secondary hover:text-primary hover:border-[var(--color-border-hover)]'
-              }`}
-            >
-              <Sun className="w-6 h-6 text-amber-500" />
-              <span className="text-xs font-bold">{t('settings.lightTheme')}</span>
-            </button>
+                <button
+                  type="button"
+                  onClick={() => setTheme('dark')}
+                  className={`py-2.5 px-3 rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-2 font-bold text-xs ${
+                    theme === 'dark'
+                      ? 'bg-accent/15 border-accent text-accent shadow-xs'
+                      : 'bg-subtle border-theme text-secondary hover:text-primary hover:border-[var(--color-border-hover)]'
+                  }`}
+                >
+                  <Moon className="w-4 h-4 text-indigo-400" />
+                  <span>{t('settings.darkTheme')}</span>
+                </button>
 
-            <button
-              type="button"
-              onClick={() => setTheme('dark')}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col items-center gap-2.5 ${
-                theme === 'dark'
-                  ? 'bg-accent/10 border-accent text-accent shadow-sm'
-                  : 'bg-subtle border-theme text-secondary hover:text-primary hover:border-[var(--color-border-hover)]'
-              }`}
-            >
-              <Moon className="w-6 h-6 text-indigo-400" />
-              <span className="text-xs font-bold">{t('settings.darkTheme')}</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setTheme('system')}
-              className={`p-4 rounded-2xl border transition-all cursor-pointer flex flex-col items-center gap-2.5 ${
-                theme === 'system'
-                  ? 'bg-accent/10 border-accent text-accent shadow-sm'
-                  : 'bg-subtle border-theme text-secondary hover:text-primary hover:border-[var(--color-border-hover)]'
-              }`}
-            >
-              <Monitor className="w-6 h-6 text-secondary" />
-              <span className="text-xs font-bold">{t('settings.systemDefault')}</span>
-            </button>
-          </div>
-        </Card>
-
-        {/* Profile Card */}
-        <Card hover title={t('settings.userProfile')} subtitle={t('settings.userProfileSubtitle')} icon={User}>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-2">
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                {t('settings.fullName')}
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="input-base"
-              />
-            </div>
-
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                {t('settings.emailAddress')}
-              </label>
-              <input
-                type="email"
-                disabled
-                value={email}
-                className="input-base opacity-60 cursor-not-allowed"
-              />
-            </div>
-          </div>
-        </Card>
-
-        {/* Default Currency & Financial Preferences Card */}
-        <Card
-          hover
-          title={t('settings.defaultCurrency')}
-          subtitle={t('settings.defaultCurrencySubtitle')}
-          icon={Coins}
-        >
-          <div className="space-y-5 mt-2">
-            {/* Live Financial Formatting Preview Banner */}
-            <div className="relative overflow-hidden p-4 rounded-2xl bg-gradient-to-br from-indigo-500/[0.08] via-purple-500/[0.05] to-emerald-500/[0.05] border border-theme card-shadow">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-xl bg-accent/15 border border-accent/30 flex items-center justify-center text-accent shadow-xs shrink-0">
-                    <Wallet className="w-5 h-5" />
-                  </div>
-                  <div>
-                    <span className="text-[11px] font-extrabold text-secondary uppercase tracking-widest block">
-                      {t('settings.financialFormattingPreview')}
-                    </span>
-                    <div className="flex flex-wrap items-baseline gap-2 mt-0.5">
-                      <span className="text-lg sm:text-xl font-black text-primary tracking-tight">
-                        2,500.00 <span className="text-accent">{effectiveCurrency}</span>
-                      </span>
-                      <span className="text-xs font-bold text-rose-500 bg-rose-500/10 px-2 py-0.5 rounded-md border border-rose-500/20">
-                        {t('settings.expenseSample')} -150.00 {effectiveCurrency}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 self-start sm:self-auto">
-                  <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-surface border border-theme shadow-xs text-primary">
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-                    {t('settings.activeCode')} {effectiveCurrency}
-                  </span>
-                </div>
+                <button
+                  type="button"
+                  onClick={() => setTheme('system')}
+                  className={`py-2.5 px-3 rounded-xl border transition-all cursor-pointer flex items-center justify-center gap-2 font-bold text-xs ${
+                    theme === 'system'
+                      ? 'bg-accent/15 border-accent text-accent shadow-xs'
+                      : 'bg-subtle border-theme text-secondary hover:text-primary hover:border-[var(--color-border-hover)]'
+                  }`}
+                >
+                  <Monitor className="w-4 h-4 text-secondary" />
+                  <span>{t('settings.systemDefault')}</span>
+                </button>
               </div>
-            </div>
+            </Card>
 
-            {/* Quick Currency Selection Grid */}
-            <div>
-              <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-2.5">
-                Popular Regional Currencies
-              </label>
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {CURRENCY_OPTIONS.slice(0, 8).map((curr) => {
-                  const isSelected = !isCustom && currency === curr.code;
+            {/* 2. Language & Localization (Compact Grid) */}
+            <Card
+              hover
+              title={t('settings.language')}
+              subtitle={t('settings.switchLanguageSubtitle')}
+              icon={Globe}
+              headerClassName="pb-2.5"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                {LANGUAGE_OPTIONS.map((lang) => {
+                  const isSelected = language === lang.code;
                   return (
                     <button
-                      key={curr.code}
+                      key={lang.code}
                       type="button"
-                      onClick={() => {
-                        setCurrency(curr.code);
-                        setIsCustom(false);
-                      }}
-                      className={`group relative p-3.5 rounded-2xl border text-left transition-all duration-200 cursor-pointer flex flex-col justify-between select-none ${
+                      onClick={() => setLanguage(lang.code)}
+                      className={`p-2.5 rounded-xl border transition-all duration-150 cursor-pointer flex items-center justify-between gap-2 text-left group ${
                         isSelected
-                          ? 'bg-gradient-to-br from-accent/15 via-accent/10 to-transparent border-accent shadow-md shadow-accent/10 ring-1 ring-accent/30'
-                          : 'bg-surface hover:bg-subtle border-theme hover:border-[var(--color-border-hover)] hover:-translate-y-0.5 shadow-xs'
+                          ? 'bg-accent/10 border-accent text-accent ring-1 ring-accent/30 shadow-xs'
+                          : 'bg-subtle hover:bg-surface border-theme hover:border-theme-strong text-secondary hover:text-primary'
                       }`}
                     >
-                      {/* Top Row: Flag + Code + Symbol Badge */}
-                      <div className="flex items-center justify-between gap-1 mb-2">
-                        <div className="flex items-center gap-1.5">
-                          <span className="text-base leading-none" role="img" aria-label={curr.name}>
-                            {curr.flag}
+                      <div className="flex items-center gap-2 min-w-0">
+                        <div
+                          className={`w-7 h-7 rounded-lg border flex items-center justify-center font-black text-[10px] shrink-0 ${
+                            isSelected
+                              ? 'bg-accent text-white border-accent'
+                              : `${lang.badgeBg} ${lang.badgeText} border-theme`
+                          }`}
+                        >
+                          {lang.badgeCode}
+                        </div>
+                        <div className="min-w-0">
+                          <span className={`text-xs font-bold block truncate text-primary ${lang.fontClass || ''}`}>
+                            {lang.nativeLabel}
                           </span>
-                          <span className={`text-sm font-black tracking-tight ${isSelected ? 'text-accent' : 'text-primary'}`}>
-                            {curr.code}
+                          <span className="text-[10px] text-secondary block truncate">
+                            {lang.label}
                           </span>
                         </div>
-                        <span className={`text-xs font-bold px-2 py-0.5 rounded-lg border transition-colors ${
-                          isSelected
-                            ? 'bg-accent text-white border-accent'
-                            : 'bg-subtle border-theme text-secondary group-hover:text-primary'
-                        }`}>
-                          {curr.symbol}
-                        </span>
                       </div>
-
-                      {/* Bottom Row: Name and Region */}
-                      <div className="space-y-0.5">
-                        <span className="text-xs font-bold text-primary block truncate">
-                          {curr.name}
-                        </span>
-                        <span className="text-[10px] text-secondary font-medium block truncate">
-                          {curr.region}
-                        </span>
-                      </div>
-
-                      {/* Selected Checkmark Badge */}
                       {isSelected && (
-                        <div className="absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-accent text-white flex items-center justify-center shadow-xs">
-                          <Check className="w-3 h-3 stroke-[3]" />
+                        <div className="w-4 h-4 rounded-full bg-accent text-white flex items-center justify-center shrink-0">
+                          <Check className="w-2.5 h-2.5 stroke-[3]" />
                         </div>
                       )}
                     </button>
                   );
                 })}
               </div>
-            </div>
+            </Card>
 
-            {/* Comprehensive Dropdown & Custom Option */}
-            <div className="p-4 rounded-2xl bg-subtle border border-theme space-y-3">
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {/* 3. User Profile Card */}
+            <Card
+              hover
+              title={t('settings.userProfile')}
+              subtitle={t('settings.userProfileSubtitle')}
+              icon={User}
+              headerClassName="pb-2.5"
+            >
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5 flex items-center gap-1.5">
-                    <Globe className="w-3.5 h-3.5 text-accent" />
-                    {t('settings.allGlobalCurrencies')}
+                  <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1">
+                    {t('settings.fullName')}
                   </label>
-                  <select
-                    value={isCustom ? 'CUSTOM' : currency}
-                    onChange={(e) => {
-                      if (e.target.value === 'CUSTOM') {
-                        setIsCustom(true);
-                      } else {
-                        setIsCustom(false);
-                        setCurrency(e.target.value);
-                      }
-                    }}
-                    className="select-base font-semibold"
-                  >
-                    {CURRENCY_OPTIONS.map((c) => (
-                      <option key={c.code} value={c.code}>
-                        {c.flag} {c.code} ({c.symbol}) — {c.name} ({c.region})
-                      </option>
-                    ))}
-                    <option value="CUSTOM">{t('settings.customCurrencyOption')}</option>
-                  </select>
+                  <input
+                    type="text"
+                    required
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    className="input-base text-xs font-semibold py-2"
+                  />
                 </div>
 
-                {isCustom ? (
-                  <div className="animate-fade-in">
-                    <label className="block text-xs font-bold text-secondary uppercase tracking-wider mb-1.5">
-                      {t('settings.customCurrencyCode')}
+                <div>
+                  <div className="flex items-center justify-between mb-1">
+                    <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider">
+                      {t('settings.emailAddress')}
                     </label>
-                    <input
-                      type="text"
-                      maxLength={6}
-                      placeholder="e.g. CHF, SGD, NZD, SEK"
-                      value={customCurrency}
-                      onChange={(e) => setCustomCurrency(e.target.value.toUpperCase())}
-                      className="input-base font-mono uppercase font-bold"
-                    />
-                    <span className="text-[10px] text-secondary mt-1 block">
-                      {t('settings.customCurrencyDesc')}
+                    <span className="text-[10px] font-bold text-muted flex items-center gap-1">
+                      <Lock className="w-2.5 h-2.5" /> Read-only
                     </span>
                   </div>
-                ) : (
-                  <div className="flex flex-col justify-center">
-                    <span className="text-xs font-bold text-secondary">
-                      Active Unit Display:
-                    </span>
-                    <span className="text-xs text-muted mt-0.5">
-                      All balances, logs, and summaries will format with <strong className="text-primary font-bold">{effectiveCurrency}</strong>.
-                    </span>
-                  </div>
-                )}
+                  <input
+                    type="email"
+                    disabled
+                    value={email}
+                    className="input-base text-xs font-semibold py-2 opacity-60 cursor-not-allowed bg-subtle"
+                  />
+                </div>
               </div>
+            </Card>
+
+            {/* 4. Data Ownership & Backup Card */}
+            <Card
+              hover
+              title={t('settings.dataOwnershipBackup')}
+              subtitle={t('settings.dataOwnershipSubtitle')}
+              icon={Download}
+              headerClassName="pb-2.5"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-subtle border border-theme">
+                <div>
+                  <span className="text-xs font-bold text-primary block">{t('settings.fullDatabaseBackup')}</span>
+                  <p className="text-[11px] text-secondary mt-0.5 max-w-sm">
+                    {t('settings.fullDatabaseBackupDesc')}
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="secondary"
+                  size="sm"
+                  icon={Download}
+                  loading={exportLoading}
+                  onClick={handleExportData}
+                  className="w-full sm:w-auto shrink-0 font-bold"
+                >
+                  {t('settings.exportAllDataBtn')}
+                </Button>
+              </div>
+            </Card>
+
+            {/* 5. Creator & Developer Info Card */}
+            <Card
+              hover
+              title={t('settings.aboutTheCreator')}
+              subtitle={t('settings.aboutTheCreatorSubtitle')}
+              icon={Code2}
+              headerClassName="pb-2.5"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-3 rounded-xl bg-subtle border border-theme">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-black text-xs shadow-xs shrink-0">
+                    MS
+                  </div>
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs font-black text-primary">MS Hossen</span>
+                      <Badge variant="purple" size="xs">{t('settings.partTimeCoder')}</Badge>
+                    </div>
+                    <p className="text-[11px] text-secondary mt-0.5">
+                      {t('settings.creatorBio')}
+                    </p>
+                  </div>
+                </div>
+                <Link to="/developer">
+                  <Button type="button" variant="secondary" size="sm" icon={ExternalLink} className="w-full sm:w-auto shrink-0 text-xs font-bold">
+                    {t('settings.developerHubLinks')}
+                  </Button>
+                </Link>
+              </div>
+            </Card>
+          </div>
+
+          {/* RIGHT COLUMN: Daily Targets & Currency Settings (col-span-6) */}
+          <div className="lg:col-span-6 space-y-5">
+            {/* 1. Daily Target Goals Card */}
+            <Card
+              hover
+              title={t('settings.dailyTargetsBaselines')}
+              subtitle={t('settings.dailyTargetsSubtitle')}
+              icon={Target}
+              headerClassName="pb-2.5"
+            >
+              <div className="space-y-3">
+                {/* 1.1 Calorie Target */}
+                <div className="p-3 rounded-xl bg-surface border border-theme hover:border-amber-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
+                      <Flame className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-primary uppercase tracking-wider">
+                        {t('settings.calorieBudget')}
+                      </h4>
+                      <span className="text-[10px] text-secondary">Daily intake baseline</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="relative w-28">
+                      <input
+                        type="number"
+                        min="0"
+                        max="10000"
+                        step="1"
+                        value={calorieGoal}
+                        onChange={(e) => setCalorieGoal(e.target.value)}
+                        className="input-base text-xs font-extrabold py-1.5 pr-10 text-right"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-black text-secondary pointer-events-none">
+                        kcal
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {[1800, 2000, 2400].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setCalorieGoal(preset)}
+                          className={`text-[10px] font-bold px-1.5 py-1 rounded-md border transition-all cursor-pointer ${
+                            Number(calorieGoal) === preset
+                              ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
+                              : 'bg-subtle border-theme text-secondary hover:text-primary'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 1.2 Target Weight */}
+                <div className="p-3 rounded-xl bg-surface border border-theme hover:border-emerald-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
+                      <Scale className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-primary uppercase tracking-wider">
+                        {t('settings.targetWeight')}
+                      </h4>
+                      <span className="text-[10px] text-secondary">Body goal reference</span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="relative w-28">
+                      <input
+                        type="number"
+                        step="0.1"
+                        min="0"
+                        max="500"
+                        value={weightGoal}
+                        onChange={(e) => setWeightGoal(e.target.value)}
+                        className="input-base text-xs font-extrabold py-1.5 pr-8 text-right"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-black text-secondary pointer-events-none">
+                        kg
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {[65, 70, 75].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setWeightGoal(preset)}
+                          className={`text-[10px] font-bold px-1.5 py-1 rounded-md border transition-all cursor-pointer ${
+                            Number(weightGoal) === preset
+                              ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
+                              : 'bg-subtle border-theme text-secondary hover:text-primary'
+                          }`}
+                        >
+                          {preset}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* 1.3 Daily Study Target */}
+                <div className="p-3 rounded-xl bg-surface border border-theme hover:border-indigo-500/30 transition-all flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5 min-w-0">
+                    <div className="w-8 h-8 rounded-lg bg-indigo-500/10 border border-indigo-500/20 text-accent flex items-center justify-center shrink-0">
+                      <BookOpen className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <h4 className="text-xs font-bold text-primary uppercase tracking-wider">
+                        {t('settings.dailyStudyTarget')}
+                      </h4>
+                      <span className="text-[10px] text-secondary font-medium">
+                        {Math.floor(Number(studyMinutesGoal || 0) / 60)}h {Number(studyMinutesGoal || 0) % 60}m daily
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-2 shrink-0">
+                    <div className="relative w-28">
+                      <input
+                        type="number"
+                        min="0"
+                        max="1440"
+                        step="1"
+                        value={studyMinutesGoal}
+                        onChange={(e) => setStudyMinutesGoal(e.target.value)}
+                        className="input-base text-xs font-extrabold py-1.5 pr-10 text-right"
+                      />
+                      <span className="absolute right-2.5 top-1/2 -translate-y-1/2 text-[10px] font-black text-secondary pointer-events-none">
+                        mins
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      {[60, 120, 180].map((preset) => (
+                        <button
+                          key={preset}
+                          type="button"
+                          onClick={() => setStudyMinutesGoal(preset)}
+                          className={`text-[10px] font-bold px-1.5 py-1 rounded-md border transition-all cursor-pointer ${
+                            Number(studyMinutesGoal) === preset
+                              ? 'bg-indigo-500/15 text-accent border-indigo-500/30'
+                              : 'bg-subtle border-theme text-secondary hover:text-primary'
+                          }`}
+                        >
+                          {preset === 60 ? '1h' : preset === 120 ? '2h' : '3h'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* 2. Default Currency & Financial Preferences Card */}
+            <Card
+              hover
+              title={t('settings.defaultCurrency')}
+              subtitle={t('settings.defaultCurrencySubtitle')}
+              icon={Coins}
+              headerClassName="pb-2.5"
+            >
+              <div className="space-y-3.5">
+                {/* Live Financial Formatting Preview Banner */}
+                <div className="p-3 rounded-xl bg-gradient-to-r from-indigo-500/[0.08] via-purple-500/[0.05] to-emerald-500/[0.05] border border-theme flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-lg bg-accent/15 border border-accent/30 flex items-center justify-center text-accent shrink-0">
+                      <Wallet className="w-4 h-4" />
+                    </div>
+                    <div>
+                      <span className="text-[10px] font-extrabold text-secondary uppercase tracking-wider block">
+                        {t('settings.financialFormattingPreview')}
+                      </span>
+                      <div className="flex items-baseline gap-2 mt-0.5">
+                        <span className="text-base font-black text-primary">
+                          2,500.00 <span className="text-accent">{effectiveCurrency}</span>
+                        </span>
+                        <span className="text-[10px] font-bold text-rose-500 bg-rose-500/10 px-1.5 py-0.5 rounded border border-rose-500/20">
+                          {t('settings.expenseSample')} -150.00 {effectiveCurrency}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold bg-surface border border-theme text-primary shrink-0">
+                    <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                    {effectiveCurrency}
+                  </span>
+                </div>
+
+                {/* Quick Currency Selection 4x2 Grid */}
+                <div>
+                  <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1.5">
+                    Popular Regional Currencies
+                  </label>
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {CURRENCY_OPTIONS.slice(0, 8).map((curr) => {
+                      const isSelected = !isCustom && currency === curr.code;
+                      return (
+                        <button
+                          key={curr.code}
+                          type="button"
+                          onClick={() => {
+                            setCurrency(curr.code);
+                            setIsCustom(false);
+                          }}
+                          className={`relative p-2.5 rounded-xl border text-left transition-all duration-150 cursor-pointer flex flex-col justify-between select-none ${
+                            isSelected
+                              ? 'bg-accent/15 border-accent shadow-xs ring-1 ring-accent/30'
+                              : 'bg-surface hover:bg-subtle border-theme hover:border-[var(--color-border-hover)]'
+                          }`}
+                        >
+                          <div className="flex items-center justify-between gap-1 mb-1">
+                            <div className="flex items-center gap-1">
+                              <span className="text-sm leading-none" role="img" aria-label={curr.name}>
+                                {curr.flag}
+                              </span>
+                              <span className={`text-xs font-black ${isSelected ? 'text-accent' : 'text-primary'}`}>
+                                {curr.code}
+                              </span>
+                            </div>
+                            <span className="text-[10px] font-bold text-secondary">
+                              {curr.symbol}
+                            </span>
+                          </div>
+
+                          <span className="text-[10px] text-secondary font-medium block truncate">
+                            {curr.name}
+                          </span>
+
+                          {isSelected && (
+                            <div className="absolute -top-1 -right-1 w-4 h-4 rounded-full bg-accent text-white flex items-center justify-center shadow-xs">
+                              <Check className="w-2.5 h-2.5 stroke-[3]" />
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Dropdown / Custom Currency */}
+                <div className="p-3 rounded-xl bg-subtle border border-theme space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1 flex items-center gap-1">
+                        <Globe className="w-3 h-3 text-accent" />
+                        {t('settings.allGlobalCurrencies')}
+                      </label>
+                      <select
+                        value={isCustom ? 'CUSTOM' : currency}
+                        onChange={(e) => {
+                          if (e.target.value === 'CUSTOM') {
+                            setIsCustom(true);
+                          } else {
+                            setIsCustom(false);
+                            setCurrency(e.target.value);
+                          }
+                        }}
+                        className="select-base text-xs font-semibold py-1.5"
+                      >
+                        {CURRENCY_OPTIONS.map((c) => (
+                          <option key={c.code} value={c.code}>
+                            {c.flag} {c.code} ({c.symbol}) — {c.name}
+                          </option>
+                        ))}
+                        <option value="CUSTOM">{t('settings.customCurrencyOption')}</option>
+                      </select>
+                    </div>
+
+                    {isCustom ? (
+                      <div className="animate-fade-in">
+                        <label className="block text-[11px] font-bold text-secondary uppercase tracking-wider mb-1">
+                          {t('settings.customCurrencyCode')}
+                        </label>
+                        <input
+                          type="text"
+                          maxLength={6}
+                          placeholder="e.g. CHF, SGD, NZD"
+                          value={customCurrency}
+                          onChange={(e) => setCustomCurrency(e.target.value.toUpperCase())}
+                          className="input-base text-xs font-mono uppercase font-bold py-1.5"
+                        />
+                      </div>
+                    ) : (
+                      <div className="flex flex-col justify-center">
+                        <span className="text-[11px] font-bold text-secondary">
+                          Active Unit Display:
+                        </span>
+                        <span className="text-[11px] text-muted mt-0.5">
+                          Balances & ledgers format in <strong className="text-primary">{effectiveCurrency}</strong>.
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </Card>
+
+            {/* Bottom Save Preferences Bar */}
+            <div className="p-4 rounded-2xl bg-surface border border-theme card-shadow flex items-center justify-between gap-4">
+              <div>
+                <span className="text-xs font-bold text-primary block">Save Your Configuration</span>
+                <span className="text-[11px] text-secondary">Syncs all theme, baseline, and regional units</span>
+              </div>
+              <Button
+                type="submit"
+                variant="gradient"
+                size="md"
+                icon={Save}
+                loading={saving}
+                className="shadow-md shadow-indigo-500/20 font-bold px-5 shrink-0"
+              >
+                {t('settings.saveAllPreferences')}
+              </Button>
             </div>
           </div>
-        </Card>
-
-        {/* Daily Target Goals Card */}
-        <Card
-          hover
-          title={t('settings.dailyTargetsBaselines')}
-          subtitle={t('settings.dailyTargetsSubtitle')}
-          icon={Target}
-        >
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-2">
-            {/* 1. Calorie Target Card */}
-            <div className="p-4 rounded-2xl bg-surface border border-theme hover:border-amber-500/30 transition-all card-shadow flex flex-col justify-between space-y-3.5 group">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-500 flex items-center justify-center shrink-0">
-                    <Flame className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-extrabold text-primary uppercase tracking-wider">
-                      {t('settings.calorieBudget')}
-                    </h4>
-                    <span className="text-[11px] text-secondary font-medium">Daily intake target</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="0"
-                    max="10000"
-                    step="1"
-                    value={calorieGoal}
-                    onChange={(e) => setCalorieGoal(e.target.value)}
-                    className="input-base font-extrabold text-base pr-16"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-secondary pointer-events-none">
-                    kcal
-                  </span>
-                </div>
-
-                {/* Quick Presets */}
-                <div className="flex items-center gap-1.5 mt-2">
-                  {[1800, 2000, 2400].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setCalorieGoal(preset)}
-                      className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer ${
-                        Number(calorieGoal) === preset
-                          ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30'
-                          : 'bg-subtle border-theme text-secondary hover:text-primary hover:border-[var(--color-border-hover)]'
-                      }`}
-                    >
-                      {preset} kcal
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <p className="text-[11px] text-secondary leading-relaxed pt-1 border-t border-subtle">
-                Powers your daily deficit/surplus & energy engine metrics.
-              </p>
-            </div>
-
-            {/* 2. Target Weight Card */}
-            <div className="p-4 rounded-2xl bg-surface border border-theme hover:border-emerald-500/30 transition-all card-shadow flex flex-col justify-between space-y-3.5 group">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-emerald-500/10 border border-emerald-500/20 text-emerald-500 flex items-center justify-center shrink-0">
-                    <Scale className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-extrabold text-primary uppercase tracking-wider">
-                      {t('settings.targetWeight')}
-                    </h4>
-                    <span className="text-[11px] text-secondary font-medium">Ideal body goal</span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div className="relative">
-                  <input
-                    type="number"
-                    step="0.1"
-                    min="0"
-                    max="500"
-                    value={weightGoal}
-                    onChange={(e) => setWeightGoal(e.target.value)}
-                    className="input-base font-extrabold text-base pr-12"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-secondary pointer-events-none">
-                    kg
-                  </span>
-                </div>
-
-                {/* Quick Presets */}
-                <div className="flex items-center gap-1.5 mt-2">
-                  {[65, 70, 75].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setWeightGoal(preset)}
-                      className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer ${
-                        Number(weightGoal) === preset
-                          ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
-                          : 'bg-subtle border-theme text-secondary hover:text-primary hover:border-[var(--color-border-hover)]'
-                      }`}
-                    >
-                      {preset} kg
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <p className="text-[11px] text-secondary leading-relaxed pt-1 border-t border-subtle">
-                Reference milestone for body metrics & weight tracking trends.
-              </p>
-            </div>
-
-            {/* 3. Study & Focus Goal Card */}
-            <div className="p-4 rounded-2xl bg-surface border border-theme hover:border-indigo-500/30 transition-all card-shadow flex flex-col justify-between space-y-3.5 group">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-9 h-9 rounded-xl bg-indigo-500/10 border border-indigo-500/20 text-accent flex items-center justify-center shrink-0">
-                    <BookOpen className="w-4 h-4" />
-                  </div>
-                  <div>
-                    <h4 className="text-xs font-extrabold text-primary uppercase tracking-wider">
-                      {t('settings.dailyStudyTarget')}
-                    </h4>
-                    <span className="text-[11px] text-secondary font-medium">
-                      {Math.floor(Number(studyMinutesGoal || 0) / 60)}h {Number(studyMinutesGoal || 0) % 60}m daily
-                    </span>
-                  </div>
-                </div>
-              </div>
-
-              <div>
-                <div className="relative">
-                  <input
-                    type="number"
-                    min="0"
-                    max="1440"
-                    step="1"
-                    value={studyMinutesGoal}
-                    onChange={(e) => setStudyMinutesGoal(e.target.value)}
-                    className="input-base font-extrabold text-base pr-16"
-                  />
-                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-black text-secondary pointer-events-none">
-                    mins
-                  </span>
-                </div>
-
-                {/* Quick Presets */}
-                <div className="flex items-center gap-1.5 mt-2">
-                  {[60, 120, 180].map((preset) => (
-                    <button
-                      key={preset}
-                      type="button"
-                      onClick={() => setStudyMinutesGoal(preset)}
-                      className={`text-[10px] font-bold px-2 py-1 rounded-lg border transition-all cursor-pointer ${
-                        Number(studyMinutesGoal) === preset
-                          ? 'bg-indigo-500/15 text-accent border-indigo-500/30'
-                          : 'bg-subtle border-theme text-secondary hover:text-primary hover:border-[var(--color-border-hover)]'
-                      }`}
-                    >
-                      {preset === 60 ? '1 hr' : preset === 120 ? '2 hrs' : '3 hrs'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              <p className="text-[11px] text-secondary leading-relaxed pt-1 border-t border-subtle">
-                Powers your daily pomodoro rings & study consistency score.
-              </p>
-            </div>
-          </div>
-        </Card>
-
-        {/* Action Button */}
-        <div className="flex justify-end pt-2">
-          <Button
-            type="submit"
-            variant="gradient"
-            size="lg"
-            icon={Save}
-            loading={saving}
-            className="w-full sm:w-auto shadow-md shadow-indigo-500/20 font-bold"
-          >
-            {t('settings.saveAllPreferences')}
-          </Button>
         </div>
       </form>
-
-      {/* Data Backup & Export Section */}
-      <Card hover title={t('settings.dataOwnershipBackup')} subtitle={t('settings.dataOwnershipSubtitle')} icon={Download}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-          <div>
-            <span className="text-xs font-bold text-primary block">{t('settings.fullDatabaseBackup')}</span>
-            <p className="text-xs text-secondary mt-0.5 max-w-lg">
-              {t('settings.fullDatabaseBackupDesc')}
-            </p>
-          </div>
-          <Button
-            variant="secondary"
-            size="md"
-            icon={Download}
-            loading={exportLoading}
-            onClick={handleExportData}
-            className="w-full sm:w-auto shrink-0"
-          >
-            {t('settings.exportAllDataBtn')}
-          </Button>
-        </div>
-      </Card>
-
-      {/* Creator & Developer Info */}
-      <Card hover title={t('settings.aboutTheCreator')} subtitle={t('settings.aboutTheCreatorSubtitle')} icon={Code2}>
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pt-2">
-          <div className="flex items-center gap-3.5">
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-indigo-600 to-purple-600 flex items-center justify-center text-white font-extrabold text-base shadow-sm shadow-indigo-500/25 shrink-0">
-              MS
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm font-extrabold text-primary">MS Hossen</span>
-                <Badge variant="purple" size="xs">{t('settings.partTimeCoder')}</Badge>
-              </div>
-              <p className="text-xs text-secondary mt-0.5">
-                {t('settings.creatorBio')}
-              </p>
-            </div>
-          </div>
-          <Link to="/developer">
-            <Button variant="secondary" size="md" icon={ExternalLink} className="w-full sm:w-auto shrink-0">
-              {t('settings.developerHubLinks')}
-            </Button>
-          </Link>
-        </div>
-      </Card>
     </div>
   );
 };
