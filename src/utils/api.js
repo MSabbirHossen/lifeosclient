@@ -1,4 +1,5 @@
 import axios from 'axios';
+import { showLoginRequiredToast } from './alerts';
 
 // Determine base API URL: In local development, always route through local Vite proxy (/api -> localhost:5000)
 // In production builds, use VITE_API_URL (e.g. deployed serverless/backend)
@@ -130,10 +131,16 @@ api.interceptors.response.use(
     // Only handle genuine 401 authentication rejections on protected routes
     if (error.response && (error.response.status === 401 || error.response.status === 403)) {
       const url = error.config?.url || '';
-      const isAuthAttempt = url.includes('/auth/login') || url.includes('/auth/register') || url.includes('/auth/google');
+      const method = error.config?.method?.toLowerCase();
+      const isAuthAttempt =
+        url.includes('/auth/login') ||
+        url.includes('/auth/register') ||
+        url.includes('/auth/google');
 
-      // Do not clear existing session if it was just a failed login attempt with wrong credentials
-      if (!isAuthAttempt) {
+      const hadToken = !!localStorage.getItem('lifeos_token');
+
+      // If user had a token that is now invalid/expired, reset credentials
+      if (hadToken && !isAuthAttempt) {
         localStorage.removeItem('lifeos_token');
         localStorage.removeItem('lifeos_user');
         clearApiCache();
@@ -141,9 +148,15 @@ api.interceptors.response.use(
           window.dispatchEvent(new CustomEvent('lifeos-session-expired'));
         }
       }
+
+      // If a guest attempted a mutation without being logged in, prompt them with login toast
+      if (!isAuthAttempt && ['post', 'put', 'patch', 'delete'].includes(method)) {
+        showLoginRequiredToast('save your data');
+      }
     }
     return Promise.reject(error);
   }
 );
 
 export default api;
+

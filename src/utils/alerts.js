@@ -261,6 +261,61 @@ export const notifyError = (error, fallbackMessage = 'An unexpected error occurr
   return showErrorToast(message);
 };
 
+/**
+ * Guest/Unauthenticated Input Interceptor Alerts
+ */
+export const notifyGuestAction = (itemName = 'Item', action = 'updated') => {
+  return showInfoToast(
+    `${itemName} ${action} in preview. Sign in to store your data permanently.`,
+    'Preview Mode'
+  );
+};
+
+export const showLoginRequiredAlert = (actionName = 'save your data') => {
+  const theme = getThemeColors();
+  return Swal.fire({
+    ...getSwalBaseOptions(),
+    icon: 'info',
+    title: 'Sign In to Store Data',
+    html: `
+      <div style="text-align: center; margin-top: 6px;">
+        <p style="margin-bottom: 10px; font-size: 14px; opacity: 0.95; line-height: 1.5;">
+          You need to be signed in to <strong>${actionName}</strong>.
+        </p>
+        <p style="font-size: 12px; color: ${theme.mutedColor}; line-height: 1.4;">
+          Guest entries are only displayed in your local preview and will not be stored on the server. Create a free account or log in to keep all your trackers synced.
+        </p>
+      </div>
+    `,
+    showCancelButton: true,
+    confirmButtonText: '🔑 Sign In / Register',
+    cancelButtonText: 'Continue Exploring',
+    focusConfirm: true,
+  }).then((result) => {
+    if (result.isConfirmed) {
+      window.location.href = '/login';
+      return true;
+    }
+    return false;
+  });
+};
+
+export const showLoginRequiredToast = (actionName = 'save data') => {
+  return showWarningToast(
+    `Sign in required to ${actionName}. Data is only kept in preview.`,
+    'Sign In to Store'
+  );
+};
+
+
+export const ensureAuthenticated = (user, actionName = 'save data') => {
+  if (!user) {
+    showLoginRequiredAlert(actionName);
+    return false;
+  }
+  return true;
+};
+
 export default {
   Swal,
   showSuccessToast,
@@ -276,4 +331,8 @@ export default {
   notifyUpdated,
   notifyDeleted,
   notifyError,
+  showLoginRequiredAlert,
+  showLoginRequiredToast,
+  ensureAuthenticated,
 };
+

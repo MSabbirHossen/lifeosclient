@@ -5,6 +5,7 @@ import { AuthProvider, useAuth } from './context/AuthContext';
 import { LanguageProvider } from './context/LanguageContext';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
+import { GuestBanner } from './components/GuestBanner';
 import { getFormattedDate } from './utils/dateHelpers';
 import { LoadingScreen } from './components/LoadingScreen';
 
@@ -27,6 +28,7 @@ const Settings = lazy(() => import('./pages/Settings').then((m) => ({ default: m
 const DeveloperInfo = lazy(() => import('./pages/DeveloperInfo').then((m) => ({ default: m.DeveloperInfo || m.default })));
 
 const Layout = ({ children, selectedDate, setSelectedDate }) => {
+  const { user } = useAuth();
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
 
@@ -54,6 +56,7 @@ const Layout = ({ children, selectedDate, setSelectedDate }) => {
           setSelectedDate={setSelectedDate}
         />
         <main className="flex-1 p-2.5 sm:p-4 md:p-6 lg:p-8 max-w-7xl w-full mx-auto min-w-0">
+          {!user && <GuestBanner />}
           {children}
         </main>
       </div>
@@ -61,15 +64,12 @@ const Layout = ({ children, selectedDate, setSelectedDate }) => {
   );
 };
 
-const ProtectedRoute = ({ children, selectedDate, setSelectedDate }) => {
-  const { user, loading } = useAuth();
+// Accessible to both Authenticated Users and Unauthenticated Guests exploring the app
+const AppRoute = ({ children, selectedDate, setSelectedDate }) => {
+  const { loading } = useAuth();
 
   if (loading) {
     return <LoadingScreen fullScreen={true} message="Loading Life OS..." />;
-  }
-
-  if (!user) {
-    return <Navigate to="/login" replace />;
   }
 
   return <Layout selectedDate={selectedDate} setSelectedDate={setSelectedDate}>{children}</Layout>;
@@ -107,7 +107,7 @@ export function App() {
                 <Route path="/login" element={<PublicOnlyRoute><Auth /></PublicOnlyRoute>} />
                 <Route path="/register" element={<PublicOnlyRoute><Auth /></PublicOnlyRoute>} />
 
-                {/* Dashboard & Tracker Routes */}
+                {/* Dashboard & Tracker Routes - Accessible to all (Guests & Users) */}
                 <Route
                   path="/"
                   element={<Navigate to="/dashboard" replace />}
@@ -115,73 +115,73 @@ export function App() {
                 <Route
                   path="/dashboard"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <Dashboard selectedDate={selectedDate} />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route
                   path="/journal"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <Journal />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route
                   path="/time-tracker"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <TimeTracker />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route
                   path="/study"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <StudyTracker />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route
                   path="/fitness"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <FitnessTracker />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route
                   path="/calories"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <CalorieTracker />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route
                   path="/finance"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <FinanceTracker />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route
                   path="/islamic"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <IslamicTracker />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route
                   path="/islamic-fasting"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <IslamicFastingTracker selectedDate={selectedDate} />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route
@@ -191,49 +191,49 @@ export function App() {
                 <Route
                   path="/qada-matrix"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <QadaMatrix />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route
                   path="/habits"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <HabitsTracker />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route
                   path="/goals"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <GoalsTracker />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route
                   path="/reports"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <Reports />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route
                   path="/settings"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <Settings />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route
                   path="/developer"
                   element={
-                    <ProtectedRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
+                    <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
                       <DeveloperInfo />
-                    </ProtectedRoute>
+                    </AppRoute>
                   }
                 />
                 <Route path="*" element={<Navigate to="/dashboard" replace />} />
