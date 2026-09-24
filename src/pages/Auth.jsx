@@ -559,7 +559,20 @@ export const Auth = () => {
           </div>
         </form>
 
-
+        {/* Continue Exploring without Login */}
+        <div className="mt-5 pt-4 border-t border-theme text-center">
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard')}
+            className="w-full py-2.5 px-4 rounded-xl border border-theme hover:bg-subtle active:scale-[0.99] text-primary font-semibold text-xs sm:text-sm transition-all duration-200 flex items-center justify-center gap-2 group cursor-pointer card-shadow"
+          >
+            <span>Continue Exploring without Login</span>
+            <ArrowRight className="w-3.5 h-3.5 text-secondary group-hover:text-primary group-hover:translate-x-0.5 transition-transform" />
+          </button>
+          <p className="text-[11px] text-muted mt-2 font-medium">
+            Test features, input data, and explore trackers in live preview mode
+          </p>
+        </div>
       </div>
     </div>
   );
