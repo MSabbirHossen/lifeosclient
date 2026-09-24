@@ -204,9 +204,9 @@ export const FastingTimer = ({ compact = false }) => {
     return (
       <div
         onClick={handleCompactClick}
-        className="p-3 sm:p-4 rounded-2xl bg-subtle border border-theme flex flex-col sm:flex-row sm:items-center justify-between gap-3.5 sm:gap-4 card-hover cursor-pointer"
+        className="p-3.5 sm:p-4 rounded-2xl bg-surface border border-theme flex flex-col justify-between gap-3.5 card-shadow transition-all duration-200 hover:shadow-md hover:border-theme-strong hover:-translate-y-0.5 cursor-pointer"
       >
-        <div className="flex items-center gap-3 sm:gap-3.5 min-w-0">
+        <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 min-w-0">
           <div className="relative flex items-center justify-center shrink-0">
             <svg width={size} height={size} className="transform -rotate-90">
               <circle
@@ -233,7 +233,7 @@ export const FastingTimer = ({ compact = false }) => {
             </svg>
             <div className="absolute flex flex-col items-center justify-center">
               <span className="text-xs font-black text-primary">
-                {fastingState.isActive ? `${progressPercent}%` : t('fasting.off')}
+                {fastingState.isActive ? `${progressPercent}%` : t('fasting.off', 'Off')}
               </span>
               <span className="text-[9px] font-bold text-secondary">
                 {fastingState.isActive ? `${hoursElapsed}h ${minutesElapsed}m` : selectedProtocolId}
@@ -241,37 +241,37 @@ export const FastingTimer = ({ compact = false }) => {
             </div>
           </div>
 
-          <div className="min-w-0">
-            <div className="flex items-center gap-1.5 mb-1 flex-wrap">
+          <div className="min-w-0 flex-1 space-y-1">
+            <div className="flex items-center gap-1.5 flex-wrap">
               <Badge variant={fastingState.isActive ? 'purple' : 'neutral'} size="xs">
                 {fastingState.isActive ? (
                   <span className="flex items-center gap-1">
-                    <Moon className="w-3 h-3 text-purple-400" /> {t('fasting.fastingPhase')} ({activeTargetHours}h)
+                    <Moon className="w-3 h-3 text-purple-400" /> {t('fasting.fastingPhase', 'Fasting')} ({activeTargetHours}h)
                   </span>
                 ) : (
                   <span className="flex items-center gap-1">
-                    <Utensils className="w-3 h-3 text-emerald-400" /> {t('fasting.window')} ({eatingHours}h)
+                    <Utensils className="w-3 h-3 text-emerald-400" /> {t('fasting.window', 'Window')} ({eatingHours}h)
                   </span>
                 )}
               </Badge>
               <Badge variant="success" size="xs">
-                {fastingStats.completedCount} {t('fasting.completedIF')}
+                {fastingStats.completedCount} {t('fasting.completedIF', 'Completed IF')}
               </Badge>
               {fastingStats.partialCount > 0 && (
                 <Badge variant="warning" size="xs">
-                  {fastingStats.partialCount} {t('fasting.partialFast')}
+                  {fastingStats.partialCount} {t('fasting.partialFast', 'Partial Fast')}
                 </Badge>
               )}
             </div>
-            <p className="text-xs font-bold text-primary truncate">
+            <p className="text-xs font-bold text-primary leading-tight">
               {fastingState.isActive
-                ? `${hoursRemaining}h ${minutesRemaining}m ${t('fasting.toEatingWindow')}`
-                : `${activeTargetHours}h ${t('fasting.fastingPhase')} / ${eatingHours}h ${t('fasting.eatingWindow')}`}
+                ? `${hoursRemaining}h ${minutesRemaining}m ${t('fasting.toEatingWindow', 'to Eating Window')}`
+                : `${activeTargetHours}h ${t('fasting.fastingPhase', 'Fasting')} / ${eatingHours}h ${t('fasting.eatingWindow', 'Eating')}`}
             </p>
-            <p className="text-[11px] text-secondary mt-0.5 truncate flex items-center gap-1">
-              <span>{fastingState.isActive ? `${t('fasting.started')} ${new Date(fastingState.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : `${t('fasting.protocolLabel')}: ${selectedProtocolId}`}</span>
+            <p className="text-[11px] text-secondary flex items-center gap-1 flex-wrap">
+              <span>{fastingState.isActive ? `${t('fasting.started', 'Started')} ${new Date(fastingState.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : `${t('fasting.protocolLabel', 'Protocol')}: ${selectedProtocolId}`}</span>
               {fastingStats.streak > 0 && (
-                <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">· 🔥 {fastingStats.streak}{t('streakWidget.daysStreak')}</span>
+                <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">· 🔥 {fastingStats.streak} {t('streakWidget.daysStreak', 'd streak')}</span>
               )}
             </p>
           </div>
@@ -280,11 +280,11 @@ export const FastingTimer = ({ compact = false }) => {
         <Button
           variant={fastingState.isActive ? 'danger' : 'primary'}
           size="sm"
-          className="w-full sm:w-auto shrink-0"
+          className="w-full justify-center shrink-0"
           icon={fastingState.isActive ? Square : Play}
           onClick={fastingState.isActive ? handleStop : handleStart}
         >
-          {fastingState.isActive ? t('fasting.endFast') : t('fasting.startFast')}
+          {fastingState.isActive ? t('fasting.endFast', 'End Fast') : t('fasting.startFast', 'Start Fast')}
         </Button>
       </div>
     );
