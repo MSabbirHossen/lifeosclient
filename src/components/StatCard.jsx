@@ -39,26 +39,26 @@ export const StatCard = ({
   const selectedColor = colorMap[color] || colorMap.cerulean;
 
   return (
-    <Card hover onClick={onClick} className={`bg-surface border border-theme ${className}`}>
-      <div className="flex items-start justify-between gap-4">
+    <Card hover onClick={onClick} className={`bg-surface border border-theme p-3 sm:p-4 rounded-xl sm:rounded-2xl ${className}`}>
+      <div className="flex items-center justify-between gap-3">
         <div className="min-w-0 flex-1">
-          <span className="text-[11px] sm:text-xs font-bold text-secondary uppercase tracking-wider block truncate">
+          <span className="text-[10px] sm:text-[11px] font-bold text-secondary uppercase tracking-wider block truncate">
             {title}
           </span>
-          <div className="text-xl sm:text-2xl lg:text-3xl font-extrabold text-primary tracking-tight mt-1 truncate">
+          <div className="text-lg sm:text-xl lg:text-2xl font-black text-primary tracking-tight mt-0.5 truncate">
             {value}
           </div>
-          <div className="flex items-center gap-1.5 sm:gap-2 mt-1.5 flex-wrap">
-            {subtitle && <span className="text-[11px] sm:text-xs text-secondary font-medium truncate max-w-full">{subtitle}</span>}
+          <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+            {subtitle && <span className="text-[10px] sm:text-[11px] text-secondary font-medium truncate max-w-full">{subtitle}</span>}
             {trend && (
               <span
-                className={`inline-flex items-center gap-0.5 px-2 py-0.5 rounded-full text-[10px] sm:text-[11px] font-bold border ${
+                className={`inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[9px] sm:text-[10px] font-bold border ${
                   trend.positive
                     ? 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/20'
                     : 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/20'
                 }`}
               >
-                {trend.positive ? <TrendingUp className="w-3 h-3" /> : <TrendingDown className="w-3 h-3" />}
+                {trend.positive ? <TrendingUp className="w-2.5 h-2.5" /> : <TrendingDown className="w-2.5 h-2.5" />}
                 {trend.value}
               </span>
             )}
@@ -67,9 +67,9 @@ export const StatCard = ({
 
         {Icon && (
           <div
-            className={`w-10 h-10 sm:w-12 sm:h-12 rounded-xl sm:rounded-2xl flex items-center justify-center border shrink-0 transition-all duration-300 group-hover:scale-110 group-hover:rotate-3 shadow-xs ${selectedColor}`}
+            className={`w-9 h-9 sm:w-10 sm:h-10 rounded-xl flex items-center justify-center border shrink-0 transition-all duration-200 group-hover:scale-105 shadow-xs ${selectedColor}`}
           >
-            <Icon className="w-5 h-5 sm:w-6 sm:h-6" />
+            <Icon className="w-4 h-4 sm:w-5 sm:h-5" />
           </div>
         )}
       </div>
