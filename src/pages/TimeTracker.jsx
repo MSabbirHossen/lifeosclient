@@ -25,15 +25,18 @@ import {
   Play,
 } from 'lucide-react';
 
-const CATEGORIES = ['Work', 'Study', 'Fitness', 'Islamic', 'Social', 'Sleep', 'Other'];
+const CATEGORIES = ['Work', 'Study', 'Fitness', 'Islamic', 'Personal Task', 'Social', 'Sleep', 'Time Waste', 'Other'];
 
 const CATEGORY_COLORS = {
   Work: 'indigo',
   Study: 'purple',
   Fitness: 'emerald',
   Islamic: 'cyan',
+  'Personal Task': 'sky',
+  Personal: 'sky',
   Social: 'amber',
   Sleep: 'rose',
+  'Time Waste': 'orange',
   Other: 'neutral',
 };
 
@@ -285,7 +288,7 @@ export const TimeTracker = ({ selectedDate }) => {
 
       {/* Category Breakdown Chips */}
       <Card title={t('time.categoryBreakdown', 'Category Distribution')} subtitle={t('time.timeAllocationCategory', 'Time allocation breakdown across categories')}>
-        <div className="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-2 sm:gap-2.5 mt-1">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 lg:grid-cols-9 gap-2 sm:gap-2.5 mt-1">
           {CATEGORIES.map((cat) => {
             const mins = summary.byCategory?.[cat] || 0;
             const hours = Math.floor(mins / 60);
@@ -463,11 +466,10 @@ export const TimeTracker = ({ selectedDate }) => {
                           key={c}
                           type="button"
                           onClick={() => setCategory(c)}
-                          className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${
-                            isSelected
+                          className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${isSelected
                               ? 'bg-accent text-accent-contrast border-accent shadow-xs'
                               : 'bg-surface/80 border-theme text-secondary hover:text-primary hover:bg-subtle'
-                          }`}
+                            }`}
                         >
                           {c}
                         </button>
