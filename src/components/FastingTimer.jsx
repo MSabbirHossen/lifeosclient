@@ -24,6 +24,9 @@ import {
 } from 'lucide-react';
 import {
   getFastingStats,
+  getFastingState,
+  fetchFastingData,
+  updateFastingState,
   recordEndedFast,
   adjustFastingCount,
   subscribeFastingUpdates,
@@ -47,31 +50,34 @@ export const FastingTimer = ({ compact = false }) => {
   const [showSettings, setShowSettings] = useState(false);
   const [fastingStats, setFastingStats] = useState(() => getFastingStats());
   const [endedSummary, setEndedSummary] = useState(null);
-
-  const [fastingState, setFastingState] = useState(() => {
-    try {
-      const saved = localStorage.getItem('lifeos_fasting_state');
-      if (saved) return JSON.parse(saved);
-    } catch (e) {}
-    return {
-      isActive: false,
-      startTime: null,
-      protocolId: '16:8',
-      targetHours: 16,
-    };
-  });
-
+  const [fastingState, setFastingState] = useState(() => getFastingState());
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
 
-  // Sync state to local storage
+  // Fetch fresh fasting data on mount and poll for cross-device updates
   useEffect(() => {
-    localStorage.setItem('lifeos_fasting_state', JSON.stringify(fastingState));
-  }, [fastingState]);
+    fetchFastingData().then((res) => {
+      if (res?.activeState) setFastingState(res.activeState);
+      if (res?.stats) setFastingStats(res.stats);
+    });
 
-  // Subscribe to real-time fasting updates across tabs/components
+    // Cross-device periodic sync every 20 seconds
+    const syncInterval = setInterval(() => {
+      if (localStorage.getItem('lifeos_token')) {
+        fetchFastingData().then((res) => {
+          if (res?.activeState) setFastingState(res.activeState);
+          if (res?.stats) setFastingStats(res.stats);
+        });
+      }
+    }, 20000);
+
+    return () => clearInterval(syncInterval);
+  }, []);
+
+  // Subscribe to real-time fasting updates across tabs/components/storage events
   useEffect(() => {
-    const unsub = subscribeFastingUpdates((newStats) => {
-      setFastingStats(newStats);
+    const unsub = subscribeFastingUpdates(({ stats, state }) => {
+      if (stats) setFastingStats(stats);
+      if (state) setFastingState(state);
     });
     return unsub;
   }, []);
@@ -110,23 +116,21 @@ export const FastingTimer = ({ compact = false }) => {
     ? Number(customHours) || 16
     : FASTING_PROTOCOLS.find((p) => p.id === selectedProtocolId)?.fastHours || 16;
 
-  const handleStart = () => {
+  const handleStart = async () => {
     setEndedSummary(null);
-    setFastingState({
+    const newState = {
       isActive: true,
       startTime: new Date().toISOString(),
       protocolId: selectedProtocolId,
       targetHours: activeTargetHours,
-    });
+    };
+    setFastingState(newState);
+    await updateFastingState(newState);
   };
 
-  const handleStop = () => {
+  const handleStop = async () => {
     if (fastingState.isActive && fastingState.startTime) {
-      // 3-tier classification:
-      // 1. Completed IF: 80%+ target
-      // 2. Partial Fast: 20% to 80% target
-      // 3. Early Ended: < 20% target
-      const result = recordEndedFast({
+      const result = await recordEndedFast({
         protocolId: fastingState.protocolId || selectedProtocolId,
         targetHours: activeTargetHours,
         startTime: fastingState.startTime,
@@ -135,25 +139,28 @@ export const FastingTimer = ({ compact = false }) => {
       setEndedSummary(result);
     }
 
-    setFastingState((prev) => ({
-      ...prev,
+    const inactiveState = {
+      ...fastingState,
       isActive: false,
       startTime: null,
-    }));
+    };
+    setFastingState(inactiveState);
     setElapsedSeconds(0);
   };
 
-  const handleReset = () => {
+  const handleReset = async () => {
     if (fastingState.isActive) {
-      setFastingState((prev) => ({
-        ...prev,
+      const resetState = {
+        ...fastingState,
         startTime: new Date().toISOString(),
-      }));
+      };
+      setFastingState(resetState);
+      await updateFastingState(resetState);
     }
     setElapsedSeconds(0);
   };
 
-  const handleProtocolChange = (protId) => {
+  const handleProtocolChange = async (protId) => {
     setSelectedProtocolId(protId);
     const target =
       protId === 'custom'
@@ -161,11 +168,13 @@ export const FastingTimer = ({ compact = false }) => {
         : FASTING_PROTOCOLS.find((p) => p.id === protId)?.fastHours || 16;
 
     if (fastingState.isActive) {
-      setFastingState((prev) => ({
-        ...prev,
+      const updatedState = {
+        ...fastingState,
         protocolId: protId,
         targetHours: target,
-      }));
+      };
+      setFastingState(updatedState);
+      await updateFastingState(updatedState);
     }
   };
 

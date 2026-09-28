@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
 import api from '../utils/api';
+import { fetchFastingData } from '../utils/fastingService';
 
 const AuthContext = createContext();
 
@@ -59,6 +60,7 @@ export const AuthProvider = ({ children }) => {
         if (userData.currency) {
           localStorage.setItem('lifeos_currency', userData.currency);
         }
+        fetchFastingData();
       } catch (err) {
         // If the backend returns 401 or 403, the session/token is invalid or expired
         if (err.response && (err.response.status === 401 || err.response.status === 403)) {
@@ -89,6 +91,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('lifeos_token', token);
     localStorage.setItem('lifeos_user', JSON.stringify(userData));
     setUser(userData);
+    fetchFastingData();
     return res.data;
   };
 
@@ -104,6 +107,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('lifeos_token', token);
     localStorage.setItem('lifeos_user', JSON.stringify(userData));
     setUser(userData);
+    fetchFastingData();
     return res.data;
   };
 
@@ -125,6 +129,7 @@ export const AuthProvider = ({ children }) => {
     localStorage.setItem('lifeos_token', token);
     localStorage.setItem('lifeos_user', JSON.stringify(userData));
     setUser(userData);
+    fetchFastingData();
     return res.data;
   };
 

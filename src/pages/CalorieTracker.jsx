@@ -224,8 +224,9 @@ export const CalorieTracker = ({ selectedDate }) => {
 
   // Subscribe to live Intermittent Fasting (IF) count and streak updates
   useEffect(() => {
-    const unsub = subscribeFastingUpdates((newStats) => {
-      setFastingStats(newStats);
+    const unsub = subscribeFastingUpdates((payload) => {
+      if (payload?.stats) setFastingStats(payload.stats);
+      else if (payload) setFastingStats(payload);
     });
     return unsub;
   }, []);
