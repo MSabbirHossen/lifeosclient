@@ -38,8 +38,8 @@ export const Card = ({
     >
       <div className="flex-1 min-w-0 flex flex-col">
         {(title || action || Icon || badge) && (
-          <div className="flex items-center justify-between gap-2 sm:gap-3 mb-3.5 sm:mb-4 pb-2.5 sm:pb-3 border-b border-subtle/80 shrink-0">
-            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 sm:gap-3 mb-3.5 sm:mb-4 pb-2.5 sm:pb-3 border-b border-subtle/80 shrink-0">
+            <div className="flex items-center gap-2.5 sm:gap-3 min-w-0 flex-1 w-full sm:w-auto">
               {Icon && (
                 <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-xl bg-accent/10 dark:bg-accent/15 border border-accent/20 flex items-center justify-center text-accent shrink-0 shadow-xs transition-transform duration-200 group-hover:scale-105">
                   <Icon className="w-4 h-4" />
@@ -58,7 +58,7 @@ export const Card = ({
               </div>
             </div>
             {action && (
-              <div className="shrink-0 flex items-center gap-1.5 sm:gap-2 justify-end ml-2">
+              <div className="shrink-0 flex items-center gap-1.5 sm:gap-2 justify-start sm:justify-end w-full sm:w-auto">
                 {action}
               </div>
             )}

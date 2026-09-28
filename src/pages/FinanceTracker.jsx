@@ -870,11 +870,11 @@ export const FinanceTracker = ({ selectedDate }) => {
         subtitle="Chronological list of all financial entries and currency exchanges"
         icon={CreditCard}
         action={
-          <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
             <select
               value={filterCurrency}
               onChange={(e) => setFilterCurrency(e.target.value)}
-              className="select-base text-xs py-1.5 px-2.5 rounded-lg flex-1 sm:flex-initial font-medium"
+              className="select-base text-xs py-1.5 px-2.5 rounded-lg flex-1 sm:w-36 font-medium"
             >
               <option value="all">All Currencies</option>
               {availableCurrencies.map((c) => (
@@ -887,7 +887,7 @@ export const FinanceTracker = ({ selectedDate }) => {
             <select
               value={filterType}
               onChange={(e) => setFilterType(e.target.value)}
-              className="select-base text-xs py-1.5 px-2.5 rounded-lg flex-1 sm:flex-initial font-medium"
+              className="select-base text-xs py-1.5 px-2.5 rounded-lg flex-1 sm:w-36 font-medium"
             >
               <option value="all">All Types</option>
               <option value="income">Income</option>
@@ -908,40 +908,24 @@ export const FinanceTracker = ({ selectedDate }) => {
             onAction={() => openTransactionModal('expense')}
           />
         ) : (
-          <div className="touch-scroll-x overflow-x-auto mt-3 -mx-2 sm:mx-0 px-2 sm:px-0">
-            <table className="w-full min-w-[660px] text-left text-xs border-collapse">
-              <thead>
-                <tr className="border-b border-theme text-secondary font-bold uppercase tracking-wider">
-                  <th className="pb-3 px-3">Date</th>
-                  <th className="pb-3 px-3">Title / Details</th>
-                  <th className="pb-3 px-3">Type</th>
-                  <th className="pb-3 px-3">Method / Route</th>
-                  <th className="pb-3 px-3">Notes</th>
-                  <th className="pb-3 px-3 text-right">Amount</th>
-                  <th className="pb-3 px-3 text-right">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-subtle font-medium">
-                {filteredTransactions.map((tx) => {
-                  const isTransfer = tx.type === 'transfer';
-                  const isExchange = isTransfer && tx.toCurrency && tx.currency !== tx.toCurrency;
+          <>
+            {/* Mobile View: High-Design Touch Cards (Visible on screens < 640px) */}
+            <div className="block sm:hidden space-y-2.5 mt-2">
+              {filteredTransactions.map((tx) => {
+                const isTransfer = tx.type === 'transfer';
+                const isExchange = isTransfer && tx.toCurrency && tx.currency !== tx.toCurrency;
 
-                  return (
-                    <tr key={tx._id} className="hover:bg-subtle/50 transition-colors">
-                      <td className="py-3 px-3 text-primary font-bold whitespace-nowrap">
-                        {formatDisplayDate(tx.date)}
-                      </td>
-                      <td className="py-3 px-3 whitespace-nowrap">
-                        <span className="font-bold text-primary block">
-                          {tx.title || tx.category}
+                return (
+                  <div
+                    key={tx._id}
+                    className="p-3 rounded-xl bg-subtle/40 hover:bg-subtle/80 border border-theme space-y-2 transition-all"
+                  >
+                    {/* Top Row: Date + Badge + Amount */}
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 min-w-0 flex-wrap">
+                        <span className="text-[11px] font-bold text-secondary">
+                          {formatDisplayDate(tx.date)}
                         </span>
-                        {isTransfer && tx.toPaymentMethod && (
-                          <span className="text-[11px] text-secondary">
-                            {tx.paymentMethod} ({tx.currency}) → {tx.toPaymentMethod} ({tx.toCurrency || tx.currency})
-                          </span>
-                        )}
-                      </td>
-                      <td className="py-3 px-3 whitespace-nowrap">
                         <Badge
                           variant={
                             tx.type === 'income'
@@ -957,64 +941,190 @@ export const FinanceTracker = ({ selectedDate }) => {
                         >
                           {isExchange ? 'Exchange' : tx.type}
                         </Badge>
-                      </td>
-                      <td className="py-3 px-3 text-secondary whitespace-nowrap font-medium">
+                      </div>
+
+                      <div
+                        className={`text-xs font-extrabold tracking-tight shrink-0 text-right ${
+                          tx.type === 'income'
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : isTransfer
+                              ? 'text-indigo-600 dark:text-indigo-400'
+                              : 'text-[var(--color-danger)]'
+                        }`}
+                      >
+                        {tx.type === 'income' && `+${tx.amount.toFixed(2)} ${tx.currency || displayCurrency}`}
+                        {tx.type === 'expense' && `-${tx.amount.toFixed(2)} ${tx.currency || displayCurrency}`}
+                        {isTransfer &&
+                          (isExchange ? (
+                            <div className="leading-tight">
+                              <div>{tx.amount.toFixed(2)} {tx.currency}</div>
+                              <div className="text-[10px] text-accent font-semibold">
+                                ➔ {(tx.toAmount !== undefined ? tx.toAmount : tx.amount).toFixed(2)} {tx.toCurrency}
+                              </div>
+                            </div>
+                          ) : (
+                            <span>⇄ {tx.amount.toFixed(2)} {tx.currency || displayCurrency}</span>
+                          ))}
+                      </div>
+                    </div>
+
+                    {/* Middle Row: Title & Payment Method / Route */}
+                    <div className="flex items-start justify-between gap-2">
+                      <div className="font-bold text-xs text-primary break-words flex-1">
+                        {tx.title || tx.category}
+                      </div>
+                      <div className="text-[10px] text-secondary font-semibold shrink-0 bg-surface px-2 py-0.5 rounded-md border border-theme">
                         {isTransfer && tx.toPaymentMethod ? (
                           <span>{tx.paymentMethod} ➔ {tx.toPaymentMethod}</span>
                         ) : (
                           tx.paymentMethod || 'Debit Card'
                         )}
-                      </td>
-                      <td className="py-3 px-3 text-secondary max-w-xs truncate">
-                        {tx.notes || '—'}
-                      </td>
-                      <td
-                        className={`py-3 px-3 text-right font-extrabold whitespace-nowrap ${tx.type === 'income'
-                          ? 'text-emerald-600 dark:text-emerald-400'
-                          : isTransfer
-                            ? 'text-indigo-600 dark:text-indigo-400'
-                            : 'text-[var(--color-danger)]'
-                          }`}
-                      >
-                        {tx.type === 'income' && `+${tx.amount.toFixed(2)} ${tx.currency || displayCurrency}`}
-                        {tx.type === 'expense' && `-${tx.amount.toFixed(2)} ${tx.currency || displayCurrency}`}
-                        {isTransfer && (
-                          isExchange ? (
-                            <div className="flex flex-col items-end leading-tight">
-                              <span>{tx.amount.toFixed(2)} {tx.currency}</span>
-                              <span className="text-[11px] text-accent font-semibold">
-                                ➔ {(tx.toAmount !== undefined ? tx.toAmount : tx.amount).toFixed(2)} {tx.toCurrency}
-                              </span>
-                            </div>
+                      </div>
+                    </div>
+
+                    {/* Transfer Details Breakdown */}
+                    {isTransfer && tx.toPaymentMethod && (
+                      <div className="text-[10px] text-secondary">
+                        {tx.paymentMethod} ({tx.currency}) → {tx.toPaymentMethod} ({tx.toCurrency || tx.currency})
+                      </div>
+                    )}
+
+                    {/* Notes & Action Buttons */}
+                    <div className="flex items-center justify-between gap-2 pt-1.5 border-t border-theme/60">
+                      <div className="text-[11px] text-secondary truncate flex-1">
+                        {tx.notes || <span className="opacity-40 italic">No notes</span>}
+                      </div>
+                      <div className="flex items-center gap-1 shrink-0">
+                        <button
+                          onClick={() => handleEditTransaction(tx)}
+                          className="p-1.5 rounded-lg text-secondary hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
+                          title="Edit Transaction"
+                        >
+                          <Edit2 className="w-3.5 h-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteTransaction(tx._id)}
+                          className="p-1.5 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                          title="Delete Transaction"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* Desktop View: Full Table (Visible on screens >= 640px) */}
+            <div className="hidden sm:block touch-scroll-x overflow-x-auto mt-3 -mx-2 sm:mx-0 px-2 sm:px-0">
+              <table className="w-full min-w-[660px] text-left text-xs border-collapse">
+                <thead>
+                  <tr className="border-b border-theme text-secondary font-bold uppercase tracking-wider">
+                    <th className="pb-3 px-3">Date</th>
+                    <th className="pb-3 px-3">Title / Details</th>
+                    <th className="pb-3 px-3">Type</th>
+                    <th className="pb-3 px-3">Method / Route</th>
+                    <th className="pb-3 px-3">Notes</th>
+                    <th className="pb-3 px-3 text-right">Amount</th>
+                    <th className="pb-3 px-3 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-subtle font-medium">
+                  {filteredTransactions.map((tx) => {
+                    const isTransfer = tx.type === 'transfer';
+                    const isExchange = isTransfer && tx.toCurrency && tx.currency !== tx.toCurrency;
+
+                    return (
+                      <tr key={tx._id} className="hover:bg-subtle/50 transition-colors">
+                        <td className="py-3 px-3 text-primary font-bold whitespace-nowrap">
+                          {formatDisplayDate(tx.date)}
+                        </td>
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          <span className="font-bold text-primary block">
+                            {tx.title || tx.category}
+                          </span>
+                          {isTransfer && tx.toPaymentMethod && (
+                            <span className="text-[11px] text-secondary">
+                              {tx.paymentMethod} ({tx.currency}) → {tx.toPaymentMethod} ({tx.toCurrency || tx.currency})
+                            </span>
+                          )}
+                        </td>
+                        <td className="py-3 px-3 whitespace-nowrap">
+                          <Badge
+                            variant={
+                              tx.type === 'income'
+                                ? 'success'
+                                : isExchange
+                                  ? 'cyan'
+                                  : isTransfer
+                                    ? 'purple'
+                                    : 'neutral'
+                            }
+                            size="xs"
+                            dot
+                          >
+                            {isExchange ? 'Exchange' : tx.type}
+                          </Badge>
+                        </td>
+                        <td className="py-3 px-3 text-secondary whitespace-nowrap font-medium">
+                          {isTransfer && tx.toPaymentMethod ? (
+                            <span>{tx.paymentMethod} ➔ {tx.toPaymentMethod}</span>
                           ) : (
-                            <span>⇄ {tx.amount.toFixed(2)} {tx.currency || displayCurrency}</span>
-                          )
-                        )}
-                      </td>
-                      <td className="py-3 px-3 text-right whitespace-nowrap">
-                        <div className="flex items-center justify-end gap-1">
-                          <button
-                            onClick={() => handleEditTransaction(tx)}
-                            className="p-1.5 rounded-lg text-secondary hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
-                            title="Edit Transaction"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </button>
-                          <button
-                            onClick={() => handleDeleteTransaction(tx._id)}
-                            className="p-1.5 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
-                            title="Delete Transaction"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+                            tx.paymentMethod || 'Debit Card'
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-secondary max-w-xs truncate">
+                          {tx.notes || '—'}
+                        </td>
+                        <td
+                          className={`py-3 px-3 text-right font-extrabold whitespace-nowrap ${tx.type === 'income'
+                            ? 'text-emerald-600 dark:text-emerald-400'
+                            : isTransfer
+                              ? 'text-indigo-600 dark:text-indigo-400'
+                              : 'text-[var(--color-danger)]'
+                            }`}
+                        >
+                          {tx.type === 'income' && `+${tx.amount.toFixed(2)} ${tx.currency || displayCurrency}`}
+                          {tx.type === 'expense' && `-${tx.amount.toFixed(2)} ${tx.currency || displayCurrency}`}
+                          {isTransfer && (
+                            isExchange ? (
+                              <div className="flex flex-col items-end leading-tight">
+                                <span>{tx.amount.toFixed(2)} {tx.currency}</span>
+                                <span className="text-[11px] text-accent font-semibold">
+                                  ➔ {(tx.toAmount !== undefined ? tx.toAmount : tx.amount).toFixed(2)} {tx.toCurrency}
+                                </span>
+                              </div>
+                            ) : (
+                              <span>⇄ {tx.amount.toFixed(2)} {tx.currency || displayCurrency}</span>
+                            )
+                          )}
+                        </td>
+                        <td className="py-3 px-3 text-right whitespace-nowrap">
+                          <div className="flex items-center justify-end gap-1">
+                            <button
+                              onClick={() => handleEditTransaction(tx)}
+                              className="p-1.5 rounded-lg text-secondary hover:text-accent hover:bg-accent/10 transition-colors cursor-pointer"
+                              title="Edit Transaction"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </button>
+                            <button
+                              onClick={() => handleDeleteTransaction(tx._id)}
+                              className="p-1.5 rounded-lg text-secondary hover:text-rose-600 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                              title="Delete Transaction"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </Card>
 
