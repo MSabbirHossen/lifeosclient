@@ -116,7 +116,7 @@ export function App() {
                   path="/dashboard"
                   element={
                     <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                      <Dashboard selectedDate={selectedDate} />
+                      <Dashboard selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                     </AppRoute>
                   }
                 />
@@ -124,7 +124,7 @@ export function App() {
                   path="/journal"
                   element={
                     <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                      <Journal />
+                      <Journal selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                     </AppRoute>
                   }
                 />
@@ -132,7 +132,7 @@ export function App() {
                   path="/time-tracker"
                   element={
                     <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                      <TimeTracker />
+                      <TimeTracker selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                     </AppRoute>
                   }
                 />
@@ -140,7 +140,7 @@ export function App() {
                   path="/study"
                   element={
                     <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                      <StudyTracker />
+                      <StudyTracker selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                     </AppRoute>
                   }
                 />
@@ -148,7 +148,7 @@ export function App() {
                   path="/fitness"
                   element={
                     <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                      <FitnessTracker />
+                      <FitnessTracker selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                     </AppRoute>
                   }
                 />
@@ -156,7 +156,7 @@ export function App() {
                   path="/calories"
                   element={
                     <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                      <CalorieTracker />
+                      <CalorieTracker selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                     </AppRoute>
                   }
                 />
@@ -164,7 +164,7 @@ export function App() {
                   path="/finance"
                   element={
                     <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                      <FinanceTracker />
+                      <FinanceTracker selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                     </AppRoute>
                   }
                 />
@@ -172,7 +172,7 @@ export function App() {
                   path="/islamic"
                   element={
                     <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                      <IslamicTracker />
+                      <IslamicTracker selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                     </AppRoute>
                   }
                 />
@@ -180,7 +180,7 @@ export function App() {
                   path="/islamic-fasting"
                   element={
                     <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                      <IslamicFastingTracker selectedDate={selectedDate} />
+                      <IslamicFastingTracker selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                     </AppRoute>
                   }
                 />
@@ -192,7 +192,7 @@ export function App() {
                   path="/qada-matrix"
                   element={
                     <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                      <QadaMatrix />
+                      <QadaMatrix selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                     </AppRoute>
                   }
                 />
@@ -200,7 +200,7 @@ export function App() {
                   path="/habits"
                   element={
                     <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                      <HabitsTracker />
+                      <HabitsTracker selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                     </AppRoute>
                   }
                 />
@@ -208,7 +208,7 @@ export function App() {
                   path="/goals"
                   element={
                     <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                      <GoalsTracker />
+                      <GoalsTracker selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                     </AppRoute>
                   }
                 />
@@ -216,7 +216,7 @@ export function App() {
                   path="/reports"
                   element={
                     <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                      <Reports />
+                      <Reports selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                     </AppRoute>
                   }
                 />
@@ -224,7 +224,7 @@ export function App() {
                   path="/settings"
                   element={
                     <AppRoute selectedDate={selectedDate} setSelectedDate={setSelectedDate}>
-                      <Settings />
+                      <Settings selectedDate={selectedDate} setSelectedDate={setSelectedDate} />
                     </AppRoute>
                   }
                 />
