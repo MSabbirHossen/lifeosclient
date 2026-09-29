@@ -30,6 +30,8 @@ import {
   Banknote,
   Landmark,
   Smartphone,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 
 const NESTED_EXPENSE_CATEGORIES = {
@@ -261,6 +263,33 @@ export const FinanceTracker = ({ selectedDate }) => {
     currencyTotals: {},
   });
   const [loading, setLoading] = useState(() => !getLocalCache('/finance/transactions'));
+
+  // Blur / Privacy Mode State
+  const [isPageBlurred, setIsPageBlurred] = useState(() => {
+    return localStorage.getItem('lifeos_blur_finance') === 'true';
+  });
+  const [blurredCards, setBlurredCards] = useState({});
+
+  const togglePageBlur = () => {
+    const newState = !isPageBlurred;
+    setIsPageBlurred(newState);
+    localStorage.setItem('lifeos_blur_finance', String(newState));
+    setBlurredCards({});
+  };
+
+  const isCardBlurred = (cardId) => {
+    if (blurredCards[cardId] !== undefined) {
+      return blurredCards[cardId];
+    }
+    return isPageBlurred;
+  };
+
+  const toggleCardBlur = (cardId) => {
+    setBlurredCards((prev) => ({
+      ...prev,
+      [cardId]: !(prev[cardId] !== undefined ? prev[cardId] : isPageBlurred),
+    }));
+  };
 
   // Filters State
   const [filterType, setFilterType] = useState('all');
@@ -662,7 +691,21 @@ export const FinanceTracker = ({ selectedDate }) => {
         title={t('finance.title', 'Personal Finance & Wealth')}
         description={`${t('finance.subtitle', 'Track income streams, categorize daily expenses, and analyze cash flow.')} (${defaultCurrency})`}
         action={
-          <div className="flex items-center gap-2.5 flex-wrap">
+          <div className="flex items-center gap-2 sm:gap-2.5 flex-wrap">
+            <Button
+              variant={isPageBlurred ? 'primary' : 'outline'}
+              size="md"
+              icon={isPageBlurred ? EyeOff : Eye}
+              onClick={togglePageBlur}
+              className={`transition-all duration-200 cursor-pointer ${
+                isPageBlurred
+                  ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 shadow-xs'
+                  : 'hover:border-theme-strong'
+              }`}
+              title={isPageBlurred ? 'Unblur all content on page' : 'Blur all content on page for privacy'}
+            >
+              {isPageBlurred ? 'Unblur Page' : 'Blur Page'}
+            </Button>
             <Button
               variant="secondary"
               size="md"
@@ -699,6 +742,9 @@ export const FinanceTracker = ({ selectedDate }) => {
           subtitle="All currency vaults combined"
           icon={Wallet}
           color="indigo"
+          allowBlur={true}
+          isBlurred={isCardBlurred('netWealth')}
+          onToggleBlur={() => toggleCardBlur('netWealth')}
         />
         <StatCard
           title="Total Income"
@@ -706,6 +752,9 @@ export const FinanceTracker = ({ selectedDate }) => {
           subtitle="All recorded earnings"
           icon={TrendingUp}
           color="emerald"
+          allowBlur={true}
+          isBlurred={isCardBlurred('totalIncome')}
+          onToggleBlur={() => toggleCardBlur('totalIncome')}
         />
         <StatCard
           title="Total Expenses"
@@ -713,6 +762,9 @@ export const FinanceTracker = ({ selectedDate }) => {
           subtitle="All recorded outflows"
           icon={TrendingDown}
           color="rose"
+          allowBlur={true}
+          isBlurred={isCardBlurred('totalExpenses')}
+          onToggleBlur={() => toggleCardBlur('totalExpenses')}
         />
       </div>
 
@@ -726,6 +778,9 @@ export const FinanceTracker = ({ selectedDate }) => {
             title="Multi-Currency Asset Holdings"
             subtitle={`Live balances per currency · Valuations in ${displayCurrency}`}
             icon={Coins}
+            allowBlur={true}
+            isBlurred={isCardBlurred('multiCurrency')}
+            onToggleBlur={() => toggleCardBlur('multiCurrency')}
             action={
               <Button
                 variant="secondary"
@@ -819,6 +874,9 @@ export const FinanceTracker = ({ selectedDate }) => {
             title="Payment Methods & Accounts"
             subtitle={`Live net balance in ${displayCurrency} equivalent`}
             icon={Layers}
+            allowBlur={true}
+            isBlurred={isCardBlurred('paymentMethods')}
+            onToggleBlur={() => toggleCardBlur('paymentMethods')}
           >
             <div className="flex flex-col justify-between h-full space-y-3 mt-1">
               <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
@@ -869,6 +927,9 @@ export const FinanceTracker = ({ selectedDate }) => {
         title="Transaction & Transfer Ledger"
         subtitle="Chronological list of all financial entries and currency exchanges"
         icon={CreditCard}
+        allowBlur={true}
+        isBlurred={isCardBlurred('ledger')}
+        onToggleBlur={() => toggleCardBlur('ledger')}
         action={
           <div className="flex items-center gap-2 w-full sm:w-auto">
             <select
