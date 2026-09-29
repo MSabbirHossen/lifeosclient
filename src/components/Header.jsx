@@ -30,6 +30,7 @@ export const Header = ({ onOpenMobileMenu, selectedDate, setSelectedDate }) => {
 
   const langMenuRef = useRef(null);
   const profileMenuRef = useRef(null);
+  const dateInputRef = useRef(null);
 
   // Close menus on outside click
   useEffect(() => {
@@ -48,19 +49,45 @@ export const Header = ({ onOpenMobileMenu, selectedDate, setSelectedDate }) => {
   const currentDate = selectedDate || getFormattedDate();
 
   const handlePrevDay = () => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() - 1);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    if (typeof currentDate === 'string' && currentDate.includes('-')) {
+      const [y, m, d] = currentDate.split('-').map(Number);
+      const date = new Date(y, m - 1, d);
+      date.setDate(date.getDate() - 1);
+      setSelectedDate(getFormattedDate(date));
+    } else {
+      const d = new Date(currentDate);
+      d.setDate(d.getDate() - 1);
+      setSelectedDate(getFormattedDate(d));
+    }
   };
 
   const handleNextDay = () => {
-    const d = new Date(currentDate);
-    d.setDate(d.getDate() + 1);
-    setSelectedDate(d.toISOString().split('T')[0]);
+    if (typeof currentDate === 'string' && currentDate.includes('-')) {
+      const [y, m, d] = currentDate.split('-').map(Number);
+      const date = new Date(y, m - 1, d);
+      date.setDate(date.getDate() + 1);
+      setSelectedDate(getFormattedDate(date));
+    } else {
+      const d = new Date(currentDate);
+      d.setDate(d.getDate() + 1);
+      setSelectedDate(getFormattedDate(d));
+    }
   };
 
   const handleToday = () => {
     setSelectedDate(getFormattedDate());
+  };
+
+  const handleOpenPicker = () => {
+    try {
+      if (dateInputRef.current?.showPicker) {
+        dateInputRef.current.showPicker();
+      } else {
+        dateInputRef.current?.focus();
+      }
+    } catch {
+      dateInputRef.current?.focus();
+    }
   };
 
   const isToday = currentDate === getFormattedDate();
@@ -88,18 +115,29 @@ export const Header = ({ onOpenMobileMenu, selectedDate, setSelectedDate }) => {
             {isRTL ? <ChevronRight className="w-3.5 h-3.5 sm:w-4 sm:h-4" /> : <ChevronLeft className="w-3.5 h-3.5 sm:w-4 sm:h-4" />}
           </button>
 
-          <div className="flex items-center gap-1 sm:gap-2 px-0.5 sm:px-1.5 py-0.5 min-w-0">
-            <Calendar className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-accent shrink-0 hidden xs:inline" />
-            <input
-              type="date"
-              value={currentDate}
-              onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-transparent text-primary focus:outline-none cursor-pointer text-[11px] sm:text-xs font-bold w-[92px] sm:w-[125px] p-0"
-              aria-label="Select Date"
-            />
-            <span className="hidden md:inline text-secondary font-medium text-xs border-l rtl:border-l-0 rtl:border-r border-theme pl-2 rtl:pl-0 rtl:pr-2 whitespace-nowrap">
+          {/* Single Date Display with Click-to-Pick Date Picker */}
+          <div
+            onClick={handleOpenPicker}
+            className="flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-0.5 min-w-0 cursor-pointer hover:bg-surface/80 rounded-lg transition-colors group select-none relative"
+            title={t('common.selectDate', 'Select Date')}
+          >
+            <Calendar className="w-3.5 h-3.5 text-accent shrink-0 group-hover:scale-110 transition-transform" />
+            <span className="text-primary font-bold text-xs sm:text-xs whitespace-nowrap">
               {formatDisplayDate(currentDate)}
             </span>
+            <input
+              ref={dateInputRef}
+              type="date"
+              value={currentDate}
+              onChange={(e) => {
+                if (e.target.value) {
+                  setSelectedDate(e.target.value);
+                }
+              }}
+              className="sr-only"
+              tabIndex={-1}
+              aria-label="Select Date"
+            />
           </div>
 
           <button
