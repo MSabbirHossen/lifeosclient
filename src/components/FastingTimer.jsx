@@ -21,6 +21,8 @@ import {
   X,
   Trophy,
   BarChart2,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import {
   getFastingStats,
@@ -32,9 +34,26 @@ import {
   subscribeFastingUpdates,
 } from '../utils/fastingService';
 
-export const FastingTimer = ({ compact = false }) => {
+export const FastingTimer = ({
+  compact = false,
+  allowBlur = false,
+  isBlurred: controlledBlurred,
+  onToggleBlur,
+}) => {
   const { t } = useLanguage();
   const navigate = useNavigate();
+
+  const [internalBlurred, setInternalBlurred] = useState(false);
+  const isBlurred = controlledBlurred !== undefined ? controlledBlurred : internalBlurred;
+
+  const handleToggleBlur = (e) => {
+    e?.stopPropagation?.();
+    if (onToggleBlur) {
+      onToggleBlur(!isBlurred);
+    } else {
+      setInternalBlurred(!internalBlurred);
+    }
+  };
 
   const FASTING_PROTOCOLS = [
     { id: '16:8', label: t('fasting.protocolStandard'), fastHours: 16, eatHours: 8 },
@@ -198,6 +217,17 @@ export const FastingTimer = ({ compact = false }) => {
   const circumference = 2 * Math.PI * radius;
   const strokeDashoffset = circumference - (progressPercent / 100) * circumference;
 
+  const targetEndTime = fastingState.isActive && fastingState.startTime
+    ? new Date(new Date(fastingState.startTime).getTime() + activeTargetHours * 3600 * 1000)
+    : null;
+
+  const startDateObj = fastingState.isActive && fastingState.startTime ? new Date(fastingState.startTime) : null;
+  const startDateStr = startDateObj ? startDateObj.toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
+  const startTimeStr = startDateObj ? startDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+  const endDateStr = targetEndTime ? targetEndTime.toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
+  const endTimeStr = targetEndTime ? targetEndTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
   // Aggregate stats calculations
   const totalAttempted =
     fastingStats.completedCount + fastingStats.partialCount + fastingStats.earlyEndedCount;
@@ -212,89 +242,155 @@ export const FastingTimer = ({ compact = false }) => {
 
     return (
       <div
-        onClick={handleCompactClick}
-        className="p-3.5 sm:p-4 rounded-2xl bg-surface border border-theme flex flex-col justify-between gap-3.5 card-shadow transition-all duration-200 hover:shadow-md hover:border-theme-strong hover:-translate-y-0.5 cursor-pointer"
+        onClick={isBlurred ? (e) => handleToggleBlur(e) : handleCompactClick}
+        className="p-3.5 sm:p-4 rounded-2xl bg-surface border border-theme flex flex-col justify-between gap-3.5 card-shadow transition-all duration-200 hover:shadow-md hover:border-theme-strong hover:-translate-y-0.5 cursor-pointer relative"
       >
-        <div className="flex items-start sm:items-center gap-3 sm:gap-3.5 min-w-0">
-          <div className="relative flex items-center justify-center shrink-0">
-            <svg width={size} height={size} className="transform -rotate-90">
-              <circle
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                stroke="currentColor"
-                strokeWidth={strokeWidth}
-                className="text-subtle text-opacity-20 stroke-current"
-                fill="transparent"
-              />
-              <circle
-                cx={size / 2}
-                cy={size / 2}
-                r={radius}
-                stroke={fastingState.isActive ? 'var(--color-purple)' : 'var(--color-text-muted)'}
-                strokeWidth={strokeWidth}
-                strokeDasharray={circumference}
-                strokeDashoffset={strokeDashoffset}
-                strokeLinecap="round"
-                fill="transparent"
-                className="transition-all duration-500 ease-out"
-              />
-            </svg>
-            <div className="absolute flex flex-col items-center justify-center">
-              <span className="text-xs font-black text-primary">
-                {fastingState.isActive ? `${progressPercent}%` : t('fasting.off', 'Off')}
-              </span>
-              <span className="text-[9px] font-bold text-secondary">
-                {fastingState.isActive ? `${hoursElapsed}h ${minutesElapsed}m` : selectedProtocolId}
-              </span>
-            </div>
+        {allowBlur && (
+          <div className="absolute top-3 right-3 z-20">
+            <button
+              type="button"
+              onClick={handleToggleBlur}
+              className={`p-1 rounded-lg border transition-all duration-200 cursor-pointer ${
+                isBlurred
+                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/25 shadow-xs'
+                  : 'text-secondary hover:text-primary hover:bg-subtle border-transparent hover:border-theme'
+              }`}
+              title={isBlurred ? 'Show Fasting Timer (Unblur)' : 'Hide Fasting Timer (Blur)'}
+              aria-label={isBlurred ? 'Unblur Fasting Timer' : 'Blur Fasting Timer'}
+            >
+              {isBlurred ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </button>
           </div>
+        )}
 
-          <div className="min-w-0 flex-1 space-y-1">
-            <div className="flex items-center gap-1.5 flex-wrap">
-              <Badge variant={fastingState.isActive ? 'purple' : 'neutral'} size="xs">
+        <div className="relative flex flex-col justify-between h-full gap-3.5 flex-1">
+          <div
+            className={`flex items-start sm:items-center gap-3 sm:gap-3.5 min-w-0 transition-all duration-200 ${
+              isBlurred ? 'filter blur-md select-none opacity-30 pointer-events-none' : ''
+            }`}
+          >
+            <div className="relative flex items-center justify-center shrink-0">
+              <svg width={size} height={size} className="transform -rotate-90">
+                <circle
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  stroke="currentColor"
+                  strokeWidth={strokeWidth}
+                  className="text-subtle text-opacity-20 stroke-current"
+                  fill="transparent"
+                />
+                <circle
+                  cx={size / 2}
+                  cy={size / 2}
+                  r={radius}
+                  stroke={fastingState.isActive ? 'var(--color-purple)' : 'var(--color-text-muted)'}
+                  strokeWidth={strokeWidth}
+                  strokeDasharray={circumference}
+                  strokeDashoffset={strokeDashoffset}
+                  strokeLinecap="round"
+                  fill="transparent"
+                  className="transition-all duration-500 ease-out"
+                />
+              </svg>
+              <div className="absolute flex flex-col items-center justify-center">
+                <span className="text-xs font-black text-primary">
+                  {fastingState.isActive ? `${progressPercent}%` : t('fasting.off', 'Off')}
+                </span>
+                <span className="text-[9px] font-bold text-secondary">
+                  {fastingState.isActive ? `${hoursElapsed}h ${minutesElapsed}m` : selectedProtocolId}
+                </span>
+              </div>
+            </div>
+
+            <div className="min-w-0 flex-1 space-y-1">
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <Badge variant={fastingState.isActive ? 'purple' : 'neutral'} size="xs">
+                  {fastingState.isActive ? (
+                    <span className="flex items-center gap-1">
+                      <Moon className="w-3 h-3 text-purple-400" /> {t('fasting.fastingPhase', 'Fasting')} ({activeTargetHours}h)
+                    </span>
+                  ) : (
+                    <span className="flex items-center gap-1">
+                      <Utensils className="w-3 h-3 text-emerald-400" /> {t('fasting.window', 'Window')} ({eatingHours}h)
+                    </span>
+                  )}
+                </Badge>
+                {fastingStats.streak > 0 && (
+                  <Badge variant="amber" size="xs">
+                    <span className="flex items-center gap-1 font-bold">
+                      <Flame className="w-3 h-3 text-amber-500 fill-amber-500" /> {fastingStats.streak} {t('streakWidget.daysStreak', 'd Streak')}
+                    </span>
+                  </Badge>
+                )}
+                <Badge variant="success" size="xs">
+                  {fastingStats.completedCount} {t('fasting.completedIF', 'Completed IF')}
+                </Badge>
+                {fastingStats.partialCount > 0 && (
+                  <Badge variant="warning" size="xs">
+                    {fastingStats.partialCount} {t('fasting.partialFast', 'Partial Fast')}
+                  </Badge>
+                )}
+              </div>
+              <p className="text-xs font-bold text-primary leading-tight">
+                {fastingState.isActive
+                  ? `${hoursRemaining}h ${minutesRemaining}m ${t('fasting.toEatingWindow', 'to Eating Window')}`
+                  : `${activeTargetHours}h ${t('fasting.fastingPhase', 'Fasting')} / ${eatingHours}h ${t('fasting.eatingWindow', 'Eating')}`}
+              </p>
+              <div className="text-[11px] text-secondary flex items-center gap-1.5 flex-wrap">
                 {fastingState.isActive ? (
-                  <span className="flex items-center gap-1">
-                    <Moon className="w-3 h-3 text-purple-400" /> {t('fasting.fastingPhase', 'Fasting')} ({activeTargetHours}h)
-                  </span>
+                  <>
+                    <span>
+                      {t('fasting.started', 'Started')}: <span className="font-semibold text-primary">{startDateStr}, {startTimeStr}</span>
+                    </span>
+                    <span className="text-secondary/60">·</span>
+                    <span className="text-purple-600 dark:text-purple-400 font-bold">
+                      {t('fasting.endsAt', 'Ends')}: {endDateStr}, {endTimeStr}
+                    </span>
+                  </>
                 ) : (
-                  <span className="flex items-center gap-1">
-                    <Utensils className="w-3 h-3 text-emerald-400" /> {t('fasting.window', 'Window')} ({eatingHours}h)
+                  <span>{t('fasting.protocolLabel', 'Protocol')}: {selectedProtocolId}</span>
+                )}
+                {fastingStats.streak > 0 && (
+                  <span className="text-amber-500 dark:text-amber-400 font-extrabold ml-1 inline-flex items-center gap-1">
+                    · 🔥 {fastingStats.streak} {t('streakWidget.daysStreak', 'd Streak')}
                   </span>
                 )}
-              </Badge>
-              <Badge variant="success" size="xs">
-                {fastingStats.completedCount} {t('fasting.completedIF', 'Completed IF')}
-              </Badge>
-              {fastingStats.partialCount > 0 && (
-                <Badge variant="warning" size="xs">
-                  {fastingStats.partialCount} {t('fasting.partialFast', 'Partial Fast')}
-                </Badge>
-              )}
+              </div>
             </div>
-            <p className="text-xs font-bold text-primary leading-tight">
-              {fastingState.isActive
-                ? `${hoursRemaining}h ${minutesRemaining}m ${t('fasting.toEatingWindow', 'to Eating Window')}`
-                : `${activeTargetHours}h ${t('fasting.fastingPhase', 'Fasting')} / ${eatingHours}h ${t('fasting.eatingWindow', 'Eating')}`}
-            </p>
-            <p className="text-[11px] text-secondary flex items-center gap-1 flex-wrap">
-              <span>{fastingState.isActive ? `${t('fasting.started', 'Started')} ${new Date(fastingState.startTime).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : `${t('fasting.protocolLabel', 'Protocol')}: ${selectedProtocolId}`}</span>
-              {fastingStats.streak > 0 && (
-                <span className="text-purple-600 dark:text-purple-400 font-bold ml-1">· 🔥 {fastingStats.streak} {t('streakWidget.daysStreak', 'd streak')}</span>
-              )}
-            </p>
           </div>
-        </div>
 
-        <Button
-          variant={fastingState.isActive ? 'danger' : 'primary'}
-          size="sm"
-          className="w-full justify-center shrink-0"
-          icon={fastingState.isActive ? Square : Play}
-          onClick={fastingState.isActive ? handleStop : handleStart}
-        >
-          {fastingState.isActive ? t('fasting.endFast', 'End Fast') : t('fasting.startFast', 'Start Fast')}
-        </Button>
+          <div
+            className={`transition-all duration-200 ${
+              isBlurred ? 'filter blur-md select-none opacity-30 pointer-events-none' : ''
+            }`}
+          >
+            <Button
+              variant={fastingState.isActive ? 'danger' : 'primary'}
+              size="sm"
+              className="w-full justify-center shrink-0"
+              icon={fastingState.isActive ? Square : Play}
+              onClick={fastingState.isActive ? handleStop : handleStart}
+            >
+              {fastingState.isActive ? t('fasting.endFast', 'End Fast') : t('fasting.startFast', 'Start Fast')}
+            </Button>
+          </div>
+
+          {isBlurred && (
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                handleToggleBlur(e);
+              }}
+              className="absolute inset-0 z-10 flex items-center justify-center cursor-pointer bg-surface/20 backdrop-blur-[2px] rounded-xl hover:bg-surface/30 transition-all group/blur"
+              title="Click to reveal"
+            >
+              <span className="px-3 py-1.5 rounded-xl bg-surface/90 border border-theme text-xs font-bold text-secondary shadow-md flex items-center gap-1.5 group-hover/blur:text-primary group-hover/blur:scale-105 transition-all">
+                <Eye className="w-3.5 h-3.5 text-accent" /> Click to reveal
+              </span>
+            </div>
+          )}
+        </div>
       </div>
     );
   }
@@ -421,7 +517,7 @@ export const FastingTimer = ({ compact = false }) => {
                     {progressPercent}% {t('fasting.complete')}
                   </span>
                   <span className="text-[10px] text-secondary">
-                    {t('fasting.target')}: {activeTargetHours}h
+                    {t('fasting.target')}: {activeTargetHours}h {targetEndTime ? `· Ends ${endTimeStr}` : ''}
                   </span>
                 </>
               ) : (
@@ -434,25 +530,70 @@ export const FastingTimer = ({ compact = false }) => {
             </div>
           </div>
 
-          {/* Phase Details Summary */}
-          <div className="w-full grid grid-cols-2 gap-2.5 text-center">
-            <div className="p-2.5 bg-surface rounded-xl border border-theme">
-              <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
-                {t('fasting.currentPhase')}
-              </span>
-              <span className="text-xs font-black text-primary mt-0.5 block truncate">
-                {fastingState.isActive ? `🌙 ${t('fasting.fastingPhase')} (${activeTargetHours}h)` : `☀️ ${t('fasting.eatingPhase')} (${eatingHours}h)`}
-              </span>
+          {/* Phase Details & Start/End Dates/Times */}
+          {fastingState.isActive ? (
+            <div className="w-full space-y-2">
+              {/* Start & End Date/Time Card */}
+              <div className="p-2.5 sm:p-3 bg-surface rounded-xl border border-theme flex items-center justify-between gap-2 text-xs shadow-xs">
+                <div className="min-w-0">
+                  <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
+                    {t('fasting.started', 'Started')}
+                  </span>
+                  <span className="text-xs font-black text-primary block truncate mt-0.5">
+                    {startDateStr}, {startTimeStr}
+                  </span>
+                </div>
+                <div className="h-6 w-[1px] bg-theme shrink-0" />
+                <div className="min-w-0 text-right">
+                  <span className="text-[10px] font-bold text-purple-600 dark:text-purple-400 uppercase tracking-wider block">
+                    {t('fasting.endsAt', 'Fast Ends (Target)')}
+                  </span>
+                  <span className="text-xs font-black text-purple-600 dark:text-purple-400 block truncate mt-0.5">
+                    {endDateStr}, {endTimeStr}
+                  </span>
+                </div>
+              </div>
+
+              {/* 2 Mini Phase Stats */}
+              <div className="grid grid-cols-2 gap-2 text-center">
+                <div className="p-2 bg-surface rounded-xl border border-theme">
+                  <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
+                    {t('fasting.currentPhase', 'Current Phase')}
+                  </span>
+                  <span className="text-xs font-black text-primary mt-0.5 block truncate">
+                    🌙 {t('fasting.fastingPhase', 'Fasting')} ({activeTargetHours}h)
+                  </span>
+                </div>
+                <div className="p-2 bg-surface rounded-xl border border-theme">
+                  <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
+                    {t('fasting.eatingWindowIn', 'Eating Window In')}
+                  </span>
+                  <span className="text-xs font-black text-purple-600 dark:text-purple-400 mt-0.5 block truncate">
+                    {hoursRemaining}h {minutesRemaining}m left
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="p-2.5 bg-surface rounded-xl border border-theme">
-              <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
-                {fastingState.isActive ? t('fasting.eatingWindowIn') : t('fasting.fastTarget')}
-              </span>
-              <span className="text-xs font-black text-purple-600 dark:text-purple-400 mt-0.5 block truncate">
-                {fastingState.isActive ? `${hoursRemaining}h ${minutesRemaining}m` : `${activeTargetHours}h`}
-              </span>
+          ) : (
+            <div className="w-full grid grid-cols-2 gap-2.5 text-center">
+              <div className="p-2.5 bg-surface rounded-xl border border-theme">
+                <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
+                  {t('fasting.currentPhase', 'Current Phase')}
+                </span>
+                <span className="text-xs font-black text-primary mt-0.5 block truncate">
+                  ☀️ {t('fasting.eatingPhase', 'Eating Window')} ({eatingHours}h)
+                </span>
+              </div>
+              <div className="p-2.5 bg-surface rounded-xl border border-theme">
+                <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
+                  {t('fasting.fastTarget', 'Target Protocol')}
+                </span>
+                <span className="text-xs font-black text-primary mt-0.5 block truncate">
+                  {activeTargetHours}h Fasting
+                </span>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Action Button Controls */}
           <div className="w-full flex items-center gap-2 pt-1">
