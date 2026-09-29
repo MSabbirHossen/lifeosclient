@@ -23,6 +23,9 @@ import {
   BarChart2,
   Eye,
   EyeOff,
+  Edit2,
+  Calendar,
+  Check,
 } from 'lucide-react';
 import {
   getFastingStats,
@@ -71,6 +74,72 @@ export const FastingTimer = ({
   const [endedSummary, setEndedSummary] = useState(null);
   const [fastingState, setFastingState] = useState(() => getFastingState());
   const [elapsedSeconds, setElapsedSeconds] = useState(0);
+
+  // Manual start date & time editor state
+  const toLocalDatetimeValue = (date) => {
+    const d = date ? new Date(date) : new Date();
+    if (isNaN(d.getTime())) return '';
+    const pad = (n) => String(n).padStart(2, '0');
+    const year = d.getFullYear();
+    const month = pad(d.getMonth() + 1);
+    const day = pad(d.getDate());
+    const hours = pad(d.getHours());
+    const minutes = pad(d.getMinutes());
+    return `${year}-${month}-${day}T${hours}:${minutes}`;
+  };
+
+  const [isEditingTime, setIsEditingTime] = useState(false);
+  const [manualStartTime, setManualStartTime] = useState(() =>
+    fastingState.startTime ? toLocalDatetimeValue(fastingState.startTime) : toLocalDatetimeValue(new Date())
+  );
+
+  const handleOpenTimeEditor = () => {
+    const currentStart = fastingState.isActive && fastingState.startTime
+      ? fastingState.startTime
+      : new Date().toISOString();
+    setManualStartTime(toLocalDatetimeValue(currentStart));
+    setIsEditingTime(true);
+  };
+
+  const applyTimeOffset = (hoursOffset, minutesOffset = 0) => {
+    const d = new Date();
+    d.setHours(d.getHours() + hoursOffset);
+    d.setMinutes(d.getMinutes() + minutesOffset);
+    setManualStartTime(toLocalDatetimeValue(d));
+  };
+
+  const setYesterdayEvening = () => {
+    const d = new Date();
+    d.setDate(d.getDate() - 1);
+    d.setHours(20, 0, 0, 0);
+    setManualStartTime(toLocalDatetimeValue(d));
+  };
+
+  const handleSaveManualTime = async () => {
+    if (!manualStartTime) return;
+    const newDate = new Date(manualStartTime);
+    if (isNaN(newDate.getTime())) return;
+
+    if (fastingState.isActive) {
+      const updatedState = {
+        ...fastingState,
+        startTime: newDate.toISOString(),
+        targetHours: activeTargetHours,
+      };
+      setFastingState(updatedState);
+      await updateFastingState(updatedState);
+    } else {
+      const newState = {
+        isActive: true,
+        startTime: newDate.toISOString(),
+        protocolId: selectedProtocolId,
+        targetHours: activeTargetHours,
+      };
+      setFastingState(newState);
+      await updateFastingState(newState);
+    }
+    setIsEditingTime(false);
+  };
 
   // Fetch fresh fasting data on mount and poll for cross-device updates
   useEffect(() => {
@@ -227,6 +296,26 @@ export const FastingTimer = ({
 
   const endDateStr = targetEndTime ? targetEndTime.toLocaleDateString([], { month: 'short', day: 'numeric' }) : '';
   const endTimeStr = targetEndTime ? targetEndTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+
+  // Dynamic preview dates for manual editor
+  const previewStartDateObj = manualStartTime ? new Date(manualStartTime) : null;
+  const isPreviewValid = previewStartDateObj && !isNaN(previewStartDateObj.getTime());
+  const previewTargetEndTime = isPreviewValid
+    ? new Date(previewStartDateObj.getTime() + activeTargetHours * 3600 * 1000)
+    : null;
+
+  const previewStartDateStr = isPreviewValid
+    ? previewStartDateObj.toLocaleDateString([], { month: 'short', day: 'numeric' })
+    : '';
+  const previewStartTimeStr = isPreviewValid
+    ? previewStartDateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : '';
+  const previewEndDateStr = previewTargetEndTime
+    ? previewTargetEndTime.toLocaleDateString([], { month: 'short', day: 'numeric' })
+    : '';
+  const previewEndTimeStr = previewTargetEndTime
+    ? previewTargetEndTime.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+    : '';
 
   // Aggregate stats calculations
   const totalAttempted =
@@ -530,15 +619,150 @@ export const FastingTimer = ({
             </div>
           </div>
 
-          {/* Phase Details & Start/End Dates/Times */}
-          {fastingState.isActive ? (
+          {/* Phase Details & Start/End Dates/Times (Interactive & Editable) */}
+          {isEditingTime ? (
+            /* Manual Start Date & Time Editor Drawer */
+            <div className="w-full p-3 sm:p-3.5 bg-surface rounded-xl border border-purple-500/40 shadow-sm animate-fade-in space-y-3 text-xs">
+              <div className="flex items-center justify-between pb-1.5 border-b border-theme">
+                <span className="font-extrabold text-primary flex items-center gap-1.5 text-xs">
+                  <Calendar className="w-3.5 h-3.5 text-purple-500" />
+                  {fastingState.isActive
+                    ? t('fasting.editStartTimeTitle', 'Adjust Fast Start Date & Time')
+                    : t('fasting.setStartTimeTitle', 'Set Custom Fast Start Date & Time')}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setIsEditingTime(false)}
+                  className="text-secondary hover:text-primary cursor-pointer p-0.5"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+
+              {/* Datetime input field */}
+              <div className="space-y-1">
+                <label className="text-[11px] font-bold text-secondary block">
+                  {t('fasting.startDateTimeLabel', 'Started Date & Time:')}
+                </label>
+                <input
+                  type="datetime-local"
+                  value={manualStartTime}
+                  onChange={(e) => setManualStartTime(e.target.value)}
+                  className="w-full px-3 py-2 rounded-xl bg-subtle border border-theme focus:border-purple-500 text-primary text-xs sm:text-sm font-bold outline-none transition-all"
+                />
+              </div>
+
+              {/* Quick preset chips */}
+              <div className="flex items-center gap-1.5 flex-wrap pt-0.5">
+                <span className="text-[10px] font-bold text-secondary">{t('fasting.quickOffsets', 'Quick:')}</span>
+                <button
+                  type="button"
+                  onClick={() => applyTimeOffset(0)}
+                  className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-subtle hover:bg-surface border border-theme text-secondary hover:text-primary cursor-pointer transition-colors"
+                >
+                  Now
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyTimeOffset(-1)}
+                  className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-subtle hover:bg-surface border border-theme text-secondary hover:text-primary cursor-pointer transition-colors"
+                >
+                  -1h
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyTimeOffset(-2)}
+                  className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-subtle hover:bg-surface border border-theme text-secondary hover:text-primary cursor-pointer transition-colors"
+                >
+                  -2h
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyTimeOffset(-4)}
+                  className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-subtle hover:bg-surface border border-theme text-secondary hover:text-primary cursor-pointer transition-colors"
+                >
+                  -4h
+                </button>
+                <button
+                  type="button"
+                  onClick={() => applyTimeOffset(-8)}
+                  className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-subtle hover:bg-surface border border-theme text-secondary hover:text-primary cursor-pointer transition-colors"
+                >
+                  -8h
+                </button>
+                <button
+                  type="button"
+                  onClick={setYesterdayEvening}
+                  className="px-2 py-0.5 rounded-lg text-[10px] font-semibold bg-subtle hover:bg-surface border border-theme text-secondary hover:text-primary cursor-pointer transition-colors"
+                >
+                  Yesterday 8PM
+                </button>
+              </div>
+
+              {/* Dynamic Live Recalculation Preview */}
+              {isPreviewValid && (
+                <div className="p-2.5 rounded-lg bg-purple-500/10 border border-purple-500/25 flex items-center justify-between gap-2 text-xs">
+                  <div>
+                    <span className="text-[10px] text-secondary font-bold block">
+                      {t('fasting.started', 'Started')}
+                    </span>
+                    <span className="font-extrabold text-primary text-xs">
+                      {previewStartDateStr}, {previewStartTimeStr}
+                    </span>
+                  </div>
+                  <div className="h-6 w-[1px] bg-purple-500/30 shrink-0" />
+                  <div className="min-w-0 text-right">
+                    <span className="text-[10px] text-purple-600 dark:text-purple-400 font-bold block flex items-center justify-end gap-1">
+                      <Sparkles className="w-3 h-3" /> {t('fasting.endsAt', 'Fast Ends (Target)')}
+                    </span>
+                    <span className="font-extrabold text-purple-600 dark:text-purple-400 text-xs">
+                      {previewEndDateStr}, {previewEndTimeStr}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Save / Cancel buttons */}
+              <div className="flex items-center gap-2 pt-1">
+                <Button
+                  variant="primary"
+                  size="sm"
+                  className="flex-1 justify-center text-xs font-bold"
+                  icon={Check}
+                  onClick={handleSaveManualTime}
+                >
+                  {fastingState.isActive
+                    ? t('fasting.updateStartTime', 'Update Start Time')
+                    : t('fasting.startWithTime', 'Start Fast with Selected Time')}
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="text-xs"
+                  onClick={() => setIsEditingTime(false)}
+                >
+                  {t('common.cancel', 'Cancel')}
+                </Button>
+              </div>
+            </div>
+          ) : fastingState.isActive ? (
             <div className="w-full space-y-2">
-              {/* Start & End Date/Time Card */}
-              <div className="p-2.5 sm:p-3 bg-surface rounded-xl border border-theme flex items-center justify-between gap-2 text-xs shadow-xs">
+              {/* Start & End Date/Time Card with manual edit trigger */}
+              <div className="p-2.5 sm:p-3 bg-surface rounded-xl border border-theme flex items-center justify-between gap-2 text-xs shadow-xs transition-all">
                 <div className="min-w-0">
-                  <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
-                    {t('fasting.started', 'Started')}
-                  </span>
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
+                      {t('fasting.started', 'Started')}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={handleOpenTimeEditor}
+                      className="px-1.5 py-0.5 rounded-md bg-subtle hover:bg-surface border border-theme text-[10px] font-semibold text-secondary hover:text-primary transition-all inline-flex items-center gap-1 cursor-pointer"
+                      title="Edit Start Time and Date"
+                    >
+                      <Edit2 className="w-2.5 h-2.5 text-accent" /> {t('common.edit', 'Edit')}
+                    </button>
+                  </div>
                   <span className="text-xs font-black text-primary block truncate mt-0.5">
                     {startDateStr}, {startTimeStr}
                   </span>
@@ -575,22 +799,34 @@ export const FastingTimer = ({
               </div>
             </div>
           ) : (
-            <div className="w-full grid grid-cols-2 gap-2.5 text-center">
-              <div className="p-2.5 bg-surface rounded-xl border border-theme">
-                <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
-                  {t('fasting.currentPhase', 'Current Phase')}
-                </span>
-                <span className="text-xs font-black text-primary mt-0.5 block truncate">
-                  ☀️ {t('fasting.eatingPhase', 'Eating Window')} ({eatingHours}h)
-                </span>
+            <div className="w-full space-y-2">
+              <div className="grid grid-cols-2 gap-2.5 text-center">
+                <div className="p-2.5 bg-surface rounded-xl border border-theme">
+                  <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
+                    {t('fasting.currentPhase', 'Current Phase')}
+                  </span>
+                  <span className="text-xs font-black text-primary mt-0.5 block truncate">
+                    ☀️ {t('fasting.eatingPhase', 'Eating Window')} ({eatingHours}h)
+                  </span>
+                </div>
+                <div className="p-2.5 bg-surface rounded-xl border border-theme">
+                  <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
+                    {t('fasting.fastTarget', 'Target Protocol')}
+                  </span>
+                  <span className="text-xs font-black text-primary mt-0.5 block truncate">
+                    {activeTargetHours}h Fasting
+                  </span>
+                </div>
               </div>
-              <div className="p-2.5 bg-surface rounded-xl border border-theme">
-                <span className="text-[10px] font-bold text-secondary uppercase tracking-wider block">
-                  {t('fasting.fastTarget', 'Target Protocol')}
-                </span>
-                <span className="text-xs font-black text-primary mt-0.5 block truncate">
-                  {activeTargetHours}h Fasting
-                </span>
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={handleOpenTimeEditor}
+                  className="text-xs font-semibold text-secondary hover:text-primary inline-flex items-center gap-1.5 transition-colors cursor-pointer py-0.5"
+                >
+                  <Calendar className="w-3.5 h-3.5 text-accent" />
+                  <span>{t('fasting.startedEarlier', 'Started earlier? Set custom start time & date')}</span>
+                </button>
               </div>
             </div>
           )}
