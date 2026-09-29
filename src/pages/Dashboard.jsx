@@ -34,6 +34,8 @@ import {
   Activity,
   CheckCircle2,
   AlertCircle,
+  Eye,
+  EyeOff,
 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, BarChart, Bar, XAxis, YAxis } from 'recharts';
@@ -88,6 +90,33 @@ export const Dashboard = ({ selectedDate }) => {
   });
   const [refreshing, setRefreshing] = useState(false);
   const [isReflectionModalOpen, setIsReflectionModalOpen] = useState(false);
+
+  // Blur / Privacy Mode State
+  const [isPageBlurred, setIsPageBlurred] = useState(() => {
+    return localStorage.getItem('lifeos_blur_dashboard') === 'true';
+  });
+  const [blurredCards, setBlurredCards] = useState({});
+
+  const togglePageBlur = () => {
+    const newState = !isPageBlurred;
+    setIsPageBlurred(newState);
+    localStorage.setItem('lifeos_blur_dashboard', String(newState));
+    setBlurredCards({});
+  };
+
+  const isCardBlurred = (cardId) => {
+    if (blurredCards[cardId] !== undefined) {
+      return blurredCards[cardId];
+    }
+    return isPageBlurred;
+  };
+
+  const toggleCardBlur = (cardId) => {
+    setBlurredCards((prev) => ({
+      ...prev,
+      [cardId]: !(prev[cardId] !== undefined ? prev[cardId] : isPageBlurred),
+    }));
+  };
 
   const fetchDashboardData = useCallback(async (isSilent = false) => {
     const cached = getLocalCache(`/dashboard/summary?date=${activeDate}`);
@@ -243,6 +272,20 @@ export const Dashboard = ({ selectedDate }) => {
         description={`${t('dashboard.subtitle', 'Live synthesis and metrics for')} ${formatDisplayDate(activeDate)}`}
         action={
           <div className="flex items-center gap-2 flex-wrap w-full sm:w-auto">
+            <Button
+              variant={isPageBlurred ? 'primary' : 'outline'}
+              size="sm"
+              icon={isPageBlurred ? EyeOff : Eye}
+              onClick={togglePageBlur}
+              className={`transition-all duration-200 cursor-pointer ${
+                isPageBlurred
+                  ? 'bg-amber-500 hover:bg-amber-600 text-white border-amber-600 shadow-xs'
+                  : 'hover:border-theme-strong'
+              }`}
+              title={isPageBlurred ? 'Unblur all content on page' : 'Blur all content on page for privacy'}
+            >
+              {isPageBlurred ? 'Unblur View' : 'Blur View'}
+            </Button>
             <button
               onClick={() => fetchDashboardData(false)}
               className="p-2 rounded-xl text-secondary hover:text-primary hover:bg-subtle border border-theme transition-all cursor-pointer shrink-0 flex items-center justify-center min-w-[36px] min-h-[36px]"
@@ -281,7 +324,7 @@ export const Dashboard = ({ selectedDate }) => {
         onClick={(e) => {
           if (!e.target.closest('button')) navigate('/islamic');
         }}
-        className="p-3.5 sm:p-5 rounded-2xl bg-surface border border-theme card-shadow transition-all duration-200 hover:shadow-md hover:border-theme-strong hover:-translate-y-0.5 cursor-pointer"
+        className="p-3.5 sm:p-5 rounded-2xl bg-surface border border-theme card-shadow transition-all duration-200 hover:shadow-md hover:border-theme-strong hover:-translate-y-0.5 cursor-pointer relative"
       >
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-3 gap-2 pb-2.5 border-b border-theme/60">
           <div className="flex items-center gap-2 cursor-pointer" onClick={() => navigate('/islamic')}>
@@ -312,34 +355,66 @@ export const Dashboard = ({ selectedDate }) => {
             >
               {t('nav.islamic', 'Islamic & Deen')} <ArrowRight className="w-3 h-3" />
             </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCardBlur('salah');
+              }}
+              className={`p-1 rounded-lg border transition-all duration-200 cursor-pointer ${
+                isCardBlurred('salah')
+                  ? 'bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30 hover:bg-amber-500/25 shadow-xs'
+                  : 'text-secondary hover:text-primary hover:bg-subtle border-transparent hover:border-theme'
+              }`}
+              title={isCardBlurred('salah') ? 'Show Salah strip' : 'Hide Salah strip'}
+            >
+              {isCardBlurred('salah') ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+            </button>
           </div>
         </div>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-2.5">
-          {['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((prayer, idx) => {
-            const status = salahMap[prayer] || 'pending';
-            const config = SALAH_STATUS_CONFIG[status] || SALAH_STATUS_CONFIG.pending;
-            const prayerNameTranslated = t(`dashboard.salah${prayer}`, prayer);
-            const isLastOnMobile = idx === 4; // Isha
-            return (
-              <button
-                key={prayer}
-                type="button"
-                onClick={() => handleCycleSalah(prayer)}
-                className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between transition-all cursor-pointer hover:scale-[1.02] active:scale-95 ${
-                  isLastOnMobile ? 'col-span-2 sm:col-span-1 md:col-span-1' : ''
-                } ${config.class}`}
-                title={`Click to cycle status: ${prayer}`}
-              >
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="text-xs sm:text-sm font-extrabold text-primary">{prayerNameTranslated}</span>
-                </div>
-                <span className="text-[11px] sm:text-xs font-bold flex items-center gap-1">
-                  {config.icon} {config.label}
-                </span>
-              </button>
-            );
-          })}
+        <div className="relative">
+          <div className={`transition-all duration-200 ${isCardBlurred('salah') ? 'filter blur-md select-none opacity-30 pointer-events-none' : ''}`}>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-2.5">
+              {['Fajr', 'Dhuhr', 'Asr', 'Maghrib', 'Isha'].map((prayer, idx) => {
+                const status = salahMap[prayer] || 'pending';
+                const config = SALAH_STATUS_CONFIG[status] || SALAH_STATUS_CONFIG.pending;
+                const prayerNameTranslated = t(`dashboard.salah${prayer}`, prayer);
+                const isLastOnMobile = idx === 4; // Isha
+                return (
+                  <button
+                    key={prayer}
+                    type="button"
+                    onClick={() => handleCycleSalah(prayer)}
+                    className={`p-2.5 sm:p-3 rounded-xl border flex items-center justify-between transition-all cursor-pointer hover:scale-[1.02] active:scale-95 ${
+                      isLastOnMobile ? 'col-span-2 sm:col-span-1 md:col-span-1' : ''
+                    } ${config.class}`}
+                    title={`Click to cycle status: ${prayer}`}
+                  >
+                    <div className="flex items-center gap-1.5 sm:gap-2">
+                      <span className="text-xs sm:text-sm font-extrabold text-primary">{prayerNameTranslated}</span>
+                    </div>
+                    <span className="text-[11px] sm:text-xs font-bold flex items-center gap-1">
+                      {config.icon} {config.label}
+                    </span>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+          {isCardBlurred('salah') && (
+            <div
+              onClick={(e) => {
+                e.stopPropagation();
+                toggleCardBlur('salah');
+              }}
+              className="absolute inset-0 z-10 flex items-center justify-center cursor-pointer bg-surface/20 backdrop-blur-[2px] rounded-xl hover:bg-surface/30 transition-all group/blur"
+              title="Click to reveal"
+            >
+              <span className="px-3 py-1.5 rounded-xl bg-surface/90 border border-theme text-xs font-bold text-secondary shadow-md flex items-center gap-1.5 group-hover/blur:text-primary group-hover/blur:scale-105 transition-all">
+                <Eye className="w-3.5 h-3.5 text-accent" /> Click to reveal
+              </span>
+            </div>
+          )}
         </div>
       </div>
 
@@ -352,6 +427,9 @@ export const Dashboard = ({ selectedDate }) => {
           icon={Clock}
           color="indigo"
           onClick={() => navigate('/time-tracker')}
+          allowBlur={true}
+          isBlurred={isCardBlurred('timeLogged')}
+          onToggleBlur={() => toggleCardBlur('timeLogged')}
         />
         <StatCard
           title={t('calories.budgetRemaining', 'Net Calorie Balance')}
@@ -360,6 +438,9 @@ export const Dashboard = ({ selectedDate }) => {
           icon={Utensils}
           color={isDeficit ? 'emerald' : 'rose'}
           onClick={() => navigate('/calories')}
+          allowBlur={true}
+          isBlurred={isCardBlurred('netCalories')}
+          onToggleBlur={() => toggleCardBlur('netCalories')}
         />
         <StatCard
           title={t('dashboard.burnedToday', 'Calories Burned')}
@@ -368,6 +449,9 @@ export const Dashboard = ({ selectedDate }) => {
           icon={Dumbbell}
           color="amber"
           onClick={() => navigate('/fitness')}
+          allowBlur={true}
+          isBlurred={isCardBlurred('caloriesBurned')}
+          onToggleBlur={() => toggleCardBlur('caloriesBurned')}
         />
         <StatCard
           title={t('dashboard.habitsCompleted', 'Habits Completed')}
@@ -376,6 +460,9 @@ export const Dashboard = ({ selectedDate }) => {
           icon={Flame}
           color="purple"
           onClick={() => navigate('/habits')}
+          allowBlur={true}
+          isBlurred={isCardBlurred('habitsCompleted')}
+          onToggleBlur={() => toggleCardBlur('habitsCompleted')}
         />
       </div>
 
@@ -390,6 +477,9 @@ export const Dashboard = ({ selectedDate }) => {
             title={t('dashboard.energyEngineTitle')}
             subtitle={t('dashboard.liveEnergySynthesis')}
             icon={Activity}
+            allowBlur={true}
+            isBlurred={isCardBlurred('calorieEngine')}
+            onToggleBlur={() => toggleCardBlur('calorieEngine')}
             badge={
               <Badge variant={isDeficit ? 'success' : 'danger'} size="xs">
                 {isDeficit ? 'Deficit Target' : 'Surplus Warning'}
@@ -463,7 +553,12 @@ export const Dashboard = ({ selectedDate }) => {
           {/* 16:8 Fasting & Finance 2-Col Grid */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3.5 sm:gap-4">
             {/* 16:8 Fasting Component */}
-            <FastingTimer compact={true} />
+            <FastingTimer
+              compact={true}
+              allowBlur={true}
+              isBlurred={isCardBlurred('fastingTimer')}
+              onToggleBlur={() => toggleCardBlur('fastingTimer')}
+            />
 
             {/* Financial Summary */}
             <Card
@@ -472,6 +567,9 @@ export const Dashboard = ({ selectedDate }) => {
               title={t('dashboard.financeSnapshot')}
               subtitle={t('dashboard.expensesCashflow')}
               icon={Wallet}
+              allowBlur={true}
+              isBlurred={isCardBlurred('financeSnapshot')}
+              onToggleBlur={() => toggleCardBlur('financeSnapshot')}
               action={
                 <Button variant="ghost" size="xs" onClick={() => navigate('/finance')} title={t('nav.finance')}>
                   <span className="hidden xl:inline">{t('nav.finance')}</span>
@@ -504,6 +602,9 @@ export const Dashboard = ({ selectedDate }) => {
             title={t('dashboard.timeAllocation', "Today's Time Allocation")}
             subtitle={t('dashboard.timeBlocksSummary', 'Logged blocks categorized across deep work, study, deen, & rest')}
             icon={Clock}
+            allowBlur={true}
+            isBlurred={isCardBlurred('timeAllocation')}
+            onToggleBlur={() => toggleCardBlur('timeAllocation')}
             action={
               <Button variant="ghost" size="xs" onClick={() => navigate('/time-tracker')} title={t('nav.focus')}>
                 <span className="hidden xl:inline">{t('nav.focus')}</span>
@@ -561,6 +662,9 @@ export const Dashboard = ({ selectedDate }) => {
             title={t('reflection.guidedReflection', 'Guided Self-Reflection')}
             subtitle={t('dashboard.promptOfDay', 'Prompt of the Day')}
             icon={BookOpen}
+            allowBlur={true}
+            isBlurred={isCardBlurred('guidedReflection')}
+            onToggleBlur={() => toggleCardBlur('guidedReflection')}
             action={
               <Button variant="ghost" size="xs" onClick={() => navigate('/journal')} title={t('nav.reflection')}>
                 <span className="hidden xl:inline">{t('nav.reflection')}</span>
@@ -602,6 +706,9 @@ export const Dashboard = ({ selectedDate }) => {
             title={t('islamic.fastingSawmTitle', 'Islamic Fasting (Sawm)')}
             subtitle={t('islamic.fastingSawmSubtitle', 'Sunnah & Obligatory Fasts')}
             icon={Moon}
+            allowBlur={true}
+            isBlurred={isCardBlurred('islamicFasting')}
+            onToggleBlur={() => toggleCardBlur('islamicFasting')}
             badge={
               <Badge
                 variant={
@@ -758,6 +865,9 @@ export const Dashboard = ({ selectedDate }) => {
             title={t('dashboard.spiritualAnchor', 'Spiritual Anchor')}
             subtitle={t('dashboard.dailyIslamicWisdom', 'Daily Islamic Wisdom')}
             icon={Compass}
+            allowBlur={true}
+            isBlurred={isCardBlurred('spiritualWisdom')}
+            onToggleBlur={() => toggleCardBlur('spiritualWisdom')}
             action={
               <Button variant="ghost" size="xs" onClick={() => navigate('/islamic')} title={t('nav.islamic')}>
                 <span className="hidden xl:inline">{t('nav.islamic')}</span>
@@ -780,7 +890,14 @@ export const Dashboard = ({ selectedDate }) => {
           </Card>
 
           {/* Quick Actions Card */}
-          <Card hover title={t('dashboard.quickActions')} icon={Sparkles}>
+          <Card
+            hover
+            title={t('dashboard.quickActions')}
+            icon={Sparkles}
+            allowBlur={true}
+            isBlurred={isCardBlurred('quickActions')}
+            onToggleBlur={() => toggleCardBlur('quickActions')}
+          >
             <div className="space-y-2 mt-2">
               <Button
                 variant="secondary"
