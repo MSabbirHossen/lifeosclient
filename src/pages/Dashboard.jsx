@@ -139,6 +139,14 @@ export const Dashboard = ({ selectedDate }) => {
       setData(res.data);
       if (res.data?.summary?.salah?.prayerMap) {
         setSalahMap(res.data.summary.salah.prayerMap);
+      } else {
+        setSalahMap({
+          Fajr: 'pending',
+          Dhuhr: 'pending',
+          Asr: 'pending',
+          Maghrib: 'pending',
+          Isha: 'pending',
+        });
       }
       setTodayFast(fastRes.data?.[0] || null);
       setFastingSummary(fastSummaryRes.data || null);
