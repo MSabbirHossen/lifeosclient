@@ -425,22 +425,20 @@ export const TimeTracker = ({ selectedDate }) => {
               <button
                 type="button"
                 onClick={() => setViewMode('timeline')}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                  viewMode === 'timeline'
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${viewMode === 'timeline'
                     ? 'bg-surface text-primary border border-theme shadow-xs'
                     : 'text-secondary hover:text-primary'
-                }`}
+                  }`}
               >
                 <LayoutList className="w-3.5 h-3.5" /> Timeline Flow
               </button>
               <button
                 type="button"
                 onClick={() => setViewMode('grid')}
-                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${
-                  viewMode === 'grid'
+                className={`px-2.5 py-1 text-xs font-bold rounded-lg transition-all cursor-pointer flex items-center gap-1.5 ${viewMode === 'grid'
                     ? 'bg-surface text-primary border border-theme shadow-xs'
                     : 'text-secondary hover:text-primary'
-                }`}
+                  }`}
               >
                 <LayoutGrid className="w-3.5 h-3.5" /> Grid View
               </button>
@@ -752,8 +750,8 @@ export const TimeTracker = ({ selectedDate }) => {
                           type="button"
                           onClick={() => setCategory(c)}
                           className={`px-2.5 py-1 text-[11px] font-bold rounded-lg border transition-all cursor-pointer ${isSelected
-                              ? 'bg-accent text-accent-contrast border-accent shadow-xs'
-                              : 'bg-surface/80 border-theme text-secondary hover:text-primary hover:bg-subtle'
+                            ? 'bg-accent text-accent-contrast border-accent shadow-xs'
+                            : 'bg-surface/80 border-theme text-secondary hover:text-primary hover:bg-subtle'
                             }`}
                         >
                           {c}
